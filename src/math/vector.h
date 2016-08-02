@@ -18,12 +18,6 @@ typedef struct {
   float w;
 } vec4;
 
-
-typedef struct {
-  float m[4][4];
-} mat4x4;
-
-
 typedef struct {
   float x;
   float y;
@@ -36,10 +30,16 @@ typedef struct {
 } vec2;
 
 typedef struct {
+  float m[4][4];
+} mat4x4;
+
+typedef struct {
   float m[3][3];
 } mat3x3;
 
 void m4x4_newIdentity(mat4x4 *out);
+void m4x4_newOrtho(mat4x4 *projectionMatrix, float left, float right, float bottom, float top, float zNear, float zFar);
+void m4x4_newPerspective( mat4x4 projectionMatrix, float fov, float ratio, float zNear, float zFar);
 void m4x4_newScaling(mat4x4 *out, float x, float y, float z);
 void m4x4_newTranslation(mat4x4 *out, float x, float y, float z);
 void m4x4_newRotationX(mat4x4 *out, float a);

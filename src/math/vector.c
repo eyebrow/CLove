@@ -10,12 +10,46 @@
 #include "vector.h"
 #include <tgmath.h>
 
+void m4x4_newOrtho(mat4x4* projectionMatrix, float left, float right, float bottom, float top, float zNear, float zFar) {
+  float x_orth = 2.0f / (right - left);
+  float y_orth = 2.0f / (top - bottom);
+  float z_orth = -2.0f / (zNear - zFar);
+
+  float tx = -(right + left) / (right - left);
+  float ty = -(top + bottom) / (top - bottom);
+  float tz = (zNear + zFar) / (zNear - zFar);
+
+  projectionMatrix->m[0][0] = x_orth;
+  projectionMatrix->m[0][1] = 0.0f;
+  projectionMatrix->m[0][2] = 0.0f;
+  projectionMatrix->m[0][3] = 0.0f;
+
+  projectionMatrix->m[1][0] = 0.0f;
+  projectionMatrix->m[1][1] = y_orth;
+  projectionMatrix->m[1][2] = 0.0f;
+  projectionMatrix->m[1][3] = 0.0f;
+
+  projectionMatrix->m[2][0] = 0.0f;
+  projectionMatrix->m[2][1] = 0.0f;
+  projectionMatrix->m[2][2] = z_orth;
+  projectionMatrix->m[2][3] = 0.0f;
+
+  projectionMatrix->m[3][0] = tx;
+  projectionMatrix->m[3][1] = ty;
+  projectionMatrix->m[3][2] = tz;
+  projectionMatrix->m[3][3] = 1.0f;
+}
+
+void m4x4_newPerspective(mat4x4 projectionMatrix, float fov, float ratio, float zNear, float zFar) {
+
+}
+
 void m4x4_scale(mat4x4 *inout, float x, float y, float z) {
   for(int i = 0; i < 3; ++i) {
-    inout->m[0][i] *= x;
-    inout->m[1][i] *= y;
-    inout->m[2][i] *= z;
-  }
+      inout->m[0][i] *= x;
+      inout->m[1][i] *= y;
+      inout->m[2][i] *= z;
+    }
 }
 
 void m4x4_translate(mat4x4 *inout, float x, float y, float z) {
@@ -34,7 +68,7 @@ void m4x4_shear2d(mat4x4 *inout, float x, float y) {
 }
 
 void m4x4_newTransform2d(mat4x4 *out, float x, float y, float r, float sx, float sy,
-                      float ox, float oy, float kx, float ky) {
+                         float ox, float oy, float kx, float ky) {
 
   float sa = sin(r);
   float ca = cos(r);
@@ -66,7 +100,7 @@ void m4x4_newTransform2d(mat4x4 *out, float x, float y, float r, float sx, float
 }
 
 void m3x3_newTransform2d(mat3x3 *out, float x, float y, float r, float sx, float sy,
-                      float ox, float oy, float kx, float ky, float w, float h) {
+                         float ox, float oy, float kx, float ky, float w, float h) {
 
   float sa = sin(r);
   float ca = cos(r);
@@ -169,11 +203,49 @@ void m4x4_newTranslation(mat4x4 *out, float x, float y, float z) {
 }
 
 void m4x4_newRotationX(mat4x4 *out, float a) {
-  // TODO
+  float ca = cos(a);
+  float sa = sin(a);
+
+
+  out->m[0][0] = 1.0f;
+  out->m[0][1] = 0.0f;
+  out->m[0][2] = 0.0f;
+  out->m[0][3] = 0.0f;
+  out->m[1][0] = 0.0f;
+  out->m[1][1] = ca;
+  out->m[1][2] = sa;
+  out->m[1][3] = 0.0f;
+  out->m[2][0] = sa;
+  out->m[2][1] = -ca;
+  out->m[2][2] = 0.0f;
+  out->m[2][3] = 0.0f;
+  out->m[3][0] = 0.0f;
+  out->m[3][1] = 0.0f;
+  out->m[3][2] = 0.0f;
+  out->m[3][3] = 1.0f;
 }
 
 void m4x4_newRotationY(mat4x4 *out, float a) {
-  // TODO
+  float ca = cos(a);
+  float sa = sin(a);
+
+
+  out->m[0][0] = ca;
+  out->m[0][1] = 0.0f;
+  out->m[0][2] = -sa;
+  out->m[0][3] = 0.0f;
+  out->m[1][0] = 0.0f;
+  out->m[1][1] = 1.0f;
+  out->m[1][2] = 0.0f;
+  out->m[1][3] = 0.0f;
+  out->m[2][0] = sa;
+  out->m[2][1] = 0.0f;
+  out->m[2][2] = ca;
+  out->m[2][3] = 0.0f;
+  out->m[3][0] = 0.0f;
+  out->m[3][1] = 0.0f;
+  out->m[3][2] = 0.0f;
+  out->m[3][3] = 1.0f;
 }
 
 void m4x4_newRotationZ(mat4x4 *out, float a) {
@@ -202,13 +274,13 @@ void m4x4_mulM4x4(mat4x4 *out, mat4x4 const* a, mat4x4 const* b) {
   // TODO pretty naive approach. Someday I'll have to check whether
   // a more cache friendly version is required
   for(int i = 0; i < 4; ++i) {
-    for(int j = 0; j < 4; ++j) {
-      out->m[i][j] = 0.0f;
-      for(int k = 0; k < 4; ++k) {
-        out->m[i][j] += a->m[i][k] * b->m[k][j];
-      }
+      for(int j = 0; j < 4; ++j) {
+          out->m[i][j] = 0.0f;
+          for(int k = 0; k < 4; ++k) {
+              out->m[i][j] += a->m[i][k] * b->m[k][j];
+            }
+        }
     }
-  }
 }
 
 void m4x4_mulV4(vec4 *out, mat4x4 const* m, vec4 const* v) {

@@ -12,6 +12,7 @@
 #include "../math/vector.h"
 #include "../mouse.h"
 #include "../keyboard.h"
+#include "../luaapi/event.h"
 
 #include "matrixstack.h"
 #include "font.h"
@@ -58,6 +59,8 @@ static struct {
   const char* title;
   int x;
   int y;
+
+  char* camera_type;
 } moduleData;
 
 #ifndef EMSCRIPTEN
@@ -165,10 +168,12 @@ void graphics_init(int width, int height) {
 
   glViewport(0, 0, width, height);
 
+  moduleData.camera_type = "ortho";
+
   matrixstack_init();
 
-  m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
-  m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
+  //m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
+  //m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
 
   moduleData.isCreated = 1;
 
@@ -213,6 +218,10 @@ void graphics_clear(void) {
 }
 
 void graphics_swap(void) {
+  if (strncmp(moduleData.camera_type,"ortho",5) == 0)
+    m4x4_newOrtho(&moduleData.projectionMatrix, 0, moduleData.width, moduleData.height, 0, 0, 10);
+  //if (strncmp(moduleData.camera_type,"projection",10) == 0)
+   //TODO
 #ifdef EMSCRIPTEN
 #ifndef WINDOWS
   SDL_GL_SwapBuffers();
@@ -226,6 +235,7 @@ void graphics_swap(void) {
 #ifdef WINDOWS
 #ifndef EMSCRIPTEN
   if(glfwWindowShouldClose(moduleData.window)){
+      event_force_quit = true;
       glfwDestroyWindow(moduleData.window);
       glfwTerminate();
     }
