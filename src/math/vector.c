@@ -9,6 +9,7 @@
 
 #include "vector.h"
 #include <tgmath.h>
+#include "util.h"
 
 void m4x4_newOrtho(mat4x4* projectionMatrix, float left, float right, float bottom, float top, float zNear, float zFar) {
   float x_orth = 2.0f / (right - left);
@@ -40,8 +41,41 @@ void m4x4_newOrtho(mat4x4* projectionMatrix, float left, float right, float bott
   projectionMatrix->m[3][3] = 1.0f;
 }
 
-void m4x4_newPerspective(mat4x4 projectionMatrix, float fov, float ratio, float zNear, float zFar) {
+void m4x4_newPerspective(mat4x4* projectionMatrix, float fov, float ratio, float zNear, float zFar) {
+  float ymax, xmax;
+  ymax = zNear * tanf((float)(fov * LOVE_PI/ 360.0f));
+  xmax = ymax * ratio;
 
+  float left = -xmax;
+  float right = xmax;
+  float bottom = -ymax;
+  float top = ymax;
+
+  float temp, temp2, temp3, temp4;
+  temp = 2.0f * zNear;
+  temp2 = right - left;
+  temp3 = top - bottom;
+  temp4 = zFar - zNear;
+
+  projectionMatrix->m[0][0] = temp / temp2;
+  projectionMatrix->m[0][1] = 0.0f;
+  projectionMatrix->m[0][2] = 0.0f;
+  projectionMatrix->m[0][3] = 0.0f;
+
+  projectionMatrix->m[1][0] = 0.0f;
+  projectionMatrix->m[1][1] = temp / temp3;
+  projectionMatrix->m[1][2] = 0.0f;
+  projectionMatrix->m[1][3] = 0.0f;
+
+  projectionMatrix->m[2][0] = (right + left) / temp2;
+  projectionMatrix->m[2][1] = (top + bottom) / temp3;
+  projectionMatrix->m[2][2] = (-zFar - zNear) / temp4;
+  projectionMatrix->m[2][3] = -1.0f;
+
+  projectionMatrix->m[3][0] = 0.0f;
+  projectionMatrix->m[3][1] = 0.0f;
+  projectionMatrix->m[3][2] = (-temp * zFar) / temp4;
+  projectionMatrix->m[3][3] = 1.0f;
 }
 
 void m4x4_scale(mat4x4 *inout, float x, float y, float z) {

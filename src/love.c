@@ -13,7 +13,7 @@ love_Version const * love_getVersion(void) {
   static const love_Version version = {
     .major = 0,
     .minor = 5,
-    .revision = 2,
+    .revision = 3,
     .codename = "TouchingTheLimits"
   };
 

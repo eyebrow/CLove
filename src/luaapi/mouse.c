@@ -166,7 +166,7 @@ void l_mouse_wheelmoved(int y) {
   lua_getglobal(moduleData.luaState, "love");
   lua_pushstring(moduleData.luaState, "wheelmoved");
   lua_rawget(moduleData.luaState, -2);
-  lua_pushinteger(moduleData.luaState, mouse_getwheel());
+  lua_pushinteger(moduleData.luaState, y);
   lua_call(moduleData.luaState, 1, 0);
   lua_settop(moduleData.luaState, lua_gettop(moduleData.luaState));
 }

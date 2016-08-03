@@ -40,6 +40,19 @@
 #include "mouse.h"
 #include "timer/timer.h"
 
+typedef struct {
+  lua_State *luaState;
+  int errhand;
+} MainLoopData;
+
+void quit_function(lua_State* state)
+{
+  lua_getglobal(state, "love");
+  lua_pushstring(state, "quit");
+  lua_rawget(state, -2);
+  lua_call(state, 0, 0);
+}
+
 int lua_errorhandler(lua_State *state) {
   lua_Debug debug;
   int level = 0;
@@ -56,75 +69,42 @@ int lua_errorhandler(lua_State *state) {
   return 1;
 }
 
-typedef struct {
-  lua_State *luaState;
-  int errhand;
-} MainLoopData;
-
-void quit_function(lua_State* state)
-{
-  lua_getglobal(state, "love");
-  lua_pushstring(state, "quit");
-  lua_rawget(state, -2);
-  if(lua_pcall(state, 0, 0, 1)) {
-      printf("Error in love.quit: %s\n", lua_tostring(state, -1));
-    }
-  lua_pop(state, 1);
-}
-
-void main_loop(void *data) {
-  MainLoopData* loopData = (MainLoopData*)data;
+void main_loop(lua_State* luaState) {
 
   timer_step();
-  lua_rawgeti(loopData->luaState, LUA_REGISTRYINDEX, loopData->errhand);
-  lua_getglobal(loopData->luaState, "love");
-  lua_pushstring(loopData->luaState, "update");
 
-  lua_rawget(loopData->luaState, -2);
-  lua_pushnumber(loopData->luaState, timer_getDelta());
+  //lua_rawgeti(luaState, LUA_REGISTRYINDEX, loopData->errhand);
+  lua_getglobal(luaState, "love");
+  lua_pushstring(luaState, "update");
+
+  lua_rawget(luaState, -2);
+  lua_pushnumber(luaState, timer_getDelta());
+  lua_call(luaState, 1, 0);
+
   if (swap_At == 1){
-      if(luaL_dofile(loopData->luaState, "main.lua")) {
-          printf("Error: %s\n", lua_tostring(loopData->luaState, -1));
+      if(luaL_dofile(luaState, "main.lua")) {
+          printf("Error: %s\n", lua_tostring(luaState, -1));
         }
-    }
-
-  if(lua_pcall(loopData->luaState, 1, 0, 0)) {
-      printf("Lua error: %s\n", lua_tostring(loopData->luaState, -1));
-#ifdef EMSCRIPTEN
-      quit_function(loopData->luaState);
-      emscripten_force_exit(1);
-#else
-      exit(1);
-#endif
     }
 
   graphics_clear();
 
-  lua_pushstring(loopData->luaState, "draw");
-  lua_rawget(loopData->luaState, -2);
-
-  if(lua_pcall(loopData->luaState, 0, 0, 0)) {
-      printf("Lua error: %s\n", lua_tostring(loopData->luaState, -1));
-#ifdef EMSCRIPTEN
-      quit_function(loopData->luaState);
-      emscripten_force_exit(1);
-      l_running = 0;
-#else
-      l_running = 0;
-#endif
-    }
+  lua_pushstring(luaState, "draw");
+  lua_rawget(luaState, -2);
+  lua_call(luaState, 0, 0);
 
   graphics_swap();
 
   // silly hack for love.event.quit()
 #ifdef WINDOWS
-  event_force_quit = graphics_stop_windows();
-  if(!event_force_quit)
-    l_running = 0;
+  event_force_quit = glfwWindowShouldClose(graphics_getWindow());
+  if(event_force_quit)
+      l_running = 0;
+
 #endif //This will affect only Windows users
   //
 
-  lua_pop(loopData->luaState, 1);
+  lua_pop(luaState, 1);
 #ifdef UNIX
   SDL_Event event;
   while(SDL_PollEvent(&event)) {
@@ -195,22 +175,23 @@ int main(int argc, char* argv[]) {
   love_Config config;
 
   l_love_register(lua);
+  l_math_register(lua);
+  l_system_register(lua);
   l_audio_register(lua);
   l_event_register(lua);
-  l_graphics_register(lua);
   l_image_register(lua);
+  l_graphics_register(lua);
   l_keyboard_register(lua);
   l_mouse_register(lua);
   l_filesystem_register(lua);
   l_timer_register(lua);
-  l_math_register(lua);
-  l_system_register(lua);
   l_physics_register(lua);
 
   l_boot(lua, &config);
 
-  keyboard_init();
   graphics_init(config.window.width, config.window.height);
+  keyboard_init();
+  timer_init();
   audio_init();
 
   if(luaL_dofile(lua, "main.lua")){
@@ -225,26 +206,20 @@ int main(int argc, char* argv[]) {
   lua_getglobal(lua, "love");
   lua_pushstring(lua, "load");
   lua_rawget(lua, -2);
-  if(lua_pcall(lua, 0, 0, 1)) {
-      printf("Error in love.load: %s\n", lua_tostring(lua, -1));
-    }
-  lua_pop(lua, 1);
+  lua_call(lua, 0, 0);
 
   lua_pushcfunction(lua, lua_errorhandler);
-  MainLoopData mainLoopData = {
-    .luaState = lua,
-    .errhand = luaL_ref(lua, LUA_REGISTRYINDEX)
-  };
-
-  timer_init();
+  MainLoopData mainLoopData;
+  mainLoopData.luaState = lua;
+  mainLoopData.errhand = luaL_ref(lua, LUA_REGISTRYINDEX);
 
 #ifdef EMSCRIPTEN
   //TODO find a way to quit(love.event.quit) love on web?
   emscripten_set_main_loop_arg(main_loop, &mainLoopData, 0, 1);
 #else
-  while(l_event_running()) {
-      main_loop(&mainLoopData);
-    }
+  while(l_event_running())
+      main_loop(lua);
+
   if(!l_event_running())
     quit_function(lua);
 #endif

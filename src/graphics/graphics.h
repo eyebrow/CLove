@@ -111,4 +111,3 @@ void graphics_clearScissor(void);
 void graphics_setScissor(int x, int y, int w, int h);
 bool graphics_getScissor(int *x, int *y, int *w, int *h);
 void graphics_reset(void);
-int graphics_stop_windows(void);
