@@ -138,7 +138,6 @@ void graphics_init(int width, int height) {
 
   moduleData.window = glfwCreateWindow(width, height, moduleData.title, NULL, NULL);
   graphics_setPosition(-1, -1);
-
   //Init all callbacks required for input
   mouse_setcallback(); //glfw only
   keyboard_setcallback(); //glfw only
@@ -226,13 +225,6 @@ void graphics_swap(void) {
 #endif
 
 #ifdef WINDOWS
-#ifndef EMSCRIPTEN
-  if(glfwWindowShouldClose(moduleData.window)){
-      event_force_quit = true;
-      glfwDestroyWindow(moduleData.window);
-      //glfwTerminate();
-    }
-#endif
   // Update love.mousepressed / released(x,y,button) / wheel
   mouse_mousepressed(mouse_getX(), mouse_getY(), mouseButton);
   mouse_mousereleased(mouse_getX(), mouse_getY(), mouseButton);
@@ -243,7 +235,7 @@ void graphics_swap(void) {
   keyboard_keyreleased(keyboardButton);
   keyboard_textInput(returnGLFWKey(keyboardCodepoint - 32));
 
-  glfwSwapBuffers(moduleData.window);
+  glfwSwapBuffers(graphics_getWindow());
   glfwPollEvents();
 #endif
 }

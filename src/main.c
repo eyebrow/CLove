@@ -70,7 +70,6 @@ int lua_errorhandler(lua_State *state) {
 }
 
 void main_loop(lua_State* luaState) {
-
   timer_step();
 
   //lua_rawgeti(luaState, LUA_REGISTRYINDEX, loopData->errhand);
@@ -80,6 +79,10 @@ void main_loop(lua_State* luaState) {
   lua_rawget(luaState, -2);
   lua_pushnumber(luaState, timer_getDelta());
   lua_call(luaState, 1, 0);
+
+#ifdef WINDOWS
+  if(glfwWindowShouldClose(graphics_getWindow())) l_running = false;
+#endif
 
   if (swap_At == 1){
       if(luaL_dofile(luaState, "main.lua")) {
@@ -94,15 +97,6 @@ void main_loop(lua_State* luaState) {
   lua_call(luaState, 0, 0);
 
   graphics_swap();
-
-  // silly hack for love.event.quit()
-#ifdef WINDOWS
-  event_force_quit = glfwWindowShouldClose(graphics_getWindow());
-  if(event_force_quit)
-      l_running = 0;
-
-#endif //This will affect only Windows users
-  //
 
   lua_pop(luaState, 1);
 #ifdef UNIX
@@ -217,13 +211,23 @@ int main(int argc, char* argv[]) {
   //TODO find a way to quit(love.event.quit) love on web?
   emscripten_set_main_loop_arg(main_loop, &mainLoopData, 0, 1);
 #else
-  while(l_event_running())
+#ifdef WINDOWS
+  while(!glfwWindowShouldClose(graphics_getWindow()) && l_running == 1)
       main_loop(lua);
-
-  if(!l_event_running())
-    quit_function(lua);
 #endif
+#ifdef UNIX
+  while(l_running == 1)
+    main_loop();
+#endif
+#endif
+  quit_function(lua);
   audio_close ();
+#ifdef UNIX //On Windows this call causes some weird ass error when the game has been closed
   lua_close(lua);
+#endif
+#ifdef WINDWOS
+  glfwDestroyWindow(graphics_getWindow());
+  glfwTerminate();
+#endif
   return 0;
 }

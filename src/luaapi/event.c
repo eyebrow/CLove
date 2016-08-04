@@ -12,8 +12,7 @@
 
 static int l_event_quit(lua_State* state){
   l_running = 0;
-  lua_pushinteger(state, l_running);
-  return 1;
+  return 0;
 }
 
 static int l_event_swap(lua_State* state){

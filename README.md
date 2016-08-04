@@ -17,7 +17,6 @@ Features
 ========
 - Lua scripting language
 - Easy to learn and use api
-- 3D support - WIP (everything has been put on hold till this feature is usable)
 - Cross Platform
 - Powerful Batch system
 - Image loader & drawing
