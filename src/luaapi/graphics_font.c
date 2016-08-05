@@ -37,11 +37,11 @@ static int l_graphics_setFont(lua_State* state) {
   graphics_Font* font;
 
   if (lua_isnumber(state,1)) {
-	  graphics_Font_new(&moduleData.defaultFont, NULL, lua_tonumber(state,1));
-	  font = &moduleData.defaultFont;
-  } else {
- 	  font = l_graphics_toFont(state, 1);
-  }
+      graphics_Font_new(&moduleData.defaultFont, NULL, lua_tonumber(state,1));
+      font = &moduleData.defaultFont;
+    } else {
+      font = l_graphics_toFont(state, 1);
+    }
   // Release current font in Lua, so it can be GCed if needed
   if(moduleData.currentFont) {
       luaL_unref(state, LUA_REGISTRYINDEX, moduleData.currentFontRef);
@@ -74,32 +74,40 @@ static int l_graphics_printf(lua_State* state) {
 
   char const* text = lua_tostring(state, 1);
   if(!text) {
-       text = "";
+      text = "";
     }
   int x = luaL_optnumber(state, 2, 0);
   int y = luaL_optnumber(state, 3, x);
-  int limit = l_tools_toNumberOrError(state, 4);
+  int z = luaL_optnumber(state, 4, 0);
+
+  int limit = l_tools_toNumberOrError(state, 5);
   graphics_TextAlign align = graphics_TextAlign_left;
-  if(!lua_isnoneornil(state, 5)) {
-      align = l_tools_toEnumOrError(state, 5, l_graphics_AlignMode);
+  if(!lua_isnoneornil(state, 6)) {
+      align = l_tools_toEnumOrError(state, 6, l_graphics_AlignMode);
     }
 
-  float r = luaL_optnumber(state, 6, 0);
-  float sx = luaL_optnumber(state, 7, 1.0f);
-  float sy = luaL_optnumber(state, 8, sx);
-  float ox = luaL_optnumber(state, 9, 0);
-  float oy = luaL_optnumber(state, 10, 0);
-  float kx = luaL_optnumber(state, 11, 0);
-  float ky = luaL_optnumber(state, 12, 0);
+  float r = luaL_optnumber(state, 7, 0);
+  float rx = luaL_optnumber(state, 8, 0);
+  float ry = luaL_optnumber(state, 9, 0);
+  float rz = luaL_optnumber(state, 10, 0);
 
-  graphics_Font_printf(moduleData.currentFont, text, x, y, limit, align, r, sx, sy, ox, oy, kx, ky);
+  float sx = luaL_optnumber(state, 11, 1.0f);
+  float sy = luaL_optnumber(state, 12, 1.0f);
+  float sz = luaL_optnumber(state, 13, 1.0f);
+
+  float ox = luaL_optnumber(state, 14, 0);
+  float oy = luaL_optnumber(state, 15, 0);
+  float kx = luaL_optnumber(state, 16, 0);
+  float ky = luaL_optnumber(state, 17, 0);
+
+  graphics_Font_printf(moduleData.currentFont, text, x, y, z, limit, align, r, rx, ry, rz, sx, sy, sz, ox, oy, kx, ky);
 
   return 0;
 }
 
 static int l_graphics_print(lua_State* state) {
   if(!moduleData.currentFont) {
-     l_graphics_loadDefaultFont();
+      l_graphics_loadDefaultFont();
     }
   char const* text = lua_tostring(state, 1);
   if(!text) {
@@ -107,16 +115,23 @@ static int l_graphics_print(lua_State* state) {
     }
   int x = luaL_optnumber(state, 2, 0);
   int y = luaL_optnumber(state, 3, x);
+  int z = luaL_optnumber(state, 4, 0);
 
-  float r = luaL_optnumber(state, 4, 0);
-  float sx = luaL_optnumber(state, 5, 1.0f);
-  float sy = luaL_optnumber(state, 6, sx);
-  float ox = luaL_optnumber(state, 7, 0);
-  float oy = luaL_optnumber(state, 8, 0);
-  float kx = luaL_optnumber(state, 9, 0);
-  float ky = luaL_optnumber(state, 10, 0);
+  float r = luaL_optnumber(state, 5, 0);
+  float rx = luaL_optnumber(state, 6, 0);
+  float ry = luaL_optnumber(state, 7, 0);
+  float rz = luaL_optnumber(state, 8, 0);
 
-  graphics_Font_print(moduleData.currentFont, text, x, y, r, sx, sy, ox, oy, kx, ky);
+  float sx = luaL_optnumber(state, 9, 1.0f);
+  float sy = luaL_optnumber(state, 10, sx);
+  float sz = luaL_optnumber(state, 11, sx);
+
+  float ox = luaL_optnumber(state, 12, 0);
+  float oy = luaL_optnumber(state, 13, 0);
+  float kx = luaL_optnumber(state, 14, 0);
+  float ky = luaL_optnumber(state, 15, 0);
+
+  graphics_Font_print(moduleData.currentFont, text, x, y,z, r,rx,ry,rz, sx, sy,sz, ox, oy, kx, ky);
   return 0;
 }
 

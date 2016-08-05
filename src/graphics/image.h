@@ -49,4 +49,8 @@ void graphics_Image_getFilter(graphics_Image *img, graphics_Filter *filter);
 void graphics_Image_setWrap(graphics_Image *img, graphics_Wrap const* wrap);
 void graphics_Image_getWrap(graphics_Image *img, graphics_Wrap *wrap);
 void graphics_Image_refresh(graphics_Image *img, image_ImageData const* data);
-void graphics_Image_draw(graphics_Image const* image, graphics_Quad const* quad, float x, float y, float r, float sx, float sy, float ox, float oy, float kx, float ky);
+void graphics_Image_draw(graphics_Image const* image, graphics_Quad const* quad, float x, float y, float z,
+                         float r, float rx, float ry, float rz,
+                         float sx, float sy, float sz,
+                         float ox, float oy,
+                         float kx, float ky);

@@ -37,9 +37,10 @@ static struct {
 
   uint32_t cp; //message to take utf8 from
   int x; // message's X
+  int y; // message's Y
+  int z;
   int storeX; // store X pos
   int storeY; // store Y pos
-  int y; // message's Y
 } moduleData;
 
 static graphics_Vertex const imageVertices[] = {
@@ -164,8 +165,12 @@ int graphics_Font_getWidth(graphics_Font* font, char const* line) {
   return sum;
 }
 
-void graphics_Font_printf(graphics_Font* font, char const* text, int px, int py, int limit, graphics_TextAlign align,
-                          float r, float sx, float sy, float ox, float oy, float kx, float ky) {
+void graphics_Font_printf(graphics_Font* font, char const* text,
+                          int px, int py, int pz,
+                          int limit, graphics_TextAlign align,
+                          float r, float rx, float ry, float rz,
+                          float sx, float sy, float sz,
+                          float ox, float oy, float kx, float ky) {
   moduleData.x = 0;
   moduleData.storeX = 0;
   moduleData.storeY = 0;
@@ -210,7 +215,11 @@ void graphics_Font_printf(graphics_Font* font, char const* text, int px, int py,
           continue;
         }
 
-      m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
+      m4x4_newTransform3d(&moduleData.tr2d,
+                          vec3_new(moduleData.x, moduleData.y, moduleData.z),
+                          r, vec3_new(rx, ry, rz),
+                          vec3_new(sx, sy, sz),
+                          ox, oy, kx, ky);
 
       graphics_drawArray(&quad, &moduleData.tr2d,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
                          graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);
@@ -224,7 +233,11 @@ void graphics_Font_printf(graphics_Font* font, char const* text, int px, int py,
 
 }
 
-void graphics_Font_print(graphics_Font* font, char const* text, int px, int py, float r, float sx, float sy, float ox, float oy, float kx, float ky) {
+void graphics_Font_print(graphics_Font* font, char const* text,
+                         int px, int py, int pz,
+                         float r, float rx, float ry, float rz,
+                         float sx, float sy, float sz,
+                         float ox, float oy, float kx, float ky) {
   moduleData.x = 0;
   moduleData.storeX = 0;
   moduleData.y = font->face->ascender;
@@ -251,7 +264,11 @@ void graphics_Font_print(graphics_Font* font, char const* text, int px, int py, 
           continue;
         }
 
-      m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
+      m4x4_newTransform3d(&moduleData.tr2d,
+                          vec3_new(moduleData.x, moduleData.y, moduleData.z),
+                          r, vec3_new(rx, ry, rz),
+                          vec3_new(sx, sy, sz),
+                          ox, oy, kx, ky);
 
       graphics_drawArray(&quad, &moduleData.tr2d,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
                          graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);

@@ -39,23 +39,27 @@ static int l_geometry_rectangle(lua_State* state) {
   const char* type = l_tools_toStringOrError(state, 1);
   float x = l_tools_toNumberOrError(state, 2);
   float y = l_tools_toNumberOrError(state, 3);
-  float w = l_tools_toNumberOrError(state, 4);
-  float h = l_tools_toNumberOrError(state, 5);
-  float r = 0;
-   if (lua_tonumber(state, 6)) r = luaL_checknumber(state, 6);
-  float sx = 1;
-   if (lua_tonumber(state, 7)) sx = luaL_checknumber(state, 7);
-  float sy = 1;
-   if (lua_tonumber(state, 8)) sy = luaL_checknumber(state, 8);
- float ox = 0;
-   if (lua_tonumber(state, 9)) ox = luaL_checknumber(state, 9);
- float oy = 0;
-   if (lua_tonumber(state, 10)) oy = luaL_checknumber(state, 10);
+  float z = l_tools_toNumberOrError(state, 4);
+
+  float w = l_tools_toNumberOrError(state, 5);
+  float h = l_tools_toNumberOrError(state, 6);
+
+  float r = luaL_optinteger(state, 7, 0);
+  float rx = luaL_optinteger(state, 8, 0);
+  float ry = luaL_optinteger(state, 9, 0);
+  float rz = luaL_optinteger(state, 10, 0);
+
+  float sx = luaL_optinteger(state, 11, 1);
+  float sy = luaL_optinteger(state, 12, 1);
+  float sz = luaL_optinteger(state, 13, 1);
+
+  float ox = luaL_optinteger(state, 14, 0);
+  float oy = luaL_optinteger(state, 15, 0);
 
   if (strncmp(type,"line",4) == 0)
-    graphics_geometry_fillRectangle(0, x, y, w, h, r, sx, sy, ox, oy);
+    graphics_geometry_fillRectangle(0, x, y, z, w, h, r, rx, ry, rz, sx, sy, sz, ox, oy);
   else if(strncmp(type,"fill", 4) == 0)
-    graphics_geometry_fillRectangle(1, x, y, w, h, r, sx, sy, ox, oy);
+    graphics_geometry_fillRectangle(1, x, y, z, w, h, r, rx, ry, rz, sx, sy, sz, ox, oy);
   else
     printf("%s \n", "Error: Only 'line' and 'fill' modes are correct");
 

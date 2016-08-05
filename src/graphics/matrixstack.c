@@ -47,20 +47,21 @@ int matrixstack_pop(void) {
   return 0;
 }
 
-void matrixstack_translate(float x, float y) {
-  m4x4_translate(matrixstack_head(), x, y, 0.0f);
+void matrixstack_translate(float x, float y, float z) {
+  m4x4_translate(matrixstack_head(), x, y, z);
 }
 
-void matrixstack_scale(float x, float y) {
-  m4x4_scale(matrixstack_head(), x, y, 0.0f);
+void matrixstack_scale(float x, float y, float z) {
+  m4x4_scale(matrixstack_head(), x, y, z);
+}
+
+void matrixstack_rotate(float a, float rx, float ry, float rz) {
+  //m4x4_rotateZ(matrixstack_head(), a);
+  m4x4_newRotation(matrixstack_head(), a, vec3_new(rx,ry,rz));
 }
 
 void matrixstack_origin(void) {
   m4x4_newIdentity(matrixstack_head());
-}
-
-void matrixstack_rotate(float a) {
-  m4x4_rotateZ(matrixstack_head(), a);
 }
 
 void matrixstack_multiply(mat4x4 const* matrix) {

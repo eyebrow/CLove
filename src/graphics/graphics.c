@@ -160,19 +160,19 @@ void graphics_init(int width, int height) {
   if(res != GLEW_OK)
     printf("Could not init glew.Something must be very wrong, no gpu drivers?");
 
+  //Dont know why but these two wont show up on Windows 10 running ATI drivers
+#ifdef UNIX
   printf("%s \n","Debug, OpenGL version: ", glGetString(GL_VERSION));
   printf("%s \n","Debug, GLSL version: ", glGetString(GL_SHADING_LANGUAGE_VERSION));
-
-  glViewport(0, 0, width, height);
-
+#endif
   matrixstack_init();
 
-  //m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
-  //m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
   m4x4_newOrtho(&moduleData.projectionMatrix, 0.0f, moduleData.width, moduleData.height, 0.0f, 0.0f, 100.0f);
+  //m4x4_newPerspective(&moduleData.projectionMatrix, 75.0f, (float)(moduleData.width/moduleData.height),0.1f, 100.0f);
 
   moduleData.isCreated = 1;
 
+  glViewport(0, 0, width, height);
   graphics_setColor(1.0f, 1.0f, 1.0f, 1.0f);
 
   graphics_geometry_init();
@@ -204,6 +204,10 @@ void graphics_setColor(float red, float green, float blue, float alpha) {
   moduleData.foregroundColor.green = green;
   moduleData.foregroundColor.blue  = blue;
   moduleData.foregroundColor.alpha = alpha;
+}
+
+mat4x4* graphics_getProjectionMat() {
+  return &moduleData.projectionMatrix;
 }
 
 void graphics_clear(void) {
@@ -242,8 +246,8 @@ void graphics_swap(void) {
 
 void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ibo, GLuint count, GLenum type, GLenum indexType, float const* useColor, float ws, float hs) {
 
-  mat4x4 tr;
-  m4x4_mulM4x4(&tr, tr2d, matrixstack_head());
+  //mat4x4 tr;
+  //m4x4_mulM4x4(&tr, tr2d, matrixstack_head());
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), 0);
@@ -254,7 +258,8 @@ void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ib
 
   graphics_Shader_activate(
         &moduleData.projectionMatrix,
-        &tr,
+        matrixstack_head(),
+        tr2d,
         quad,
         useColor,
         ws,

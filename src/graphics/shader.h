@@ -44,6 +44,7 @@ typedef struct {
   // This way we can access them real quick
   struct {
     GLuint transform;
+    GLuint view;
     GLuint projection;
     GLuint textureRect;
     GLuint tex;
@@ -74,7 +75,7 @@ typedef enum {
 } graphics_ShaderCompileStatus;
 
 graphics_ShaderCompileStatus graphics_Shader_new(graphics_Shader *shader, char const* vertexCode, char const* fragmentCode);
-void graphics_Shader_activate(mat4x4 const* projection, mat4x4 const* transform, graphics_Quad const* textureRect, float const* useColor, float ws,float hs);
+void graphics_Shader_activate(mat4x4 const* projection,mat4x4 const*  view ,mat4x4 const* transform, graphics_Quad const* textureRect, float const* useColor, float ws,float hs);
 graphics_Shader* graphics_getShader(void);
 void graphics_shader_init(void);
 void graphics_Shader_free(graphics_Shader* shader);
