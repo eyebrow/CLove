@@ -10,6 +10,9 @@
 #include "vector.h"
 #include <tgmath.h>
 #include "util.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 mat4x4 m4x4_new(float m00, float m01, float m02, float m03,
                 float m10, float m11, float m12, float m13,
@@ -49,7 +52,7 @@ void m4x4_set   (mat4x4* out,
 
 // -- [[ START OF VEC2 ]] -- \\
 //vec2 vec2_new(float x, float y) {
-  //return (vec2){x,y};
+//return (vec2){x,y};
 //}
 vec2 v2_add(vec2 a, vec2 b)          {
   return (vec2){ a.x + b.x, a.y + b.y };
@@ -256,56 +259,32 @@ void m4x4_newTransform3d(mat4x4 *out,
                          vec3 scale,
                          float ox, float oy, float kx, float ky) {
 
-  float sa = sinf(angle);
-  float ca = cosf(angle);
-  float e = ky * scale.y;
-  float f = kx * scale.x;
-  float g = -ky*ox-oy;
-  float j = g * scale.y;
-  float k = -kx*oy-ox;
+  vec3 normalized_axis = v3_norm(axis);
+  float x = normalized_axis.x, y = normalized_axis.y, z = normalized_axis.z;
+  float c = cosf(angle), s = sinf(angle);
 
-  out->m[0][0] = ca*scale.x + axis.x*axis.y*(1-ca*e)* scale.x ;
-  out->m[0][1] = axis.y*axis.x*(1-ca*e)+axis.z*sa*scale.x;
-  out->m[0][2] = axis.z*axis.x*(1-ca)-axis.y*sa;
-  out->m[0][3] = 0.0f;
+  m4x4_set(out,
+           scale.x * (c + x*x*(1-c)),            x*y*(1-c) - z*s,         x*z*(1-c) + y*s,  0,
 
-  out->m[1][0] = axis.x*axis.y*(1-ca*f)-axis.z*sa*scale.y;
-  out->m[1][1] = ca*scale.y + axis.y*axis.y *(1-ca*f);
-  out->m[1][2] = axis.z*axis.y*(1-ca) + axis.x*sa;
-  out->m[1][3] = 0.0f;
+           y*x*(1-c) + z*s,          scale.y * (c + y*y*(1-c)),            y*z*(1-c) - x*s,  0,
 
-  out->m[2][0] = 0.0f;
-  out->m[2][1] = axis.x*axis.z*(1-ca) + axis.y*sa;
-  out->m[2][2] = axis.y*axis.z*(1-ca) - axis.x*sa;
-  out->m[2][3] = ca + axis.z*axis.z*(1-ca);
-
-  out->m[3][0] = pos.x+ca*k*scale.x-j*sa;
-  out->m[3][1] = pos.y+k*sa*scale.x+ca*j;
-  out->m[3][2] = pos.z+k*scale.x;
-  out->m[3][3] = 1.0f;
+           z*x*(1-c) - y*s,          z*y*(1-c) + x*s,                      scale.z * (c + z*z*(1-c)),        0,
+           pos.x,                        pos.y,                    pos.z,                   1
+           );
 
 }
 
 void m4x4_newRotation(mat4x4 *out, float a, vec3 axis) {
-  float x = axis.x, y = axis.y, z = axis.z;
-  float c = cos(a), s = sin(a);
+  vec3 normalized_axis = v3_norm(axis);
+  float x = normalized_axis.x, y = normalized_axis.y, z = normalized_axis.z;
+  float c = cosf(a), s = sinf(a);
 
-  out->m[0][0] = c + x*x*(1-c);
-  out->m[0][1] = y*x*(1-c) + z*s;
-  out->m[0][2] = z*x*(1-c) - y*s;
-  out->m[0][3] = 0.0f;
-  out->m[1][0] = x*y*(1-c) - z*s;
-  out->m[1][1] = c + y*y*(1-c);
-  out->m[1][2] = z*y*(1-c) + x*s;
-  out->m[1][3] = 0.0f;
-  out->m[2][0] = 0.0f;
-  out->m[2][1] = x*z*(1-c) + y*s;
-  out->m[2][2] = 1 + y*z*(1-c) - x*s;
-  out->m[2][3] = c + z*z*(1-c);
-  out->m[3][0] = 0.0f;
-  out->m[3][1] = 0.0f;
-  out->m[3][2] = 0.0f;
-  out->m[3][3] = 1.0f;
+  m4x4_set(out,
+           c + x*x*(1-c),            x*y*(1-c) - z*s,      x*z*(1-c) + y*s,  0,
+           y*x*(1-c) + z*s,  c + y*y*(1-c),            y*z*(1-c) - x*s,  0,
+           z*x*(1-c) - y*s,      z*y*(1-c) + x*s,  c + z*z*(1-c),        0,
+           0,                        0,                    0,            1
+           );
 }
 
 void m3x3_newTransform2d(mat3x3 *out, float x, float y, float r, float sx, float sy,
@@ -424,17 +403,16 @@ void m4x4_newRotationZ(mat4x4 *out, float a) {
            s,  c,  0,  0,
            0,  0,  1,  0,
            0,  0,  0,  1
-          );
+           );
 }
 
-void m4x4_mulM4x4(mat4x4 *out, mat4x4 const* a, mat4x4 const* b) {
-  for(int i = 0; i < 4; i++) {
-      for(int j = 0; j < 4; j++) {
-          float sum = 0;
-          for(int k = 0; k < 4; k++) {
-              sum += a->m[k][j] * b->m[i][k];
+void m4x4_mulM4x4(mat4x4 *out, const mat4x4* a, const mat4x4* b) {
+  for(int i = 0; i < 4; ++i) {
+      for(int j = 0; j < 4; ++j) {
+          //out->m[i][j] = 0.0f;
+          for(int k = 0; k < 4; ++k) {
+              out->m[i][j] += a->m[i][k] * b->m[k][j];
             }
-          out->m[i][j] = sum;
         }
     }
 }

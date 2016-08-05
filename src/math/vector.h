@@ -95,7 +95,7 @@ void m4x4_newRotation(mat4x4 *out, float a, vec3 axis);
 void m4x4_newTransform3d(mat4x4 *out, vec3 pos, float angle, vec3 axis, vec3 scale,
                          float ox, float oy, float kx, float ky);
 
-void m4x4_mulM4x4(mat4x4 *out, mat4x4 const* a, mat4x4 const* b);
+void m4x4_mulM4x4(mat4x4 *out, const mat4x4 *a, const mat4x4 *b);
 void m4x4_mulV4(vec4 *out, mat4x4 const* m, vec4 const* v);
 void m4x4_scale(mat4x4 *inout, float x, float y, float z);
 void m4x4_translate(mat4x4 *inout, float x, float y, float z);

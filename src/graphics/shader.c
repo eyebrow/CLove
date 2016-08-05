@@ -27,8 +27,8 @@ static struct {
 } moduleData;
 
 GLchar const *defaultVertexSource =
-    "vec4 position(mat4 transform_projection, mat4 view, vec4 vertex_position) {\n"
-    "  return transform_projection * view * vertex_position;\n"
+    "vec4 position(mat4 transform_projection, vec4 vertex_position) {\n"
+    "  return transform_projection * vertex_position;\n"
     "}\n";
 
 static GLchar const vertexHeader[] =
@@ -48,8 +48,7 @@ static GLchar const vertexHeader[] =
 
 static GLchar const vertexFooter[] =
     "void main() {\n"
-    //"  gl_Position = position(projection * view * transform, vec4(vPos * size, 1.0, 1.0));\n"
-    "  gl_Position = projection * view * transform * vec4(vPos * size, 1.0, 1.0);\n"
+    "  gl_Position = position(projection*transform*view , vec4(vPos * size, 1.0, 1.0));\n"
     "  fUV = vUV * textureRect[1] + textureRect[0];\n"
     "  fColor = vColor;\n"
     "}\n";
@@ -362,7 +361,7 @@ void graphics_Shader_free(graphics_Shader* shader) {
   glDeleteProgram(shader->program);
 }
 
-void graphics_Shader_activate(mat4x4 const* projection, mat4x4 const* view, mat4x4 const* transform, graphics_Quad const* textureRect, float const* useColor, float ws, float hs) {
+void graphics_Shader_activate(mat4x4 const* projection,mat4x4 const* view, mat4x4 const* transform, graphics_Quad const* textureRect, float const* useColor, float ws, float hs) {
 
   glUseProgram(moduleData.activeShader->program);
 
@@ -370,7 +369,7 @@ void graphics_Shader_activate(mat4x4 const* projection, mat4x4 const* view, mat4
 
   glUniform1i(moduleData.activeShader->uniformLocations.tex,                0);
   glUniformMatrix4fv(moduleData.activeShader->uniformLocations.projection,  1, 0, (GLfloat const*)projection);
-  glUniformMatrix4fv(moduleData.activeShader->uniformLocations.view,        1, 0, (GLfloat const*)view);
+  glUniformMatrix4fv(moduleData.activeShader->uniformLocations.view,  1, 0,       (GLfloat const*)view);
   glUniformMatrix4fv(moduleData.activeShader->uniformLocations.transform,   1, 0, (GLfloat const*)transform);
   glUniformMatrix2fv(moduleData.activeShader->uniformLocations.textureRect, 1, 0, (GLfloat const*)textureRect);
   glUniform4fv(moduleData.activeShader->uniformLocations.color,1,useColor);
