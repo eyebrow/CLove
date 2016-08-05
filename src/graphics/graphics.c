@@ -246,8 +246,8 @@ void graphics_swap(void) {
 
 void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ibo, GLuint count, GLenum type, GLenum indexType, float const* useColor, float ws, float hs) {
 
-  mat4x4 tr;
-  m4x4_mulM4x4(&tr, tr2d, matrixstack_head());
+  //mat4x4 tr;
+  //m4x4_mulM4x4(&tr, tr2d, matrixstack_head());
 
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), 0);
