@@ -15,4 +15,6 @@ int filesystem_read(char const* filename, char** output);
 int filesystem_write(const char* name, const char* data);
 int filesystem_append(const char* name, const char* data);
 int filesystem_exists(const char* name);
+int filesystem_compare(const char* a,const char* b,int l);
+int filesystem_contain(const char* a, const char* b);
 int filesystem_remove(const char* name);
