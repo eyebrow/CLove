@@ -44,7 +44,7 @@ static int l_filesystem_compare(lua_State* state)  {
   const char* a = l_tools_toStringOrError(state, 1);
   const char* b = l_tools_toStringOrError(state, 2);
   int l = l_tools_toNumberOrError(state, 3);
-  if ( filesystem_compare(a, b, l) == 0)
+  if ( filesystem_compare(a, b, l))
     lua_pushboolean(state, 1);
   else
     lua_pushboolean(state, 0);
