@@ -154,7 +154,7 @@ void main_loop(lua_State* luaState) {
           break;
 #ifndef EMSCRIPTEN
         case SDL_QUIT:
-          quit_function(loopData->luaState);
+          quit_function(luaState);
           l_running = 0;
 #endif
         }
@@ -217,7 +217,7 @@ int main(int argc, char* argv[]) {
 #endif
 #ifdef UNIX
   while(l_running == 1)
-    main_loop();
+    main_loop(lua);
 #endif
 #endif
   quit_function(lua);
