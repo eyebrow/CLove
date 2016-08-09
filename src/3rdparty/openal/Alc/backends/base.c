@@ -8,13 +8,14 @@
 #include "backends/base.h"
 
 
+extern inline ALuint64 GetDeviceClockTime(ALCdevice *device);
+
 /* Base ALCbackend method implementations. */
 void ALCbackend_Construct(ALCbackend *self, ALCdevice *device)
 {
-    int ret;
-    self->mDevice = device;
-    ret = almtx_init(&self->mMutex, almtx_recursive);
+    int ret = almtx_init(&self->mMutex, almtx_recursive);
     assert(ret == althrd_success);
+    self->mDevice = device;
 }
 
 void ALCbackend_Destruct(ALCbackend *self)
@@ -37,9 +38,18 @@ ALCuint ALCbackend_availableSamples(ALCbackend* UNUSED(self))
     return 0;
 }
 
-ALint64 ALCbackend_getLatency(ALCbackend* UNUSED(self))
+ClockLatency ALCbackend_getClockLatency(ALCbackend *self)
 {
-    return 0;
+    ALCdevice *device = self->mDevice;
+    ClockLatency ret;
+
+    almtx_lock(&self->mMutex);
+    ret.ClockTime = GetDeviceClockTime(device);
+    // TODO: Perhaps should be NumUpdates-1 worth of UpdateSize?
+    ret.Latency = 0;
+    almtx_unlock(&self->mMutex);
+
+    return ret;
 }
 
 void ALCbackend_lock(ALCbackend *self)
@@ -77,7 +87,7 @@ static ALCboolean PlaybackWrapper_start(PlaybackWrapper *self);
 static void PlaybackWrapper_stop(PlaybackWrapper *self);
 static DECLARE_FORWARD2(PlaybackWrapper, ALCbackend, ALCenum, captureSamples, void*, ALCuint)
 static DECLARE_FORWARD(PlaybackWrapper, ALCbackend, ALCuint, availableSamples)
-static ALint64 PlaybackWrapper_getLatency(PlaybackWrapper *self);
+static DECLARE_FORWARD(PlaybackWrapper, ALCbackend, ClockLatency, getClockLatency)
 static DECLARE_FORWARD(PlaybackWrapper, ALCbackend, void, lock)
 static DECLARE_FORWARD(PlaybackWrapper, ALCbackend, void, unlock)
 DECLARE_DEFAULT_ALLOCATORS(PlaybackWrapper)
@@ -121,12 +131,6 @@ static void PlaybackWrapper_stop(PlaybackWrapper *self)
     self->Funcs->StopPlayback(device);
 }
 
-static ALint64 PlaybackWrapper_getLatency(PlaybackWrapper *self)
-{
-    ALCdevice *device = STATIC_CAST(ALCbackend, self)->mDevice;
-    return self->Funcs->GetLatency(device);
-}
-
 
 typedef struct CaptureWrapper {
     DERIVE_FROM_TYPE(ALCbackend);
@@ -143,12 +147,11 @@ static ALCboolean CaptureWrapper_start(CaptureWrapper *self);
 static void CaptureWrapper_stop(CaptureWrapper *self);
 static ALCenum CaptureWrapper_captureSamples(CaptureWrapper *self, void *buffer, ALCuint samples);
 static ALCuint CaptureWrapper_availableSamples(CaptureWrapper *self);
-static ALint64 CaptureWrapper_getLatency(CaptureWrapper *self);
+static DECLARE_FORWARD(CaptureWrapper, ALCbackend, ClockLatency, getClockLatency)
 static DECLARE_FORWARD(CaptureWrapper, ALCbackend, void, lock)
 static DECLARE_FORWARD(CaptureWrapper, ALCbackend, void, unlock)
 DECLARE_DEFAULT_ALLOCATORS(CaptureWrapper)
 DEFINE_ALCBACKEND_VTABLE(CaptureWrapper);
-
 
 static void CaptureWrapper_Construct(CaptureWrapper *self, ALCdevice *device, const BackendFuncs *funcs)
 {
@@ -195,12 +198,6 @@ static ALCuint CaptureWrapper_availableSamples(CaptureWrapper *self)
     return self->Funcs->AvailableSamples(device);
 }
 
-static ALint64 CaptureWrapper_getLatency(CaptureWrapper *self)
-{
-    ALCdevice *device = STATIC_CAST(ALCbackend, self)->mDevice;
-    return self->Funcs->GetLatency(device);
-}
-
 
 ALCbackend *create_backend_wrapper(ALCdevice *device, const BackendFuncs *funcs, ALCbackend_Type type)
 {
@@ -208,10 +205,8 @@ ALCbackend *create_backend_wrapper(ALCdevice *device, const BackendFuncs *funcs,
     {
         PlaybackWrapper *backend;
 
-        backend = PlaybackWrapper_New(sizeof(*backend));
+        NEW_OBJ(backend, PlaybackWrapper)(device, funcs);
         if(!backend) return NULL;
-
-        PlaybackWrapper_Construct(backend, device, funcs);
 
         return STATIC_CAST(ALCbackend, backend);
     }
@@ -220,10 +215,8 @@ ALCbackend *create_backend_wrapper(ALCdevice *device, const BackendFuncs *funcs,
     {
         CaptureWrapper *backend;
 
-        backend = CaptureWrapper_New(sizeof(*backend));
+        NEW_OBJ(backend, CaptureWrapper)(device, funcs);
         if(!backend) return NULL;
-
-        CaptureWrapper_Construct(backend, device, funcs);
 
         return STATIC_CAST(ALCbackend, backend);
     }

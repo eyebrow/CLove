@@ -19,19 +19,21 @@ enum UserFmtType {
     UserFmtDouble = AL_DOUBLE_SOFT,
     UserFmtByte3  = AL_BYTE3_SOFT,
     UserFmtUByte3 = AL_UNSIGNED_BYTE3_SOFT,
-    UserFmtMulaw,
-    UserFmtAlaw,
+    UserFmtMulaw  = AL_MULAW_SOFT,
+    UserFmtAlaw   = 0x10000000,
     UserFmtIMA4,
     UserFmtMSADPCM,
 };
 enum UserFmtChannels {
-    UserFmtMono   = AL_MONO_SOFT,
-    UserFmtStereo = AL_STEREO_SOFT,
-    UserFmtRear   = AL_REAR_SOFT,
-    UserFmtQuad   = AL_QUAD_SOFT,
-    UserFmtX51    = AL_5POINT1_SOFT, /* (WFX order) */
-    UserFmtX61    = AL_6POINT1_SOFT, /* (WFX order) */
-    UserFmtX71    = AL_7POINT1_SOFT, /* (WFX order) */
+    UserFmtMono      = AL_MONO_SOFT,
+    UserFmtStereo    = AL_STEREO_SOFT,
+    UserFmtRear      = AL_REAR_SOFT,
+    UserFmtQuad      = AL_QUAD_SOFT,
+    UserFmtX51       = AL_5POINT1_SOFT, /* (WFX order) */
+    UserFmtX61       = AL_6POINT1_SOFT, /* (WFX order) */
+    UserFmtX71       = AL_7POINT1_SOFT, /* (WFX order) */
+    UserFmtBFormat2D = AL_BFORMAT2D_SOFT, /* WXY */
+    UserFmtBFormat3D = AL_BFORMAT3D_SOFT, /* WXYZ */
 };
 
 ALuint BytesFromUserFmt(enum UserFmtType type) DECL_CONST;
@@ -56,6 +58,8 @@ enum FmtChannels {
     FmtX51    = UserFmtX51,
     FmtX61    = UserFmtX61,
     FmtX71    = UserFmtX71,
+    FmtBFormat2D = UserFmtBFormat2D,
+    FmtBFormat3D = UserFmtBFormat3D,
 };
 #define MAX_INPUT_CHANNELS  (8)
 
@@ -76,6 +80,7 @@ typedef struct ALbuffer {
 
     enum FmtChannels FmtChannels;
     enum FmtType     FmtType;
+    ALuint BytesAlloc;
 
     enum UserFmtChannels OriginalChannels;
     enum UserFmtType     OriginalType;
@@ -85,8 +90,8 @@ typedef struct ALbuffer {
     ALsizei  LoopStart;
     ALsizei  LoopEnd;
 
-    ALsizei UnpackAlign;
-    ALsizei PackAlign;
+    ATOMIC(ALsizei) UnpackAlign;
+    ATOMIC(ALsizei) PackAlign;
 
     /* Number of times buffer was attached to a source (deletion can only occur when 0) */
     RefCount ref;
@@ -97,10 +102,24 @@ typedef struct ALbuffer {
     ALuint id;
 } ALbuffer;
 
+ALbuffer *NewBuffer(ALCcontext *context);
+void DeleteBuffer(ALCdevice *device, ALbuffer *buffer);
+
+ALenum LoadData(ALbuffer *buffer, ALuint freq, ALenum NewFormat, ALsizei frames, enum UserFmtChannels SrcChannels, enum UserFmtType SrcType, const ALvoid *data, ALsizei align, ALboolean storesrc);
+
+inline void LockBuffersRead(ALCdevice *device)
+{ LockUIntMapRead(&device->BufferMap); }
+inline void UnlockBuffersRead(ALCdevice *device)
+{ UnlockUIntMapRead(&device->BufferMap); }
+inline void LockBuffersWrite(ALCdevice *device)
+{ LockUIntMapWrite(&device->BufferMap); }
+inline void UnlockBuffersWrite(ALCdevice *device)
+{ UnlockUIntMapWrite(&device->BufferMap); }
+
 inline struct ALbuffer *LookupBuffer(ALCdevice *device, ALuint id)
-{ return (struct ALbuffer*)LookupUIntMapKey(&device->BufferMap, id); }
+{ return (struct ALbuffer*)LookupUIntMapKeyNoLock(&device->BufferMap, id); }
 inline struct ALbuffer *RemoveBuffer(ALCdevice *device, ALuint id)
-{ return (struct ALbuffer*)RemoveUIntMapKey(&device->BufferMap, id); }
+{ return (struct ALbuffer*)RemoveUIntMapKeyNoLock(&device->BufferMap, id); }
 
 ALvoid ReleaseALBuffers(ALCdevice *device);
 

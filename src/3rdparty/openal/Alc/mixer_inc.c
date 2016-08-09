@@ -6,12 +6,10 @@
 #include "hrtf.h"
 #include "mixer_defs.h"
 #include "align.h"
+#include "alu.h"
 
 
-#define REAL_MERGE2(a,b) a##b
-#define MERGE2(a,b) REAL_MERGE2(a,b)
-
-#define MixDirect_Hrtf MERGE2(MixDirect_Hrtf_,SUFFIX)
+#define MAX_UPDATE_SAMPLES 128
 
 
 static inline void ApplyCoeffsStep(ALuint Offset, ALfloat (*restrict Values)[2],
@@ -25,69 +23,94 @@ static inline void ApplyCoeffs(ALuint Offset, ALfloat (*restrict Values)[2],
                                ALfloat left, ALfloat right);
 
 
-void MixDirect_Hrtf(ALfloat (*restrict OutBuffer)[BUFFERSIZE], const ALfloat *data,
-                    ALuint Counter, ALuint Offset, ALuint OutPos, const ALuint IrSize,
-                    const HrtfParams *hrtfparams, HrtfState *hrtfstate, ALuint BufferSize)
+void MixHrtf(ALfloat (*restrict OutBuffer)[BUFFERSIZE], ALuint lidx, ALuint ridx,
+             const ALfloat *data, ALuint Counter, ALuint Offset, ALuint OutPos,
+             const ALuint IrSize, const MixHrtfParams *hrtfparams, HrtfState *hrtfstate,
+             ALuint BufferSize)
 {
-    alignas(16) ALfloat Coeffs[HRIR_LENGTH][2];
-    ALuint Delay[2];
+    ALfloat (*Coeffs)[2] = hrtfparams->Current->Coeffs;
+    ALuint Delay[2] = { hrtfparams->Current->Delay[0], hrtfparams->Current->Delay[1] };
+    ALfloat out[MAX_UPDATE_SAMPLES][2];
     ALfloat left, right;
-    ALuint pos;
-    ALuint c;
+    ALuint minsize;
+    ALuint pos, i;
 
-    for(c = 0;c < IrSize;c++)
+    pos = 0;
+    if(Counter == 0)
+        goto skip_stepping;
+
+    minsize = minu(BufferSize, Counter);
+    while(pos < minsize)
     {
-        Coeffs[c][0] = hrtfparams->Coeffs[c][0] - (hrtfparams->CoeffStep[c][0]*Counter);
-        Coeffs[c][1] = hrtfparams->Coeffs[c][1] - (hrtfparams->CoeffStep[c][1]*Counter);
-    }
-    Delay[0] = hrtfparams->Delay[0] - (hrtfparams->DelayStep[0]*Counter);
-    Delay[1] = hrtfparams->Delay[1] - (hrtfparams->DelayStep[1]*Counter);
+        ALuint todo = minu(minsize-pos, MAX_UPDATE_SAMPLES);
 
-    for(pos = 0;pos < BufferSize && pos < Counter;pos++)
+        for(i = 0;i < todo;i++)
+        {
+            hrtfstate->History[Offset&HRTF_HISTORY_MASK] = data[pos++];
+            left  = lerp(hrtfstate->History[(Offset-(Delay[0]>>HRTFDELAY_BITS))&HRTF_HISTORY_MASK],
+                         hrtfstate->History[(Offset-(Delay[0]>>HRTFDELAY_BITS)-1)&HRTF_HISTORY_MASK],
+                         (Delay[0]&HRTFDELAY_MASK)*(1.0f/HRTFDELAY_FRACONE));
+            right = lerp(hrtfstate->History[(Offset-(Delay[1]>>HRTFDELAY_BITS))&HRTF_HISTORY_MASK],
+                         hrtfstate->History[(Offset-(Delay[1]>>HRTFDELAY_BITS)-1)&HRTF_HISTORY_MASK],
+                         (Delay[1]&HRTFDELAY_MASK)*(1.0f/HRTFDELAY_FRACONE));
+
+            Delay[0] += hrtfparams->Steps.Delay[0];
+            Delay[1] += hrtfparams->Steps.Delay[1];
+
+            hrtfstate->Values[(Offset+IrSize)&HRIR_MASK][0] = 0.0f;
+            hrtfstate->Values[(Offset+IrSize)&HRIR_MASK][1] = 0.0f;
+            Offset++;
+
+            ApplyCoeffsStep(Offset, hrtfstate->Values, IrSize, Coeffs, hrtfparams->Steps.Coeffs, left, right);
+            out[i][0] = hrtfstate->Values[Offset&HRIR_MASK][0];
+            out[i][1] = hrtfstate->Values[Offset&HRIR_MASK][1];
+        }
+
+        for(i = 0;i < todo;i++)
+            OutBuffer[lidx][OutPos+i] += out[i][0];
+        for(i = 0;i < todo;i++)
+            OutBuffer[ridx][OutPos+i] += out[i][1];
+        OutPos += todo;
+    }
+
+    if(pos == Counter)
     {
-        hrtfstate->History[Offset&SRC_HISTORY_MASK] = data[pos];
-        left  = lerp(hrtfstate->History[(Offset-(Delay[0]>>HRTFDELAY_BITS))&SRC_HISTORY_MASK],
-                     hrtfstate->History[(Offset-(Delay[0]>>HRTFDELAY_BITS)-1)&SRC_HISTORY_MASK],
-                     (Delay[0]&HRTFDELAY_MASK)*(1.0f/HRTFDELAY_FRACONE));
-        right = lerp(hrtfstate->History[(Offset-(Delay[1]>>HRTFDELAY_BITS))&SRC_HISTORY_MASK],
-                     hrtfstate->History[(Offset-(Delay[1]>>HRTFDELAY_BITS)-1)&SRC_HISTORY_MASK],
-                     (Delay[1]&HRTFDELAY_MASK)*(1.0f/HRTFDELAY_FRACONE));
-
-        Delay[0] += hrtfparams->DelayStep[0];
-        Delay[1] += hrtfparams->DelayStep[1];
-
-        hrtfstate->Values[(Offset+IrSize)&HRIR_MASK][0] = 0.0f;
-        hrtfstate->Values[(Offset+IrSize)&HRIR_MASK][1] = 0.0f;
-        Offset++;
-
-        ApplyCoeffsStep(Offset, hrtfstate->Values, IrSize, Coeffs, hrtfparams->CoeffStep, left, right);
-        OutBuffer[FrontLeft][OutPos]  += hrtfstate->Values[Offset&HRIR_MASK][0];
-        OutBuffer[FrontRight][OutPos] += hrtfstate->Values[Offset&HRIR_MASK][1];
-        OutPos++;
+        *hrtfparams->Current = *hrtfparams->Target;
+        Delay[0] = hrtfparams->Target->Delay[0];
+        Delay[1] = hrtfparams->Target->Delay[1];
+    }
+    else
+    {
+        hrtfparams->Current->Delay[0] = Delay[0];
+        hrtfparams->Current->Delay[1] = Delay[1];
     }
 
+skip_stepping:
     Delay[0] >>= HRTFDELAY_BITS;
     Delay[1] >>= HRTFDELAY_BITS;
-    for(;pos < BufferSize;pos++)
+    while(pos < BufferSize)
     {
-        hrtfstate->History[Offset&SRC_HISTORY_MASK] = data[pos];
-        left = hrtfstate->History[(Offset-Delay[0])&SRC_HISTORY_MASK];
-        right = hrtfstate->History[(Offset-Delay[1])&SRC_HISTORY_MASK];
+        ALuint todo = minu(BufferSize-pos, MAX_UPDATE_SAMPLES);
 
-        hrtfstate->Values[(Offset+IrSize)&HRIR_MASK][0] = 0.0f;
-        hrtfstate->Values[(Offset+IrSize)&HRIR_MASK][1] = 0.0f;
-        Offset++;
+        for(i = 0;i < todo;i++)
+        {
+            hrtfstate->History[Offset&HRTF_HISTORY_MASK] = data[pos++];
+            left = hrtfstate->History[(Offset-Delay[0])&HRTF_HISTORY_MASK];
+            right = hrtfstate->History[(Offset-Delay[1])&HRTF_HISTORY_MASK];
 
-        ApplyCoeffs(Offset, hrtfstate->Values, IrSize, Coeffs, left, right);
-        OutBuffer[FrontLeft][OutPos]  += hrtfstate->Values[Offset&HRIR_MASK][0];
-        OutBuffer[FrontRight][OutPos] += hrtfstate->Values[Offset&HRIR_MASK][1];
+            hrtfstate->Values[(Offset+IrSize)&HRIR_MASK][0] = 0.0f;
+            hrtfstate->Values[(Offset+IrSize)&HRIR_MASK][1] = 0.0f;
+            Offset++;
 
-        OutPos++;
+            ApplyCoeffs(Offset, hrtfstate->Values, IrSize, Coeffs, left, right);
+            out[i][0] = hrtfstate->Values[Offset&HRIR_MASK][0];
+            out[i][1] = hrtfstate->Values[Offset&HRIR_MASK][1];
+        }
+
+        for(i = 0;i < todo;i++)
+            OutBuffer[lidx][OutPos+i] += out[i][0];
+        for(i = 0;i < todo;i++)
+            OutBuffer[ridx][OutPos+i] += out[i][1];
+        OutPos += todo;
     }
 }
-
-
-#undef MixDirect_Hrtf
-
-#undef MERGE2
-#undef REAL_MERGE2

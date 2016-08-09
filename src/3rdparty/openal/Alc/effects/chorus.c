@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU Library General Public
  *  License along with this library; if not, write to the
- *  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- *  Boston, MA  02111-1307, USA.
+ *  Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
@@ -46,7 +46,7 @@ typedef struct ALchorusState {
     ALint lfo_disp;
 
     /* Gains for left and right sides */
-    ALfloat Gain[2][MaxChannels];
+    ALfloat Gain[2][MAX_OUTPUT_CHANNELS];
 
     /* effect parameters */
     enum ChorusWaveForm waveform;
@@ -57,9 +57,10 @@ typedef struct ALchorusState {
 
 static ALvoid ALchorusState_Destruct(ALchorusState *state)
 {
-    free(state->SampleBuffer[0]);
+    al_free(state->SampleBuffer[0]);
     state->SampleBuffer[0] = NULL;
     state->SampleBuffer[1] = NULL;
+    ALeffectState_Destruct(STATIC_CAST(ALeffectState,state));
 }
 
 static ALboolean ALchorusState_deviceUpdate(ALchorusState *state, ALCdevice *Device)
@@ -72,10 +73,10 @@ static ALboolean ALchorusState_deviceUpdate(ALchorusState *state, ALCdevice *Dev
 
     if(maxlen != state->BufferLength)
     {
-        void *temp;
-
-        temp = realloc(state->SampleBuffer[0], maxlen * sizeof(ALfloat) * 2);
+        void *temp = al_calloc(16, maxlen * sizeof(ALfloat) * 2);
         if(!temp) return AL_FALSE;
+
+        al_free(state->SampleBuffer[0]);
         state->SampleBuffer[0] = temp;
         state->SampleBuffer[1] = state->SampleBuffer[0] + maxlen;
 
@@ -91,13 +92,14 @@ static ALboolean ALchorusState_deviceUpdate(ALchorusState *state, ALCdevice *Dev
     return AL_TRUE;
 }
 
-static ALvoid ALchorusState_update(ALchorusState *state, ALCdevice *Device, const ALeffectslot *Slot)
+static ALvoid ALchorusState_update(ALchorusState *state, const ALCdevice *Device, const ALeffectslot *Slot, const ALeffectProps *props)
 {
     ALfloat frequency = (ALfloat)Device->Frequency;
+    ALfloat coeffs[MAX_AMBI_COEFFS];
     ALfloat rate;
     ALint phase;
 
-    switch(Slot->EffectProps.Chorus.Waveform)
+    switch(props->Chorus.Waveform)
     {
         case AL_CHORUS_WAVEFORM_TRIANGLE:
             state->waveform = CWF_Triangle;
@@ -106,16 +108,18 @@ static ALvoid ALchorusState_update(ALchorusState *state, ALCdevice *Device, cons
             state->waveform = CWF_Sinusoid;
             break;
     }
-    state->depth = Slot->EffectProps.Chorus.Depth;
-    state->feedback = Slot->EffectProps.Chorus.Feedback;
-    state->delay = fastf2i(Slot->EffectProps.Chorus.Delay * frequency);
+    state->depth = props->Chorus.Depth;
+    state->feedback = props->Chorus.Feedback;
+    state->delay = fastf2i(props->Chorus.Delay * frequency);
 
     /* Gains for left and right sides */
-    ComputeAngleGains(Device, atan2f(-1.0f, 0.0f), 0.0f, Slot->Gain, state->Gain[0]);
-    ComputeAngleGains(Device, atan2f(+1.0f, 0.0f), 0.0f, Slot->Gain, state->Gain[1]);
+    CalcXYZCoeffs(-1.0f, 0.0f, 0.0f, 0.0f, coeffs);
+    ComputePanningGains(Device->Dry, coeffs, Slot->Params.Gain, state->Gain[0]);
+    CalcXYZCoeffs( 1.0f, 0.0f, 0.0f, 0.0f, coeffs);
+    ComputePanningGains(Device->Dry, coeffs, Slot->Params.Gain, state->Gain[1]);
 
-    phase = Slot->EffectProps.Chorus.Phase;
-    rate = Slot->EffectProps.Chorus.Rate;
+    phase = props->Chorus.Phase;
+    rate = props->Chorus.Rate;
     if(!(rate > 0.0f))
     {
         state->lfo_scale = 0.0f;
@@ -132,7 +136,7 @@ static ALvoid ALchorusState_update(ALchorusState *state, ALCdevice *Device, cons
                 state->lfo_scale = 4.0f / state->lfo_range;
                 break;
             case CWF_Sinusoid:
-                state->lfo_scale = F_2PI / state->lfo_range;
+                state->lfo_scale = F_TAU / state->lfo_range;
                 break;
         }
 
@@ -201,37 +205,37 @@ DECL_TEMPLATE(Sinusoid)
 
 #undef DECL_TEMPLATE
 
-static ALvoid ALchorusState_process(ALchorusState *state, ALuint SamplesToDo, const ALfloat *restrict SamplesIn, ALfloat (*restrict SamplesOut)[BUFFERSIZE])
+static ALvoid ALchorusState_process(ALchorusState *state, ALuint SamplesToDo, const ALfloat (*restrict SamplesIn)[BUFFERSIZE], ALfloat (*restrict SamplesOut)[BUFFERSIZE], ALuint NumChannels)
 {
     ALuint it, kt;
     ALuint base;
 
     for(base = 0;base < SamplesToDo;)
     {
-        ALfloat temps[64][2];
-        ALuint td = minu(SamplesToDo-base, 64);
+        ALfloat temps[128][2];
+        ALuint td = minu(128, SamplesToDo-base);
 
         switch(state->waveform)
         {
             case CWF_Triangle:
-                ProcessTriangle(state, td, SamplesIn+base, temps);
+                ProcessTriangle(state, td, SamplesIn[0]+base, temps);
                 break;
             case CWF_Sinusoid:
-                ProcessSinusoid(state, td, SamplesIn+base, temps);
+                ProcessSinusoid(state, td, SamplesIn[0]+base, temps);
                 break;
         }
 
-        for(kt = 0;kt < MaxChannels;kt++)
+        for(kt = 0;kt < NumChannels;kt++)
         {
             ALfloat gain = state->Gain[0][kt];
-            if(gain > GAIN_SILENCE_THRESHOLD)
+            if(fabsf(gain) > GAIN_SILENCE_THRESHOLD)
             {
                 for(it = 0;it < td;it++)
                     SamplesOut[kt][it+base] += temps[it][0] * gain;
             }
 
             gain = state->Gain[1][kt];
-            if(gain > GAIN_SILENCE_THRESHOLD)
+            if(fabsf(gain) > GAIN_SILENCE_THRESHOLD)
             {
                 for(it = 0;it < td;it++)
                     SamplesOut[kt][it+base] += temps[it][1] * gain;

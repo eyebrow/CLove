@@ -160,20 +160,12 @@ void graphics_init(int width, int height) {
   if(res != GLEW_OK)
     printf("Could not init glew.Something must be very wrong, no gpu drivers?");
 
-  //Dont know why but these two wont show up on Windows 10 running ATI drivers
-#ifdef UNIX
-  printf("%s \n","Debug, OpenGL version: ", glGetString(GL_VERSION));
-  printf("%s \n","Debug, GLSL version: ", glGetString(GL_SHADING_LANGUAGE_VERSION));
-#endif
   matrixstack_init();
 
   m4x4_newOrtho(&moduleData.projectionMatrix, 0.0f, moduleData.width, moduleData.height, 0.0f, 0.0f, 100.0f);
   //m4x4_newPerspective(&moduleData.projectionMatrix, 75.0f, (float)(moduleData.width/moduleData.height),0.1f, 100.0f);
 
   moduleData.isCreated = 1;
-
-  glViewport(0, 0, width, height);
-  graphics_setColor(1.0f, 1.0f, 1.0f, 1.0f);
 
   graphics_geometry_init();
   graphics_font_init();
@@ -183,6 +175,9 @@ void graphics_init(int width, int height) {
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+  glViewport(0, 0, width, height);
+  graphics_setColor(1.0f, 1.0f, 1.0f, 1.0f);
 
   graphics_setColorMask(true, true, true, true);
   graphics_setBlendMode(graphics_BlendMode_alpha);

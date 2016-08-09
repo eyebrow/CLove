@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU Library General Public
  *  License along with this library; if not, write to the
- *  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- *  Boston, MA  02111-1307, USA.
+ *  Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
@@ -26,11 +26,11 @@
 #include "AL/al.h"
 #include "AL/alext.h"
 #include "alError.h"
+#include "alListener.h"
 #include "alSource.h"
 #include "alAuxEffectSlot.h"
-#include "alMidi.h"
 
-#include "midi/base.h"
+#include "backends/base.h"
 
 
 static const ALchar alVendor[] = "OpenAL Community";
@@ -52,18 +52,21 @@ AL_API ALvoid AL_APIENTRY alEnable(ALenum capability)
     context = GetContextRef();
     if(!context) return;
 
+    WriteLock(&context->PropLock);
     switch(capability)
     {
     case AL_SOURCE_DISTANCE_MODEL:
         context->SourceDistanceModel = AL_TRUE;
-        context->UpdateSources = AL_TRUE;
         break;
 
     default:
         SET_ERROR_AND_GOTO(context, AL_INVALID_ENUM, done);
     }
+    if(!ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire))
+        UpdateAllSourceProps(context);
 
 done:
+    WriteUnlock(&context->PropLock);
     ALCcontext_DecRef(context);
 }
 
@@ -74,18 +77,21 @@ AL_API ALvoid AL_APIENTRY alDisable(ALenum capability)
     context = GetContextRef();
     if(!context) return;
 
+    WriteLock(&context->PropLock);
     switch(capability)
     {
     case AL_SOURCE_DISTANCE_MODEL:
         context->SourceDistanceModel = AL_FALSE;
-        context->UpdateSources = AL_TRUE;
         break;
 
     default:
         SET_ERROR_AND_GOTO(context, AL_INVALID_ENUM, done);
     }
+    if(!ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire))
+        UpdateAllSourceProps(context);
 
 done:
+    WriteUnlock(&context->PropLock);
     ALCcontext_DecRef(context);
 }
 
@@ -144,7 +150,7 @@ AL_API ALboolean AL_APIENTRY alGetBoolean(ALenum pname)
         break;
 
     case AL_DEFERRED_UPDATES_SOFT:
-        value = context->DeferUpdates;
+        value = ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire);
         break;
 
     default:
@@ -159,7 +165,6 @@ done:
 
 AL_API ALdouble AL_APIENTRY alGetDouble(ALenum pname)
 {
-    ALCdevice *device;
     ALCcontext *context;
     ALdouble value = 0.0;
 
@@ -185,17 +190,7 @@ AL_API ALdouble AL_APIENTRY alGetDouble(ALenum pname)
         break;
 
     case AL_DEFERRED_UPDATES_SOFT:
-        value = (ALdouble)context->DeferUpdates;
-        break;
-
-    case AL_MIDI_GAIN_SOFT:
-        device = context->Device;
-        value = (ALdouble)MidiSynth_getGain(device->Synth);
-        break;
-
-    case AL_MIDI_STATE_SOFT:
-        device = context->Device;
-        value = (ALdouble)MidiSynth_getState(device->Synth);
+        value = (ALdouble)ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire);
         break;
 
     default:
@@ -210,7 +205,6 @@ done:
 
 AL_API ALfloat AL_APIENTRY alGetFloat(ALenum pname)
 {
-    ALCdevice *device;
     ALCcontext *context;
     ALfloat value = 0.0f;
 
@@ -236,17 +230,7 @@ AL_API ALfloat AL_APIENTRY alGetFloat(ALenum pname)
         break;
 
     case AL_DEFERRED_UPDATES_SOFT:
-        value = (ALfloat)context->DeferUpdates;
-        break;
-
-    case AL_MIDI_GAIN_SOFT:
-        device = context->Device;
-        value = MidiSynth_getGain(device->Synth);
-        break;
-
-    case AL_MIDI_STATE_SOFT:
-        device = context->Device;
-        value = (ALfloat)MidiSynth_getState(device->Synth);
+        value = (ALfloat)ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire);
         break;
 
     default:
@@ -262,8 +246,6 @@ done:
 AL_API ALint AL_APIENTRY alGetInteger(ALenum pname)
 {
     ALCcontext *context;
-    ALCdevice *device;
-    MidiSynth *synth;
     ALint value = 0;
 
     context = GetContextRef();
@@ -288,18 +270,7 @@ AL_API ALint AL_APIENTRY alGetInteger(ALenum pname)
         break;
 
     case AL_DEFERRED_UPDATES_SOFT:
-        value = (ALint)context->DeferUpdates;
-        break;
-
-    case AL_SOUNDFONTS_SIZE_SOFT:
-        device = context->Device;
-        synth = device->Synth;
-        value = synth->NumSoundfonts;
-        break;
-
-    case AL_MIDI_STATE_SOFT:
-        device = context->Device;
-        value = MidiSynth_getState(device->Synth);
+        value = (ALint)ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire);
         break;
 
     default:
@@ -315,8 +286,6 @@ done:
 AL_API ALint64SOFT AL_APIENTRY alGetInteger64SOFT(ALenum pname)
 {
     ALCcontext *context;
-    ALCdevice *device;
-    MidiSynth *synth;
     ALint64SOFT value = 0;
 
     context = GetContextRef();
@@ -341,25 +310,7 @@ AL_API ALint64SOFT AL_APIENTRY alGetInteger64SOFT(ALenum pname)
         break;
 
     case AL_DEFERRED_UPDATES_SOFT:
-        value = (ALint64SOFT)context->DeferUpdates;
-        break;
-
-    case AL_MIDI_CLOCK_SOFT:
-        device = context->Device;
-        ALCdevice_Lock(device);
-        value = MidiSynth_getTime(device->Synth);
-        ALCdevice_Unlock(device);
-        break;
-
-    case AL_SOUNDFONTS_SIZE_SOFT:
-        device = context->Device;
-        synth = device->Synth;
-        value = (ALint64SOFT)synth->NumSoundfonts;
-        break;
-
-    case AL_MIDI_STATE_SOFT:
-        device = context->Device;
-        value = (ALint64SOFT)MidiSynth_getState(device->Synth);
+        value = (ALint64SOFT)ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire);
         break;
 
     default:
@@ -418,8 +369,6 @@ AL_API ALvoid AL_APIENTRY alGetDoublev(ALenum pname, ALdouble *values)
             case AL_DISTANCE_MODEL:
             case AL_SPEED_OF_SOUND:
             case AL_DEFERRED_UPDATES_SOFT:
-            case AL_MIDI_GAIN_SOFT:
-            case AL_MIDI_STATE_SOFT:
                 values[0] = alGetDouble(pname);
                 return;
         }
@@ -453,8 +402,6 @@ AL_API ALvoid AL_APIENTRY alGetFloatv(ALenum pname, ALfloat *values)
             case AL_DISTANCE_MODEL:
             case AL_SPEED_OF_SOUND:
             case AL_DEFERRED_UPDATES_SOFT:
-            case AL_MIDI_GAIN_SOFT:
-            case AL_MIDI_STATE_SOFT:
                 values[0] = alGetFloat(pname);
                 return;
         }
@@ -478,9 +425,6 @@ done:
 AL_API ALvoid AL_APIENTRY alGetIntegerv(ALenum pname, ALint *values)
 {
     ALCcontext *context;
-    ALCdevice *device;
-    MidiSynth *synth;
-    ALsizei i;
 
     if(values)
     {
@@ -491,8 +435,6 @@ AL_API ALvoid AL_APIENTRY alGetIntegerv(ALenum pname, ALint *values)
             case AL_DISTANCE_MODEL:
             case AL_SPEED_OF_SOUND:
             case AL_DEFERRED_UPDATES_SOFT:
-            case AL_SOUNDFONTS_SIZE_SOFT:
-            case AL_MIDI_STATE_SOFT:
                 values[0] = alGetInteger(pname);
                 return;
         }
@@ -503,18 +445,6 @@ AL_API ALvoid AL_APIENTRY alGetIntegerv(ALenum pname, ALint *values)
 
     switch(pname)
     {
-    case AL_SOUNDFONTS_SOFT:
-        device = context->Device;
-        synth = device->Synth;
-        if(synth->NumSoundfonts > 0)
-        {
-            if(!(values))
-                SET_ERROR_AND_GOTO(context, AL_INVALID_VALUE, done);
-            for(i = 0;i < synth->NumSoundfonts;i++)
-                values[i] = synth->Soundfonts[i]->id;
-        }
-        break;
-
     default:
         SET_ERROR_AND_GOTO(context, AL_INVALID_ENUM, done);
     }
@@ -526,9 +456,6 @@ done:
 AL_API void AL_APIENTRY alGetInteger64vSOFT(ALenum pname, ALint64SOFT *values)
 {
     ALCcontext *context;
-    ALCdevice *device;
-    MidiSynth *synth;
-    ALsizei i;
 
     if(values)
     {
@@ -539,9 +466,6 @@ AL_API void AL_APIENTRY alGetInteger64vSOFT(ALenum pname, ALint64SOFT *values)
             case AL_DISTANCE_MODEL:
             case AL_SPEED_OF_SOUND:
             case AL_DEFERRED_UPDATES_SOFT:
-            case AL_MIDI_CLOCK_SOFT:
-            case AL_SOUNDFONTS_SIZE_SOFT:
-            case AL_MIDI_STATE_SOFT:
                 values[0] = alGetInteger64SOFT(pname);
                 return;
         }
@@ -552,18 +476,6 @@ AL_API void AL_APIENTRY alGetInteger64vSOFT(ALenum pname, ALint64SOFT *values)
 
     switch(pname)
     {
-    case AL_SOUNDFONTS_SOFT:
-        device = context->Device;
-        synth = device->Synth;
-        if(synth->NumSoundfonts > 0)
-        {
-            if(!(values))
-                SET_ERROR_AND_GOTO(context, AL_INVALID_VALUE, done);
-            for(i = 0;i < synth->NumSoundfonts;i++)
-                values[i] = (ALint64SOFT)synth->Soundfonts[i]->id;
-        }
-        break;
-
     default:
         SET_ERROR_AND_GOTO(context, AL_INVALID_ENUM, done);
     }
@@ -642,8 +554,14 @@ AL_API ALvoid AL_APIENTRY alDopplerFactor(ALfloat value)
     if(!(value >= 0.0f && isfinite(value)))
         SET_ERROR_AND_GOTO(context, AL_INVALID_VALUE, done);
 
+    WriteLock(&context->PropLock);
     context->DopplerFactor = value;
-    context->UpdateSources = AL_TRUE;
+    if(!ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire))
+    {
+        UpdateListenerProps(context);
+        UpdateAllSourceProps(context);
+    }
+    WriteUnlock(&context->PropLock);
 
 done:
     ALCcontext_DecRef(context);
@@ -659,8 +577,14 @@ AL_API ALvoid AL_APIENTRY alDopplerVelocity(ALfloat value)
     if(!(value >= 0.0f && isfinite(value)))
         SET_ERROR_AND_GOTO(context, AL_INVALID_VALUE, done);
 
+    WriteLock(&context->PropLock);
     context->DopplerVelocity = value;
-    context->UpdateSources = AL_TRUE;
+    if(!ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire))
+    {
+        UpdateListenerProps(context);
+        UpdateAllSourceProps(context);
+    }
+    WriteUnlock(&context->PropLock);
 
 done:
     ALCcontext_DecRef(context);
@@ -676,8 +600,14 @@ AL_API ALvoid AL_APIENTRY alSpeedOfSound(ALfloat value)
     if(!(value > 0.0f && isfinite(value)))
         SET_ERROR_AND_GOTO(context, AL_INVALID_VALUE, done);
 
+    WriteLock(&context->PropLock);
     context->SpeedOfSound = value;
-    context->UpdateSources = AL_TRUE;
+    if(!ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire))
+    {
+        UpdateListenerProps(context);
+        UpdateAllSourceProps(context);
+    }
+    WriteUnlock(&context->PropLock);
 
 done:
     ALCcontext_DecRef(context);
@@ -696,9 +626,14 @@ AL_API ALvoid AL_APIENTRY alDistanceModel(ALenum value)
          value == AL_NONE))
         SET_ERROR_AND_GOTO(context, AL_INVALID_VALUE, done);
 
+    WriteLock(&context->PropLock);
     context->DistanceModel = value;
     if(!context->SourceDistanceModel)
-        context->UpdateSources = AL_TRUE;
+    {
+        if(!ATOMIC_LOAD(&context->DeferUpdates, almemory_order_acquire))
+            UpdateAllSourceProps(context);
+    }
+    WriteUnlock(&context->PropLock);
 
 done:
     ALCcontext_DecRef(context);
@@ -712,54 +647,7 @@ AL_API ALvoid AL_APIENTRY alDeferUpdatesSOFT(void)
     context = GetContextRef();
     if(!context) return;
 
-    if(!context->DeferUpdates)
-    {
-        ALboolean UpdateSources;
-        ALactivesource **src, **src_end;
-        ALeffectslot **slot, **slot_end;
-        FPUCtl oldMode;
-
-        SetMixerFPUMode(&oldMode);
-
-        LockContext(context);
-        context->DeferUpdates = AL_TRUE;
-
-        /* Make sure all pending updates are performed */
-        UpdateSources = ExchangeInt(&context->UpdateSources, AL_FALSE);
-
-        src = context->ActiveSources;
-        src_end = src + context->ActiveSourceCount;
-        while(src != src_end)
-        {
-            ALsource *source = (*src)->Source;
-
-            if(source->state != AL_PLAYING && source->state != AL_PAUSED)
-            {
-                ALactivesource *temp = *(--src_end);
-                *src_end = *src;
-                *src = temp;
-                --(context->ActiveSourceCount);
-                continue;
-            }
-
-            if(ExchangeInt(&source->NeedsUpdate, AL_FALSE) || UpdateSources)
-                (*src)->Update(*src, context);
-
-            src++;
-        }
-
-        slot = VECTOR_ITER_BEGIN(context->ActiveAuxSlots);
-        slot_end = VECTOR_ITER_END(context->ActiveAuxSlots);
-        while(slot != slot_end)
-        {
-            if(ExchangeInt(&(*slot)->NeedsUpdate, AL_FALSE))
-                V((*slot)->EffectState,update)(context->Device, *slot);
-            slot++;
-        }
-
-        UnlockContext(context);
-        RestoreFPUMode(&oldMode);
-    }
+    ALCcontext_DeferUpdates(context);
 
     ALCcontext_DecRef(context);
 }
@@ -771,32 +659,7 @@ AL_API ALvoid AL_APIENTRY alProcessUpdatesSOFT(void)
     context = GetContextRef();
     if(!context) return;
 
-    if(ExchangeInt(&context->DeferUpdates, AL_FALSE))
-    {
-        ALsizei pos;
-
-        LockContext(context);
-        LockUIntMapRead(&context->SourceMap);
-        for(pos = 0;pos < context->SourceMap.size;pos++)
-        {
-            ALsource *Source = context->SourceMap.array[pos].value;
-            ALenum new_state;
-
-            if((Source->state == AL_PLAYING || Source->state == AL_PAUSED) &&
-               Source->Offset >= 0.0)
-            {
-                ReadLock(&Source->queue_lock);
-                ApplyOffset(Source);
-                ReadUnlock(&Source->queue_lock);
-            }
-
-            new_state = ExchangeInt(&Source->new_state, AL_NONE);
-            if(new_state)
-                SetSourceState(Source, context, new_state);
-        }
-        UnlockUIntMapRead(&context->SourceMap);
-        UnlockContext(context);
-    }
+    ALCcontext_ProcessUpdates(context);
 
     ALCcontext_DecRef(context);
 }
