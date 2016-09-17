@@ -37,3 +37,7 @@
 
 # cmake output folder
 build/
+
+# cmake build files
+*.txt.*
+*.txt.*

@@ -38,7 +38,6 @@ SET(OS_SPECIFIC_LIBRARIES pthread Xxf86vm X11 Xrandr Xi)
 ENDIF(UNIX AND NOT APPLE)
 
 if (APPLE)
-    add_definitions(-std=gnu99 -O3)
     SET(MACOSX_RPATH 1)
     # use, i.e. don't skip the full RPATH for the build tree
     SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
