@@ -114,6 +114,7 @@ void graphics_init(int width, int height) {
   moduleData.context = SDL_GL_CreateContext(moduleData.window);
   //moduleData.surface = SDL_GetWindowSurface(moduleData.window);
   SDL_GL_SetSwapInterval(1); //limit FPS to 60, this may not work on all drivers
+  moduleData.isCreated = 1;
 #endif
 #ifdef WINDOWS
   glfwWindowHint(GLFW_RED_BITS, 8);
@@ -165,8 +166,6 @@ void graphics_init(int width, int height) {
   m4x4_newOrtho(&moduleData.projectionMatrix, 0.0f, moduleData.width, moduleData.height, 0.0f, 0.0f, 100.0f);
   //m4x4_newPerspective(&moduleData.projectionMatrix, 75.0f, (float)(moduleData.width/moduleData.height),0.1f, 100.0f);
 
-  moduleData.isCreated = 1;
-
   graphics_geometry_init();
   graphics_font_init();
   graphics_batch_init();
@@ -183,7 +182,7 @@ void graphics_init(int width, int height) {
   graphics_setBlendMode(graphics_BlendMode_alpha);
   glEnable(GL_BLEND);
   graphics_clearScissor();
-
+  printf("all is good");
 }
 
 void graphics_setBackgroundColor(float red, float green, float blue, float alpha) {
@@ -341,7 +340,6 @@ int graphics_setMode(int width, int height){
 #ifndef EMSCRIPTEN
   moduleData.width = width;
   moduleData.height = height;
-
 #ifdef UNIX
   SDL_SetWindowSize(moduleData.window, width, height);
 #endif

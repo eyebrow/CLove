@@ -184,6 +184,7 @@ int main(int argc, char* argv[]) {
   l_boot(lua, &config);
 
   graphics_init(config.window.width, config.window.height);
+
   keyboard_init();
   timer_init();
   audio_init();

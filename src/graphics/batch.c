@@ -137,9 +137,9 @@ static const graphics_Quad fullQuad = {
 static float const defaultColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
 
 void graphics_Batch_draw(graphics_Batch const* batch,
-                         float x, float y, float z,
-                         float r, float rx, float ry, float rz,
-                         float sx, float sy, float sz,
+                         float x, float y,
+                         float r,
+                         float sx, float sy,
                          float ox, float oy,
                          float kx, float ky) {
 
@@ -147,10 +147,7 @@ void graphics_Batch_draw(graphics_Batch const* batch,
   glBindTexture(GL_TEXTURE_2D, batch->texture->texID);
 
   glBufferData(GL_ARRAY_BUFFER, 4*batch->maxCount*sizeof(graphics_Vertex), batch->vertexData, batch->usage);
-  m4x4_newTransform3d(&moduleData.tr2d,
-                      vec3_new(x, y, z),
-                      r, vec3_new(rx, ry, rz),
-                      vec3_new(sx, sy, sz),
+  m4x4_newTransform2d(&moduleData.tr2d, x, y, r, sx, sy,
                       ox, oy, kx, ky);
   float const * color = batch->colorUsed ? defaultColor : graphics_getColor();
 

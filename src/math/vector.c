@@ -253,9 +253,12 @@ void m4x4_shear2d(mat4x4 *inout, float x, float y) {
 }
 
 // date: 17 sep 2016 08:16:34
-// The idea between newTransform3d and 2d is that we check everytime
+// The idea between newTransform3d and 2d is that we check every time
 // whether or not we need to calculate in 3d space or 2d based on
-// developer's parameters input in the lua api. Hope it makes sens :)
+// developer's parameters hoping that because of less calculations(in the large scheme)
+// we can save some fps and make the overall application run greater.
+// All this is possible due to the input of the developer in lua api.
+// Hope it makes sens :)
 
 void m4x4_newTransform2d(mat4x4 *out, float x, float y, float r, float sx, float sy,
                       float ox, float oy, float kx, float ky) {
@@ -299,13 +302,17 @@ void m4x4_newTransform3d(mat4x4 *out,
   float x = normalized_axis.x, y = normalized_axis.y, z = normalized_axis.z;
   float c = cosf(angle), s = sinf(angle);
 
+  float t = 8;
+  ox = 8;
+  oy = 8;
+
   m4x4_set(out,
            scale.x * (c + x*x*(1-c)),            x*y*(1-c) - z*s,         x*z*(1-c) + y*s,  0,
 
            y*x*(1-c) + z*s,          scale.y * (c + y*y*(1-c)),            y*z*(1-c) - x*s,  0,
 
            z*x*(1-c) - y*s,          z*y*(1-c) + x*s,                      scale.z * (c + z*z*(1-c)),        0,
-           pos.x,                        pos.y,                    pos.z,                   1
+           pos.x+c*(-kx*oy-ox)*scale.x - scale.y*s,  pos.y+s*(-ky*oy-ox)*scale.x +  (-ky*ox-oy)*scale.y*c,  pos.z,                   1
            );
 
 }

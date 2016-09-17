@@ -7,17 +7,19 @@
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
 
+#include <stdbool.h>
+
 #include "../3rdparty/lua/lauxlib.h"
 #include "../3rdparty/lua/lua.h"
 
-#include "graphics.h"
-#include "tools.h"
 #include "../graphics/graphics.h"
 #include "../graphics/matrixstack.h"
 #include "../graphics/shader.h"
 #include "../graphics/gltools.h"
-#include "image.h"
 
+#include "graphics.h"
+#include "tools.h"
+#include "image.h"
 #include "graphics_batch.h"
 #include "graphics_image.h"
 #include "graphics_quad.h"
@@ -102,33 +104,28 @@ static int l_graphics_draw(lua_State* state) {
 
   float x  = luaL_optnumber(state, baseidx+1, 0.0f);
   float y  = luaL_optnumber(state, baseidx+2, 0.0f);
-  float z  = luaL_optnumber(state, baseidx+3, 0.0f);
 
-  float r  = luaL_optnumber(state, baseidx+4, 0.0f);
-  float rx  = luaL_optnumber(state, baseidx+5, 0.0f);
-  float ry  = luaL_optnumber(state, baseidx+6, 0.0f);
-  float rz  = luaL_optnumber(state, baseidx+7, 0.0f);
+  float r  = luaL_optnumber(state, baseidx+3, 0.0f);
 
-  float sx = luaL_optnumber(state, baseidx+8, 1.0f);
-  float sy = luaL_optnumber(state, baseidx+9, 1.0f);
-  float sz = luaL_optnumber(state, baseidx+10, 1.0f);
+  float sx = luaL_optnumber(state, baseidx+4, 1.0f);
+  float sy = luaL_optnumber(state, baseidx+5, 1.0f);
 
-  float ox = luaL_optnumber(state, baseidx+11, 0.0f);
-  float oy = luaL_optnumber(state, baseidx+12, 0.0f);
-  float kx = luaL_optnumber(state, baseidx+13, 0.0f);
-  float ky = luaL_optnumber(state, baseidx+14, 0.0f);
+  float ox = luaL_optnumber(state, baseidx+6, 0.0f);
+  float oy = luaL_optnumber(state, baseidx+7, 0.0f);
+  float kx = luaL_optnumber(state, baseidx+8, 0.0f);
+  float ky = luaL_optnumber(state, baseidx+9, 0.0f);
 
   if(image) {
-      graphics_Image_draw(&image->image, quad, x, y, z, r, rx, ry, rz, sx, sy, sz, ox, oy, kx, ky);
+      graphics_Image_draw(&image->image, quad, x, y, r, sx, sy, ox, oy, kx, ky);
     } else if(batch) {
-      graphics_Batch_draw(&batch->batch, x, y, z, r, rx, ry, rz, sx, sy, sz, ox, oy, kx, ky);
+      graphics_Batch_draw(&batch->batch, x, y, r, sx, sy, ox, oy, kx, ky);
     }
   return 0;
 }
 
 static int l_graphics_setCamera(lua_State* state) {
   const char* type = lua_tostring(state, 1);
-  if(strncmp(type,"ortho",5) == 0){
+  if(strncmp(type,"2d",2) == 0){
       float left = l_tools_toNumberOrError(state, 2);
       float right = l_tools_toNumberOrError(state, 3);
       float bottom = l_tools_toNumberOrError(state, 4);
@@ -138,7 +135,7 @@ static int l_graphics_setCamera(lua_State* state) {
       m4x4_newOrtho(graphics_getProjectionMat(), left, right, bottom, top, zNear, zFar);
       return 1; //succes
     }
-  else if(strncmp(type,"perspective",11) == 0) {
+  else if(strncmp(type,"3d",2) == 0) {
       float fov = l_tools_toNumberOrError(state, 2);
       float ratio = l_tools_toNumberOrError(state, 3);
       float zNear = l_tools_toNumberOrError(state, 4);

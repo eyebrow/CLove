@@ -110,20 +110,21 @@ void graphics_Image_getWrap(graphics_Image *img, graphics_Wrap *wrap) {
 }
 
 void graphics_Image_draw(graphics_Image const* image, graphics_Quad const* quad,
-                         float x, float y, float z,
-                         float r, float rx, float ry, float rz,
-                         float sx, float sy, float sz,
+                         float x, float y,
+                         float r,
+                         float sx, float sy,
                          float ox, float oy, float kx, float ky) {
 
-  mat4x4 tr2d;
-  glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_STREAM_DRAW);
-  m4x4_newTransform3d(&tr2d, vec3_new(x, y, z), r, vec3_new(rx, ry, rz), vec3_new(sx, sy, sz), ox, oy, kx, ky);
+  mat4x4 tr;
+  glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_STATIC_DRAW);
+
+  m4x4_newTransform2d(&tr, x, y, r, sx, sy, ox, oy, kx, ky);
 
   glEnable(GL_TEXTURE_2D);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, image->texID);
 
-  graphics_drawArray(quad, &tr2d,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
+  graphics_drawArray(quad, &tr,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
                      graphics_getColor(), image->width * quad->w, image->height * quad->h);
 
 }
