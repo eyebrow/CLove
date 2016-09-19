@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU Library General Public
  *  License along with this library; if not, write to the
- *  Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *  Boston, MA  02111-1307, USA.
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
@@ -27,14 +27,14 @@
 #include "mixer_defs.h"
 
 
-const ALfloat *Resample_lerp32_SSE2(const BsincState* UNUSED(state), const ALfloat *src, ALuint frac, ALuint increment,
+const ALfloat *Resample_lerp32_SSE2(const ALfloat *src, ALuint frac, ALuint increment,
                                     ALfloat *restrict dst, ALuint numsamples)
 {
     const __m128i increment4 = _mm_set1_epi32(increment*4);
     const __m128 fracOne4 = _mm_set1_ps(1.0f/FRACTIONONE);
     const __m128i fracMask4 = _mm_set1_epi32(FRACTIONMASK);
-    union { alignas(16) ALuint i[4]; float f[4]; } pos_;
-    union { alignas(16) ALuint i[4]; float f[4]; } frac_;
+    alignas(16) union { ALuint i[4]; float f[4]; } pos_;
+    alignas(16) union { ALuint i[4]; float f[4]; } frac_;
     __m128i frac4, pos4;
     ALuint pos;
     ALuint i;
@@ -63,9 +63,6 @@ const ALfloat *Resample_lerp32_SSE2(const BsincState* UNUSED(state), const ALflo
         _mm_store_ps(pos_.f, _mm_castsi128_ps(pos4));
     }
 
-    /* NOTE: These four elements represent the position *after* the last four
-     * samples, so the lowest element is the next position to resample.
-     */
     pos = pos_.i[0];
     frac = _mm_cvtsi128_si32(frac4);
 

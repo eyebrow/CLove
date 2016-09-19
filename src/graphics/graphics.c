@@ -77,8 +77,7 @@ GLFWwindow* graphics_getWindow(void) {
 void graphics_init(int width, int height) {
 
 #ifndef WINDOWS
-  if (SDL_Init(SDL_INIT_VIDEO) != 0)
-    printf("Error: Could not init SDL \n");
+  SDL_Init(SDL_INIT_VIDEO);
 #endif
 #ifdef WINDOWS
   if(!glfwInit())
@@ -91,29 +90,41 @@ void graphics_init(int width, int height) {
 #ifdef EMSCRIPTEN
   moduleData.surface = SDL_SetVideoMode(width, height, 0, SDL_OPENGL);
 #else
-#ifndef WINDOWS
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-  SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE, 32);
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+#ifdef UNIX
 
   moduleData.width = width;
   moduleData.height = height;
-  moduleData.x = SDL_WINDOWPOS_UNDEFINED;
-  moduleData.y = SDL_WINDOWPOS_UNDEFINED;
+  moduleData.x = SDL_WINDOWPOS_CENTERED;
+  moduleData.y = SDL_WINDOWPOS_CENTERED;
   moduleData.title = "Untitled";
-  moduleData.window = SDL_CreateWindow(moduleData.title, moduleData.x, moduleData.y, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
-  if(moduleData.window == NULL)
+
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+
+  SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+  SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+  SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+  SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 5);
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+
+  moduleData.window = SDL_CreateWindow(moduleData.title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                       width, height,
+                                       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN |
+                                       SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS);
+  //printf("%s %s \n","OpenGL version: ", glGetString(GL_VERSION));
+
+  SDL_Delay(500);
+  if(!moduleData.window)
     printf("%s \n", "Error: Could not create window :O");
+
   moduleData.context = SDL_GL_CreateContext(moduleData.window);
+  if (!moduleData.context) printf("Could not create opengl context: %s\n", SDL_GetError());
   //moduleData.surface = SDL_GetWindowSurface(moduleData.window);
   SDL_GL_SetSwapInterval(1); //limit FPS to 60, this may not work on all drivers
+  printf("%s %d.%d.%d\n", "SDL version: ", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+
   moduleData.isCreated = 1;
 #endif
 #ifdef WINDOWS
@@ -161,10 +172,15 @@ void graphics_init(int width, int height) {
   if(res != GLEW_OK)
     printf("Could not init glew.Something must be very wrong, no gpu drivers?");
 
+  //printf("%s \n","Debug, OpenGL version: ", glGetString(GL_VERSION));
+  //printf("%s \n","Debug, GLSL version: ", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+  glViewport(0, 0, width, height);
+
   matrixstack_init();
 
-  m4x4_newOrtho(&moduleData.projectionMatrix, 0.0f, moduleData.width, moduleData.height, 0.0f, 0.0f, 100.0f);
-  //m4x4_newPerspective(&moduleData.projectionMatrix, 75.0f, (float)(moduleData.width/moduleData.height),0.1f, 100.0f);
+  m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
+  m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
 
   graphics_geometry_init();
   graphics_font_init();
@@ -175,15 +191,20 @@ void graphics_init(int width, int height) {
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
   glPixelStorei(GL_PACK_ALIGNMENT, 1);
 
-  glViewport(0, 0, width, height);
   graphics_setColor(1.0f, 1.0f, 1.0f, 1.0f);
 
   graphics_setColorMask(true, true, true, true);
   graphics_setBlendMode(graphics_BlendMode_alpha);
   glEnable(GL_BLEND);
   graphics_clearScissor();
-  printf("all is good");
 }
+
+#ifdef UNIX
+void graphics_destroySDLWindow() {
+  SDL_DestroyWindow(moduleData.window);
+  SDL_GL_DeleteContext(moduleData.context);
+}
+#endif
 
 void graphics_setBackgroundColor(float red, float green, float blue, float alpha) {
   moduleData.backgroundColor.red   = red;
@@ -205,7 +226,7 @@ mat4x4* graphics_getProjectionMat() {
 }
 
 void graphics_clear(void) {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClear(GL_COLOR_BUFFER_BIT);
 #ifdef WINDOWS
   glfwSwapInterval(1); // limit fps to monitor's refresh rate
 #endif
@@ -217,7 +238,7 @@ void graphics_swap(void) {
   SDL_GL_SwapBuffers();
 #endif
 #else
-#ifndef WINDOWS
+#ifdef UNIX
   SDL_GL_SwapWindow(moduleData.window);
 #endif
 #endif
@@ -244,11 +265,11 @@ void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ib
   //m4x4_mulM4x4(&tr, tr2d, matrixstack_head());
 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), 0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (const void*)(2*sizeof(float)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (GLvoid const*)(2*sizeof(float)));
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 8*sizeof(float), (const void*)(4*sizeof(float)));
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (GLvoid const*)(4*sizeof(float)));
 
   graphics_Shader_activate(
         &moduleData.projectionMatrix,
@@ -343,14 +364,14 @@ int graphics_setMode(int width, int height){
 #ifdef UNIX
   SDL_SetWindowSize(moduleData.window, width, height);
 #endif
-
   graphics_setPosition(-1, -1);
 #else
-  //moduleData.surface = SDL_SetVideoMode(width, height, 0, SDL_OPENGL);
   SDL_SetWindowSize(moduleData.window,width,height);
 #endif
 
 #ifdef WINDOWS
+  moduleData.width = width;
+  moduleData.height = height;
   glfwSetWindowSize(moduleData.window, width, height);
 #endif
 

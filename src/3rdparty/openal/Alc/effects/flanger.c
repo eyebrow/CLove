@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU Library General Public
  *  License along with this library; if not, write to the
- *  Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *  Boston, MA  02111-1307, USA.
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
@@ -46,7 +46,7 @@ typedef struct ALflangerState {
     ALint lfo_disp;
 
     /* Gains for left and right sides */
-    ALfloat Gain[2][MAX_OUTPUT_CHANNELS];
+    ALfloat Gain[2][MaxChannels];
 
     /* effect parameters */
     enum FlangerWaveForm waveform;
@@ -57,10 +57,9 @@ typedef struct ALflangerState {
 
 static ALvoid ALflangerState_Destruct(ALflangerState *state)
 {
-    al_free(state->SampleBuffer[0]);
+    free(state->SampleBuffer[0]);
     state->SampleBuffer[0] = NULL;
     state->SampleBuffer[1] = NULL;
-    ALeffectState_Destruct(STATIC_CAST(ALeffectState,state));
 }
 
 static ALboolean ALflangerState_deviceUpdate(ALflangerState *state, ALCdevice *Device)
@@ -73,10 +72,10 @@ static ALboolean ALflangerState_deviceUpdate(ALflangerState *state, ALCdevice *D
 
     if(maxlen != state->BufferLength)
     {
-        void *temp = al_calloc(16, maxlen * sizeof(ALfloat) * 2);
-        if(!temp) return AL_FALSE;
+        void *temp;
 
-        al_free(state->SampleBuffer[0]);
+        temp = realloc(state->SampleBuffer[0], maxlen * sizeof(ALfloat) * 2);
+        if(!temp) return AL_FALSE;
         state->SampleBuffer[0] = temp;
         state->SampleBuffer[1] = state->SampleBuffer[0] + maxlen;
 
@@ -92,14 +91,13 @@ static ALboolean ALflangerState_deviceUpdate(ALflangerState *state, ALCdevice *D
     return AL_TRUE;
 }
 
-static ALvoid ALflangerState_update(ALflangerState *state, const ALCdevice *Device, const ALeffectslot *Slot, const ALeffectProps *props)
+static ALvoid ALflangerState_update(ALflangerState *state, ALCdevice *Device, const ALeffectslot *Slot)
 {
     ALfloat frequency = (ALfloat)Device->Frequency;
-    ALfloat coeffs[MAX_AMBI_COEFFS];
     ALfloat rate;
     ALint phase;
 
-    switch(props->Flanger.Waveform)
+    switch(Slot->EffectProps.Flanger.Waveform)
     {
         case AL_FLANGER_WAVEFORM_TRIANGLE:
             state->waveform = FWF_Triangle;
@@ -108,18 +106,16 @@ static ALvoid ALflangerState_update(ALflangerState *state, const ALCdevice *Devi
             state->waveform = FWF_Sinusoid;
             break;
     }
-    state->depth = props->Flanger.Depth;
-    state->feedback = props->Flanger.Feedback;
-    state->delay = fastf2i(props->Flanger.Delay * frequency);
+    state->depth = Slot->EffectProps.Flanger.Depth;
+    state->feedback = Slot->EffectProps.Flanger.Feedback;
+    state->delay = fastf2i(Slot->EffectProps.Flanger.Delay * frequency);
 
     /* Gains for left and right sides */
-    CalcXYZCoeffs(-1.0f, 0.0f, 0.0f, 0.0f, coeffs);
-    ComputePanningGains(Device->Dry, coeffs, Slot->Params.Gain, state->Gain[0]);
-    CalcXYZCoeffs( 1.0f, 0.0f, 0.0f, 0.0f, coeffs);
-    ComputePanningGains(Device->Dry, coeffs, Slot->Params.Gain, state->Gain[1]);
+    ComputeAngleGains(Device, atan2f(-1.0f, 0.0f), 0.0f, Slot->Gain, state->Gain[0]);
+    ComputeAngleGains(Device, atan2f(+1.0f, 0.0f), 0.0f, Slot->Gain, state->Gain[1]);
 
-    phase = props->Flanger.Phase;
-    rate = props->Flanger.Rate;
+    phase = Slot->EffectProps.Flanger.Phase;
+    rate = Slot->EffectProps.Flanger.Rate;
     if(!(rate > 0.0f))
     {
         state->lfo_scale = 0.0f;
@@ -136,7 +132,7 @@ static ALvoid ALflangerState_update(ALflangerState *state, const ALCdevice *Devi
                 state->lfo_scale = 4.0f / state->lfo_range;
                 break;
             case FWF_Sinusoid:
-                state->lfo_scale = F_TAU / state->lfo_range;
+                state->lfo_scale = F_2PI / state->lfo_range;
                 break;
         }
 
@@ -205,37 +201,37 @@ DECL_TEMPLATE(Sinusoid)
 
 #undef DECL_TEMPLATE
 
-static ALvoid ALflangerState_process(ALflangerState *state, ALuint SamplesToDo, const ALfloat (*restrict SamplesIn)[BUFFERSIZE], ALfloat (*restrict SamplesOut)[BUFFERSIZE], ALuint NumChannels)
+static ALvoid ALflangerState_process(ALflangerState *state, ALuint SamplesToDo, const ALfloat *restrict SamplesIn, ALfloat (*restrict SamplesOut)[BUFFERSIZE])
 {
     ALuint it, kt;
     ALuint base;
 
     for(base = 0;base < SamplesToDo;)
     {
-        ALfloat temps[128][2];
-        ALuint td = minu(128, SamplesToDo-base);
+        ALfloat temps[64][2];
+        ALuint td = minu(SamplesToDo-base, 64);
 
         switch(state->waveform)
         {
             case FWF_Triangle:
-                ProcessTriangle(state, td, SamplesIn[0]+base, temps);
+                ProcessTriangle(state, td, SamplesIn+base, temps);
                 break;
             case FWF_Sinusoid:
-                ProcessSinusoid(state, td, SamplesIn[0]+base, temps);
+                ProcessSinusoid(state, td, SamplesIn+base, temps);
                 break;
         }
 
-        for(kt = 0;kt < NumChannels;kt++)
+        for(kt = 0;kt < MaxChannels;kt++)
         {
             ALfloat gain = state->Gain[0][kt];
-            if(fabsf(gain) > GAIN_SILENCE_THRESHOLD)
+            if(gain > GAIN_SILENCE_THRESHOLD)
             {
                 for(it = 0;it < td;it++)
                     SamplesOut[kt][it+base] += temps[it][0] * gain;
             }
 
             gain = state->Gain[1][kt];
-            if(fabsf(gain) > GAIN_SILENCE_THRESHOLD)
+            if(gain > GAIN_SILENCE_THRESHOLD)
             {
                 for(it = 0;it < td;it++)
                     SamplesOut[kt][it+base] += temps[it][1] * gain;

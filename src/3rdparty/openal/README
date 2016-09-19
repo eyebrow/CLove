@@ -45,11 +45,9 @@ Special thanks go to:
 Creative Labs for the original source code this is based off of.
 
 Christopher Fitzgerald for the current reverb effect implementation, and
-helping with the low-pass and HRTF filters.
+helping with the low-pass filter.
 
-Christian Borss for the 3D panning code previous versions used as a base.
+Christian Borss for the 3D panning code the current implementation is heavilly
+based on.
 
-Ben Davis for the idea behind a previous version of the click-removal code.
-
-Richard Furse for helping with my understanding of Ambisonics that is used by
-the various parts of the library.
+Ben Davis for the idea behind the current click-removal code.

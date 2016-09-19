@@ -11,7 +11,7 @@
 #include "matrixstack.h"
 #include <string.h>
 
-#define stackSize 32
+const static int stackSize = 32;
 
 static struct {
   int head;

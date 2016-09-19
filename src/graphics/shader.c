@@ -49,6 +49,7 @@ static GLchar const vertexHeader[] =
 static GLchar const vertexFooter[] =
     "void main() {\n"
     "  gl_Position = position(projection*view*transform , vec4(vPos * size, 1.0, 1.0));\n"
+    //"  gl_Position = position(projection * transform , vec4(vPos * size, 1.0, 1.0));\n"
     "  fUV = vUV * textureRect[1] + textureRect[0];\n"
     "  fColor = vColor;\n"
     "}\n";
@@ -361,7 +362,7 @@ void graphics_Shader_free(graphics_Shader* shader) {
   glDeleteProgram(shader->program);
 }
 
-void graphics_Shader_activate(mat4x4 const* projection,mat4x4 const* view, mat4x4 const* transform, graphics_Quad const* textureRect, float const* useColor, float ws, float hs) {
+void graphics_Shader_activate(mat4x4 const* projection,mat4x4 const* view,mat4x4 const* transform, graphics_Quad const* textureRect, float const* useColor, float ws, float hs) {
 
   glUseProgram(moduleData.activeShader->program);
 

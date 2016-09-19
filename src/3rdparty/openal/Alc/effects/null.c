@@ -15,12 +15,10 @@ typedef struct ALnullState {
 
 
 /* This destructs (not free!) the effect state. It's called only when the
- * effect slot is no longer used. Make sure to call the parent Destruct
- * function before returning!
+ * effect slot is no longer used.
  */
-static ALvoid ALnullState_Destruct(ALnullState *state)
+static ALvoid ALnullState_Destruct(ALnullState* UNUSED(state))
 {
-    ALeffectState_Destruct(STATIC_CAST(ALeffectState,state));
 }
 
 /* This updates the device-dependant effect state. This is called on
@@ -35,7 +33,7 @@ static ALboolean ALnullState_deviceUpdate(ALnullState* UNUSED(state), ALCdevice*
 /* This updates the effect state. This is called any time the effect is
  * (re)loaded into a slot.
  */
-static ALvoid ALnullState_update(ALnullState* UNUSED(state), const ALCdevice* UNUSED(device), const ALeffectslot* UNUSED(slot), const ALeffectProps* UNUSED(props))
+static ALvoid ALnullState_update(ALnullState* UNUSED(state), ALCdevice* UNUSED(device), const ALeffectslot* UNUSED(slot))
 {
 }
 
@@ -43,8 +41,11 @@ static ALvoid ALnullState_update(ALnullState* UNUSED(state), const ALCdevice* UN
  * input to the output buffer. The result should be added to the output buffer,
  * not replace it.
  */
-static ALvoid ALnullState_process(ALnullState* UNUSED(state), ALuint UNUSED(samplesToDo), const ALfloatBUFFERSIZE*restrict UNUSED(samplesIn), ALfloatBUFFERSIZE*restrict UNUSED(samplesOut), ALuint UNUSED(NumChannels))
+static ALvoid ALnullState_process(ALnullState* UNUSED(state), ALuint UNUSED(samplesToDo), const ALfloat *restrict UNUSED(samplesIn), ALfloat (*restrict samplesOut)[BUFFERSIZE])
 {
+    /* NOTE: Couldn't use the UNUSED macro on samplesOut due to the way GCC's
+     * __attribute__ declaration interacts with the parenthesis. */
+    (void)samplesOut;
 }
 
 /* This allocates memory to store the object, before it gets constructed.

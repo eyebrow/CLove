@@ -69,13 +69,17 @@ int lua_errorhandler(lua_State *state) {
   return 1;
 }
 
+#ifdef UNIX
+SDL_Event event;
+#endif
+
 void main_loop(lua_State* luaState) {
   timer_step();
 
   //lua_rawgeti(luaState, LUA_REGISTRYINDEX, loopData->errhand);
   lua_getglobal(luaState, "love");
-  lua_pushstring(luaState, "update");
 
+  lua_pushstring(luaState, "update");
   lua_rawget(luaState, -2);
   lua_pushnumber(luaState, timer_getDelta());
   lua_call(luaState, 1, 0);
@@ -89,18 +93,16 @@ void main_loop(lua_State* luaState) {
           printf("Error: %s\n", lua_tostring(luaState, -1));
         }
     }
-
   graphics_clear();
 
   lua_pushstring(luaState, "draw");
   lua_rawget(luaState, -2);
   lua_call(luaState, 0, 0);
+  lua_pop(luaState, 1);
 
   graphics_swap();
 
-  lua_pop(luaState, 1);
 #ifdef UNIX
-  SDL_Event event;
   while(SDL_PollEvent(&event)) {
       if (event.type == SDL_WINDOWEVENT) {
           switch (event.window.event) {
@@ -120,15 +122,13 @@ void main_loop(lua_State* luaState) {
               break;
             }
         }
+
       switch(event.wheel.type)
         {
         case SDL_MOUSEWHEEL:
           mouse_mousewheel(event.wheel.y);
-          int _what = event.wheel.y == 1 ? SDL_BUTTON_WHEEL_UP : SDL_BUTTON_WHEEL_DOWN;
           mouse_mousepressed(event.button.x, event.button.y,
-                             _what);
-          break;
-        default:
+                             event.wheel.y);
           break;
         }
       switch(event.type) {
@@ -156,55 +156,60 @@ void main_loop(lua_State* luaState) {
         case SDL_QUIT:
           quit_function(luaState);
           l_running = 0;
+          break;
 #endif
         }
     }
+
 #endif
 }
+MainLoopData mainLoopData;
 
 int main(int argc, char* argv[]) {
-  lua_State *lua = luaL_newstate();
+  lua_State *lua;
+  lua = luaL_newstate();
   luaL_openlibs(lua);
+  l_running = 1;
 
   love_Config config;
 
   l_love_register(lua);
-  l_math_register(lua);
-  l_system_register(lua);
+
   l_audio_register(lua);
-  l_event_register(lua);
-  l_image_register(lua);
   l_graphics_register(lua);
+  l_image_register(lua);
   l_keyboard_register(lua);
   l_mouse_register(lua);
   l_filesystem_register(lua);
   l_timer_register(lua);
-  l_physics_register(lua);
+  l_math_register(lua);
+  l_event_register(lua);
 
   l_boot(lua, &config);
-
-  graphics_init(config.window.width, config.window.height);
 
   keyboard_init();
   timer_init();
   audio_init();
 
-  if(luaL_dofile(lua, "main.lua")){
-      printf("Error: %s\n", lua_tostring(lua, -1));
-      l_no_game(lua,&config);
-    }
+  l_boot(lua, &config);
+
+  image_init();
+
+  graphics_init(config.window.width, config.window.height);
+
+  if(luaL_dofile(lua, "main.lua"))
+    printf("Error: %s \n", lua_tostring(lua, -1));
 
   love_Version const * version = love_getVersion();
-  printf("%s %s %i %i %i \n", "Love code name: ",version->codename,version->major,version->minor,version->revision);
 
   lua_pushcfunction(lua, lua_errorhandler);
   lua_getglobal(lua, "love");
   lua_pushstring(lua, "load");
   lua_rawget(lua, -2);
-  lua_call(lua, 0, 0);
+  lua_call(lua,0,0);
+  lua_pop(lua,1);
 
   lua_pushcfunction(lua, lua_errorhandler);
-  MainLoopData mainLoopData;
   mainLoopData.luaState = lua;
   mainLoopData.errhand = luaL_ref(lua, LUA_REGISTRYINDEX);
 
@@ -214,7 +219,7 @@ int main(int argc, char* argv[]) {
 #else
 #ifdef WINDOWS
   while(!glfwWindowShouldClose(graphics_getWindow()) && l_running == 1)
-      main_loop(lua);
+    main_loop(lua);
 #endif
 #ifdef UNIX
   while(l_running == 1)
@@ -225,10 +230,12 @@ int main(int argc, char* argv[]) {
   audio_close ();
 #ifdef UNIX //On Windows this call causes some weird ass error when the game has been closed
   lua_close(lua);
+  graphics_destroySDLWindow();
+  SDL_Quit();
 #endif
 #ifdef WINDWOS
   glfwDestroyWindow(graphics_getWindow());
   glfwTerminate();
 #endif
-  return 0;
+  return 1;
 }

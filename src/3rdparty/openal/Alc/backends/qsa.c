@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU Library General Public
  *  License along with this library; if not, write to the
- *  Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *  Boston, MA  02111-1307, USA.
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
@@ -53,12 +53,12 @@ typedef struct {
     int card;
     int dev;
 } DevMap;
-TYPEDEF_VECTOR(DevMap, vector_DevMap)
-
-static vector_DevMap DeviceNameMap;
-static vector_DevMap CaptureNameMap;
 
 static const ALCchar qsaDevice[] = "QSA Default";
+static DevMap* allDevNameMap;
+static ALuint numDevNames;
+static DevMap* allCaptureDevNameMap;
+static ALuint numCaptureDevNames;
 
 static const struct {
     int32_t format;
@@ -104,56 +104,69 @@ static const struct {
     {0},
 };
 
-static void deviceList(int type, vector_DevMap *devmap)
+static DevMap *deviceList(int type, ALuint *count)
 {
     snd_ctl_t* handle;
     snd_pcm_info_t pcminfo;
-    int max_cards, card, err, dev;
-    DevMap entry;
+    int max_cards, card, err, dev, num_devices, idx;
+    DevMap* dev_list;
     char name[1024];
     struct snd_ctl_hw_info info;
+    void* temp;
 
-    max_cards = snd_cards();
-    if(max_cards < 0)
-        return;
+    idx=0;
+    num_devices=0;
+    max_cards=snd_cards();
 
-    VECTOR_RESIZE(*devmap, 0, max_cards+1);
-
-    entry.name = strdup(qsaDevice);
-    entry.card = 0;
-    entry.dev = 0;
-    VECTOR_PUSH_BACK(*devmap, entry);
-
-    for(card = 0;card < max_cards;card++)
+    if (max_cards<=0)
     {
-        if((err=snd_ctl_open(&handle, card)) < 0)
-            continue;
+        return 0;
+    }
 
-        if((err=snd_ctl_hw_info(handle, &info)) < 0)
+    dev_list=malloc(sizeof(DevMap)*1);
+    dev_list[0].name=strdup(qsaDevice);
+    num_devices=1;
+
+    for (card=0; card<max_cards; card++)
+    {
+        if ((err=snd_ctl_open(&handle, card))<0)
+        {
+            continue;
+        }
+        if ((err=snd_ctl_hw_info(handle, &info))<0)
         {
             snd_ctl_close(handle);
             continue;
         }
 
-        for(dev = 0;dev < (int)info.pcmdevs;dev++)
+        for (dev=0; dev<(int)info.pcmdevs; dev++)
         {
-            if((err=snd_ctl_pcm_info(handle, dev, &pcminfo)) < 0)
-                continue;
-
-            if((type==SND_PCM_CHANNEL_PLAYBACK && (pcminfo.flags&SND_PCM_INFO_PLAYBACK)) ||
-               (type==SND_PCM_CHANNEL_CAPTURE && (pcminfo.flags&SND_PCM_INFO_CAPTURE)))
+            if ((err=snd_ctl_pcm_info(handle, dev, &pcminfo)) < 0)
             {
-                snprintf(name, sizeof(name), "%s [%s] (hw:%d,%d)", info.name, pcminfo.name, card, dev);
-                entry.name = strdup(name);
-                entry.card = card;
-                entry.dev = dev;
+                continue;
+            }
 
-                VECTOR_PUSH_BACK(*devmap, entry);
-                TRACE("Got device \"%s\", card %d, dev %d\n", name, card, dev);
+            if ((type==SND_PCM_CHANNEL_PLAYBACK && (pcminfo.flags&SND_PCM_INFO_PLAYBACK)) ||
+                (type==SND_PCM_CHANNEL_CAPTURE && (pcminfo.flags&SND_PCM_INFO_CAPTURE)))
+            {
+                temp=realloc(dev_list, sizeof(DevMap)*(num_devices+1));
+                if (temp)
+                {
+                    dev_list=temp;
+                    snprintf(name, sizeof(name), "%s [%s] (hw:%d,%d)", info.name, pcminfo.name, card, dev);
+                    dev_list[num_devices].name=strdup(name);
+                    dev_list[num_devices].card=card;
+                    dev_list[num_devices].dev=dev;
+                    num_devices++;
+                }
             }
         }
-        snd_ctl_close(handle);
+        snd_ctl_close (handle);
     }
+
+    *count=num_devices;
+
+    return dev_list;
 }
 
 
@@ -253,48 +266,71 @@ FORCE_ALIGN static int qsa_proc_playback(void* ptr)
 
 static ALCenum qsa_open_playback(ALCdevice* device, const ALCchar* deviceName)
 {
-    qsa_data *data;
-    int card, dev;
+    qsa_data* data;
+    char driver[64];
     int status;
+    int card, dev;
 
-    data = (qsa_data*)calloc(1, sizeof(qsa_data));
-    if(data == NULL)
+    strncpy(driver, GetConfigValue("qsa", "device", qsaDevice), sizeof(driver)-1);
+    driver[sizeof(driver)-1]=0;
+
+    data=(qsa_data*)calloc(1, sizeof(qsa_data));
+    if (data==NULL)
+    {
         return ALC_OUT_OF_MEMORY;
+    }
 
-    if(!deviceName)
-        deviceName = qsaDevice;
+    if (!deviceName)
+    {
+        deviceName=driver;
+    }
 
-    if(strcmp(deviceName, qsaDevice) == 0)
-        status = snd_pcm_open_preferred(&data->pcmHandle, &card, &dev, SND_PCM_OPEN_PLAYBACK);
+    if (strcmp(deviceName, qsaDevice)==0)
+    {
+        if (!deviceName)
+        {
+            deviceName=qsaDevice;
+        }
+
+        status=snd_pcm_open_preferred(&data->pcmHandle, &card, &dev, SND_PCM_OPEN_PLAYBACK);
+    }
     else
     {
-        const DevMap *iter;
+        size_t idx;
 
-        if(VECTOR_SIZE(DeviceNameMap) == 0)
-            deviceList(SND_PCM_CHANNEL_PLAYBACK, &DeviceNameMap);
+        if (!allDevNameMap)
+        {
+            allDevNameMap=deviceList(SND_PCM_CHANNEL_PLAYBACK, &numDevNames);
+        }
 
-#define MATCH_DEVNAME(iter) ((iter)->name && strcmp(deviceName, (iter)->name)==0)
-        VECTOR_FIND_IF(iter, const DevMap, DeviceNameMap, MATCH_DEVNAME);
-#undef MATCH_DEVNAME
-        if(iter == VECTOR_END(DeviceNameMap))
+        for (idx=0; idx<numDevNames; idx++)
+        {
+            if (allDevNameMap[idx].name && strcmp(deviceName, allDevNameMap[idx].name)==0)
+            {
+                if (idx>0)
+                {
+                    break;
+                }
+            }
+        }
+        if (idx==numDevNames)
         {
             free(data);
             return ALC_INVALID_DEVICE;
         }
 
-        status = snd_pcm_open(&data->pcmHandle, iter->card, iter->dev, SND_PCM_OPEN_PLAYBACK);
+        status=snd_pcm_open(&data->pcmHandle, allDevNameMap[idx].card, allDevNameMap[idx].dev, SND_PCM_OPEN_PLAYBACK);
     }
 
-    if(status < 0)
+    if (status<0)
     {
         free(data);
         return ALC_INVALID_DEVICE;
     }
 
-    data->audio_fd = snd_pcm_file_descriptor(data->pcmHandle, SND_PCM_CHANNEL_PLAYBACK);
-    if(data->audio_fd < 0)
+    data->audio_fd=snd_pcm_file_descriptor(data->pcmHandle, SND_PCM_CHANNEL_PLAYBACK);
+    if (data->audio_fd<0)
     {
-        snd_pcm_close(data->pcmHandle);
         free(data);
         return ALC_INVALID_DEVICE;
     }
@@ -597,10 +633,14 @@ static void qsa_stop_playback(ALCdevice* device)
 
 static ALCenum qsa_open_capture(ALCdevice* device, const ALCchar* deviceName)
 {
-    qsa_data *data;
-    int card, dev;
+    qsa_data* data;
     int format=-1;
+    char driver[64];
+    int card, dev;
     int status;
+
+    strncpy(driver, GetConfigValue("qsa", "capture", qsaDevice), sizeof(driver)-1);
+    driver[sizeof(driver)-1]=0;
 
     data=(qsa_data*)calloc(1, sizeof(qsa_data));
     if (data==NULL)
@@ -608,40 +648,57 @@ static ALCenum qsa_open_capture(ALCdevice* device, const ALCchar* deviceName)
         return ALC_OUT_OF_MEMORY;
     }
 
-    if(!deviceName)
-        deviceName = qsaDevice;
+    if (!deviceName)
+    {
+        deviceName=driver;
+    }
 
-    if(strcmp(deviceName, qsaDevice) == 0)
-        status = snd_pcm_open_preferred(&data->pcmHandle, &card, &dev, SND_PCM_OPEN_CAPTURE);
+    if (strcmp(deviceName, qsaDevice)==0)
+    {
+        if (!deviceName)
+        {
+            deviceName=qsaDevice;
+        }
+
+        status=snd_pcm_open_preferred(&data->pcmHandle, &card, &dev, SND_PCM_OPEN_CAPTURE);
+    }
     else
     {
-        const DevMap *iter;
+        size_t idx;
 
-        if(VECTOR_SIZE(CaptureNameMap) == 0)
-            deviceList(SND_PCM_CHANNEL_CAPTURE, &CaptureNameMap);
+        if (!allCaptureDevNameMap)
+        {
+            allCaptureDevNameMap=deviceList(SND_PCM_CHANNEL_CAPTURE, &numDevNames);
+        }
 
-#define MATCH_DEVNAME(iter) ((iter)->name && strcmp(deviceName, (iter)->name)==0)
-        VECTOR_FIND_IF(iter, const DevMap, CaptureNameMap, MATCH_DEVNAME);
-#undef MATCH_DEVNAME
-        if(iter == VECTOR_END(CaptureNameMap))
+        for (idx=0; idx<numDevNames; idx++)
+        {
+            if (allCaptureDevNameMap[idx].name && strcmp(deviceName, allCaptureDevNameMap[idx].name)==0)
+            {
+                if (idx>0)
+                {
+                    break;
+                }
+            }
+        }
+        if (idx==numDevNames)
         {
             free(data);
             return ALC_INVALID_DEVICE;
         }
 
-        status = snd_pcm_open(&data->pcmHandle, iter->card, iter->dev, SND_PCM_OPEN_CAPTURE);
+        status=snd_pcm_open(&data->pcmHandle, allCaptureDevNameMap[idx].card, allCaptureDevNameMap[idx].dev, SND_PCM_OPEN_CAPTURE);
     }
 
-    if(status < 0)
+    if (status<0)
     {
         free(data);
         return ALC_INVALID_DEVICE;
     }
 
-    data->audio_fd = snd_pcm_file_descriptor(data->pcmHandle, SND_PCM_CHANNEL_CAPTURE);
-    if(data->audio_fd < 0)
+    data->audio_fd=snd_pcm_file_descriptor(data->pcmHandle, SND_PCM_CHANNEL_CAPTURE);
+    if (data->audio_fd<0)
     {
-        snd_pcm_close(data->pcmHandle);
         free(data);
         return ALC_INVALID_DEVICE;
     }
@@ -696,13 +753,170 @@ static ALCenum qsa_open_capture(ALCdevice* device, const ALCchar* deviceName)
     data->cparams.format.voices=ChannelsFromDevFmt(device->FmtChans);
     data->cparams.format.format=format;
 
-    if(snd_pcm_plugin_params(data->pcmHandle, &data->cparams) < 0)
+    if ((snd_pcm_plugin_params(data->pcmHandle, &data->cparams))<0)
     {
-        snd_pcm_close(data->pcmHandle);
-        free(data);
-        device->ExtraData=NULL;
+        int original_rate=data->cparams.format.rate;
+        int original_voices=data->cparams.format.voices;
+        int original_format=data->cparams.format.format;
+        int it;
+        int jt;
 
-        return ALC_INVALID_VALUE;
+        for (it=0; it<1; it++)
+        {
+            /* Check for second pass */
+            if (it==1)
+            {
+                original_rate=ratelist[0].rate;
+                original_voices=channellist[0].channels;
+                original_format=formatlist[0].format;
+            }
+
+            do {
+                /* At first downgrade sample format */
+                jt=0;
+                do {
+                    if (formatlist[jt].format==data->cparams.format.format)
+                    {
+                        data->cparams.format.format=formatlist[jt+1].format;
+                        break;
+                    }
+                    if (formatlist[jt].format==0)
+                    {
+                        data->cparams.format.format=0;
+                        break;
+                    }
+                    jt++;
+                } while(1);
+
+                if (data->cparams.format.format==0)
+                {
+                    data->cparams.format.format=original_format;
+
+                    /* At secod downgrade sample rate */
+                    jt=0;
+                    do {
+                        if (ratelist[jt].rate==data->cparams.format.rate)
+                        {
+                            data->cparams.format.rate=ratelist[jt+1].rate;
+                            break;
+                        }
+                        if (ratelist[jt].rate==0)
+                        {
+                            data->cparams.format.rate=0;
+                            break;
+                        }
+                        jt++;
+                    } while(1);
+
+                    if (data->cparams.format.rate==0)
+                    {
+                        data->cparams.format.rate=original_rate;
+                        data->cparams.format.format=original_format;
+
+                        /* At third downgrade channels number */
+                        jt=0;
+                        do {
+                            if(channellist[jt].channels==data->cparams.format.voices)
+                            {
+                                data->cparams.format.voices=channellist[jt+1].channels;
+                                break;
+                            }
+                            if (channellist[jt].channels==0)
+                            {
+                                data->cparams.format.voices=0;
+                                break;
+                            }
+                           jt++;
+                        } while(1);
+                    }
+
+                    if (data->cparams.format.voices==0)
+                    {
+                        break;
+                    }
+                }
+
+                data->cparams.buf.block.frag_size=device->UpdateSize*
+                    data->cparams.format.voices*
+                    snd_pcm_format_width(data->cparams.format.format)/8;
+                data->cparams.buf.block.frags_max=device->NumUpdates;
+                data->cparams.buf.block.frags_min=device->NumUpdates;
+                if ((snd_pcm_plugin_params(data->pcmHandle, &data->cparams))<0)
+                {
+                    continue;
+                }
+                else
+                {
+                    break;
+                }
+            } while(1);
+
+            if (data->cparams.format.voices!=0)
+            {
+                break;
+            }
+        }
+
+        if (data->cparams.format.voices==0)
+        {
+            return ALC_INVALID_VALUE;
+        }
+    }
+
+    /* now fill back to the our AL device */
+    device->Frequency=data->cparams.format.rate;
+
+    switch (data->cparams.format.voices)
+    {
+        case 1:
+             device->FmtChans=DevFmtMono;
+             break;
+        case 2:
+             device->FmtChans=DevFmtStereo;
+             break;
+        case 4:
+             device->FmtChans=DevFmtQuad;
+             break;
+        case 6:
+             device->FmtChans=DevFmtX51;
+             break;
+        case 7:
+             device->FmtChans=DevFmtX61;
+             break;
+        case 8:
+             device->FmtChans=DevFmtX71;
+             break;
+        default:
+             device->FmtChans=DevFmtMono;
+             break;
+    }
+
+    switch (data->cparams.format.format)
+    {
+        case SND_PCM_SFMT_S8:
+             device->FmtType=DevFmtByte;
+             break;
+        case SND_PCM_SFMT_U8:
+             device->FmtType=DevFmtUByte;
+             break;
+        case SND_PCM_SFMT_S16_LE:
+             device->FmtType=DevFmtShort;
+             break;
+        case SND_PCM_SFMT_U16_LE:
+             device->FmtType=DevFmtUShort;
+             break;
+        case SND_PCM_SFMT_S32_LE:
+             device->FmtType=DevFmtInt;
+             break;
+        case SND_PCM_SFMT_U32_LE:
+             device->FmtType=DevFmtUInt;
+             break;
+        case SND_PCM_SFMT_FLOAT_LE:
+             device->FmtType=DevFmtFloat;
+             break;
+        default:
+             device->FmtType=DevFmtShort;
+             break;
     }
 
     return ALC_NO_ERROR;
@@ -713,8 +927,9 @@ static void qsa_close_capture(ALCdevice* device)
     qsa_data* data=(qsa_data*)device->ExtraData;
 
     if (data->pcmHandle!=NULL)
+    {
         snd_pcm_close(data->pcmHandle);
-
+    }
     free(data);
     device->ExtraData=NULL;
 }
@@ -739,6 +954,10 @@ static void qsa_start_capture(ALCdevice* device)
     }
 
     snd_pcm_capture_go(data->pcmHandle);
+
+    device->UpdateSize=data->csetup.buf.block.frag_size/
+        (ChannelsFromDevFmt(device->FmtChans)*BytesFromDevFmt(device->FmtType));
+    device->NumUpdates=data->csetup.buf.block.frags;
 }
 
 static void qsa_stop_capture(ALCdevice* device)
@@ -854,7 +1073,16 @@ static ALCenum qsa_capture_samples(ALCdevice *device, ALCvoid *buffer, ALCuint s
     return ALC_NO_ERROR;
 }
 
-static const BackendFuncs qsa_funcs= {
+static ALint64 qsa_get_latency(ALCdevice* device)
+{
+    ALint frame_size=FrameSizeFromDevFmt(device->FmtChans, device->FmtType);
+
+    return (ALint64)(device->UpdateSize*device->NumUpdates/frame_size)*
+        1000000000/device->Frequency;
+}
+
+BackendFuncs qsa_funcs=
+{
     qsa_open_playback,
     qsa_close_playback,
     qsa_reset_playback,
@@ -865,52 +1093,69 @@ static const BackendFuncs qsa_funcs= {
     qsa_start_capture,
     qsa_stop_capture,
     qsa_capture_samples,
-    qsa_available_samples
+    qsa_available_samples,
+    qsa_get_latency,
 };
 
 ALCboolean alc_qsa_init(BackendFuncs* func_list)
 {
-    *func_list = qsa_funcs;
+    *func_list=qsa_funcs;
+
     return ALC_TRUE;
 }
 
 void alc_qsa_deinit(void)
 {
-#define FREE_NAME(iter) free((iter)->name)
-    VECTOR_FOR_EACH(DevMap, DeviceNameMap, FREE_NAME);
-    VECTOR_DEINIT(DeviceNameMap);
+    ALuint i;
 
-    VECTOR_FOR_EACH(DevMap, CaptureNameMap, FREE_NAME);
-    VECTOR_DEINIT(CaptureNameMap);
-#undef FREE_NAME
+    for (i=0; i<numDevNames; ++i)
+    {
+        free(allDevNameMap[i].name);
+    }
+    free(allDevNameMap);
+    allDevNameMap=NULL;
+    numDevNames=0;
+
+    for (i=0; i<numCaptureDevNames; ++i)
+    {
+        free(allCaptureDevNameMap[i].name);
+    }
+    free(allCaptureDevNameMap);
+    allCaptureDevNameMap=NULL;
+    numCaptureDevNames=0;
 }
 
 void alc_qsa_probe(enum DevProbe type)
 {
+    ALuint i;
+
     switch (type)
     {
         case ALL_DEVICE_PROBE:
-#define FREE_NAME(iter) free((iter)->name)
-            VECTOR_FOR_EACH(DevMap, DeviceNameMap, FREE_NAME);
-            VECTOR_RESIZE(DeviceNameMap, 0, 0);
-#undef FREE_NAME
+             for (i=0; i<numDevNames; ++i)
+             {
+                 free(allDevNameMap[i].name);
+             }
+             free(allDevNameMap);
 
-            deviceList(SND_PCM_CHANNEL_PLAYBACK, &DeviceNameMap);
-#define APPEND_DEVICE(iter) AppendAllDevicesList((iter)->name)
-            VECTOR_FOR_EACH(const DevMap, DeviceNameMap, APPEND_DEVICE);
-#undef APPEND_DEVICE
-            break;
-
+             allDevNameMap=deviceList(SND_PCM_CHANNEL_PLAYBACK, &numDevNames);
+             for (i=0; i<numDevNames; ++i)
+             {
+                 AppendAllDevicesList(allDevNameMap[i].name);
+             }
+             break;
         case CAPTURE_DEVICE_PROBE:
-#define FREE_NAME(iter) free((iter)->name)
-            VECTOR_FOR_EACH(DevMap, CaptureNameMap, FREE_NAME);
-            VECTOR_RESIZE(CaptureNameMap, 0, 0);
-#undef FREE_NAME
+             for (i=0; i<numCaptureDevNames; ++i)
+             {
+                 free(allCaptureDevNameMap[i].name);
+             }
+             free(allCaptureDevNameMap);
 
-            deviceList(SND_PCM_CHANNEL_CAPTURE, &CaptureNameMap);
-#define APPEND_DEVICE(iter) AppendCaptureDeviceList((iter)->name)
-            VECTOR_FOR_EACH(const DevMap, CaptureNameMap, APPEND_DEVICE);
-#undef APPEND_DEVICE
-            break;
+             allCaptureDevNameMap=deviceList(SND_PCM_CHANNEL_CAPTURE, &numCaptureDevNames);
+             for (i=0; i<numCaptureDevNames; ++i)
+             {
+                 AppendCaptureDeviceList(allCaptureDevNameMap[i].name);
+             }
+             break;
     }
 }

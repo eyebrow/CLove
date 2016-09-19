@@ -57,6 +57,10 @@
 
 void graphics_init(int width, int height);
 
+#ifdef UNIX
+void graphics_destroySDLWindow();
+#endif
+
 typedef enum {
   graphics_BlendMode_additive,
   graphics_BlendMode_alpha,

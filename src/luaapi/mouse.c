@@ -108,12 +108,6 @@ static const char *buttonStr(int x) {
     case SDL_BUTTON_MIDDLE:
       return "m";
       break;
-    case SDL_BUTTON_WHEEL_UP:
-      return "wu";
-      break;
-    case SDL_BUTTON_WHEEL_DOWN:
-      return "wd";
-      break;
 #endif
 
 #ifdef WINDOWS

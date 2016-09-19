@@ -452,11 +452,11 @@ void m4x4_newRotationZ(mat4x4 *out, float a) {
 void m4x4_mulM4x4(mat4x4 *out, const mat4x4* a, const mat4x4* b) {
   for(int i = 0; i < 4; ++i) {
       for(int j = 0; j < 4; ++j) {
-          //out->m[i][j] = 0.0f;
-          for(int k = 0; k < 4; ++k) {
-              out->m[i][j] += a->m[i][k] * b->m[k][j];
-            }
+        out->m[i][j] = 0.0f;
+        for(int k = 0; k < 4; ++k) {
+          out->m[i][j] += a->m[i][k] * b->m[k][j];
         }
+      }
     }
 }
 

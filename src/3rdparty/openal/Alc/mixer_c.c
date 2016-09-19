@@ -12,15 +12,13 @@ static inline ALfloat point32(const ALfloat *vals, ALuint UNUSED(frac))
 { return vals[0]; }
 static inline ALfloat lerp32(const ALfloat *vals, ALuint frac)
 { return lerp(vals[0], vals[1], frac * (1.0f/FRACTIONONE)); }
-static inline ALfloat fir4_32(const ALfloat *vals, ALuint frac)
-{ return resample_fir4(vals[-1], vals[0], vals[1], vals[2], frac); }
-static inline ALfloat fir8_32(const ALfloat *vals, ALuint frac)
-{ return resample_fir8(vals[-3], vals[-2], vals[-1], vals[0], vals[1], vals[2], vals[3], vals[4], frac); }
+static inline ALfloat cubic32(const ALfloat *vals, ALuint frac)
+{ return cubic(vals[-1], vals[0], vals[1], vals[2], frac * (1.0f/FRACTIONONE)); }
 
-
-const ALfloat *Resample_copy32_C(const BsincState* UNUSED(state), const ALfloat *src, ALuint UNUSED(frac),
-  ALuint UNUSED(increment), ALfloat *restrict dst, ALuint numsamples)
+const ALfloat *Resample_copy32_C(const ALfloat *src, ALuint UNUSED(frac),
+  ALuint increment, ALfloat *restrict dst, ALuint numsamples)
 {
+    assert(increment==FRACTIONONE);
 #if defined(HAVE_SSE) || defined(HAVE_NEON)
     /* Avoid copying the source data if it's aligned like the destination. */
     if((((intptr_t)src)&15) == (((intptr_t)dst)&15))
@@ -31,9 +29,8 @@ const ALfloat *Resample_copy32_C(const BsincState* UNUSED(state), const ALfloat 
 }
 
 #define DECL_TEMPLATE(Sampler)                                                \
-const ALfloat *Resample_##Sampler##_C(const BsincState* UNUSED(state),        \
-  const ALfloat *src, ALuint frac, ALuint increment,                          \
-  ALfloat *restrict dst, ALuint numsamples)                                   \
+const ALfloat *Resample_##Sampler##_C(const ALfloat *src, ALuint frac,        \
+  ALuint increment, ALfloat *restrict dst, ALuint numsamples)                 \
 {                                                                             \
     ALuint i;                                                                 \
     for(i = 0;i < numsamples;i++)                                             \
@@ -49,88 +46,16 @@ const ALfloat *Resample_##Sampler##_C(const BsincState* UNUSED(state),        \
 
 DECL_TEMPLATE(point32)
 DECL_TEMPLATE(lerp32)
-DECL_TEMPLATE(fir4_32)
-DECL_TEMPLATE(fir8_32)
+DECL_TEMPLATE(cubic32)
 
 #undef DECL_TEMPLATE
 
-const ALfloat *Resample_bsinc32_C(const BsincState *state, const ALfloat *src, ALuint frac,
-                                  ALuint increment, ALfloat *restrict dst, ALuint dstlen)
-{
-    const ALfloat *fil, *scd, *phd, *spd;
-    const ALfloat sf = state->sf;
-    const ALuint m = state->m;
-    const ALint l = state->l;
-    ALuint j_f, pi, i;
-    ALfloat pf, r;
-    ALint j_s;
 
-    for(i = 0;i < dstlen;i++)
-    {
-        // Calculate the phase index and factor.
-#define FRAC_PHASE_BITDIFF (FRACTIONBITS-BSINC_PHASE_BITS)
-        pi = frac >> FRAC_PHASE_BITDIFF;
-        pf = (frac & ((1<<FRAC_PHASE_BITDIFF)-1)) * (1.0f/(1<<FRAC_PHASE_BITDIFF));
-#undef FRAC_PHASE_BITDIFF
-
-        fil = state->coeffs[pi].filter;
-        scd = state->coeffs[pi].scDelta;
-        phd = state->coeffs[pi].phDelta;
-        spd = state->coeffs[pi].spDelta;
-
-        // Apply the scale and phase interpolated filter.
-        r = 0.0f;
-        for(j_f = 0,j_s = l;j_f < m;j_f++,j_s++)
-            r += (fil[j_f] + sf*scd[j_f] + pf*(phd[j_f] + sf*spd[j_f])) *
-                    src[j_s];
-        dst[i] = r;
-
-        frac += increment;
-        src  += frac>>FRACTIONBITS;
-        frac &= FRACTIONMASK;
-    }
-    return dst;
-}
-
-
-void ALfilterState_processC(ALfilterState *filter, ALfloat *restrict dst, const ALfloat *restrict src, ALuint numsamples)
+void ALfilterState_processC(ALfilterState *filter, ALfloat *restrict dst, const ALfloat *src, ALuint numsamples)
 {
     ALuint i;
-    if(numsamples > 1)
-    {
-        dst[0] = filter->b0 * src[0] +
-                 filter->b1 * filter->x[0] +
-                 filter->b2 * filter->x[1] -
-                 filter->a1 * filter->y[0] -
-                 filter->a2 * filter->y[1];
-        dst[1] = filter->b0 * src[1] +
-                 filter->b1 * src[0] +
-                 filter->b2 * filter->x[0] -
-                 filter->a1 * dst[0] -
-                 filter->a2 * filter->y[0];
-        for(i = 2;i < numsamples;i++)
-            dst[i] = filter->b0 * src[i] +
-                     filter->b1 * src[i-1] +
-                     filter->b2 * src[i-2] -
-                     filter->a1 * dst[i-1] -
-                     filter->a2 * dst[i-2];
-        filter->x[0] = src[i-1];
-        filter->x[1] = src[i-2];
-        filter->y[0] = dst[i-1];
-        filter->y[1] = dst[i-2];
-    }
-    else if(numsamples == 1)
-    {
-        dst[0] = filter->b0 * src[0] +
-                 filter->b1 * filter->x[0] +
-                 filter->b2 * filter->x[1] -
-                 filter->a1 * filter->y[0] -
-                 filter->a2 * filter->y[1];
-        filter->x[1] = filter->x[0];
-        filter->x[0] = src[0];
-        filter->y[1] = filter->y[0];
-        filter->y[0] = dst[0];
-    }
+    for(i = 0;i < numsamples;i++)
+        *(dst++) = ALfilterState_processSingle(filter, *(src++));
 }
 
 
@@ -165,59 +90,66 @@ static inline void ApplyCoeffs(ALuint Offset, ALfloat (*restrict Values)[2],
     }
 }
 
-#define MixHrtf MixHrtf_C
+#define SUFFIX C
 #include "mixer_inc.c"
-#undef MixHrtf
+#undef SUFFIX
 
 
-void Mix_C(const ALfloat *data, ALuint OutChans, ALfloat (*restrict OutBuffer)[BUFFERSIZE],
-           MixGains *Gains, ALuint Counter, ALuint OutPos, ALuint BufferSize)
+void MixDirect_C(ALfloat (*restrict OutBuffer)[BUFFERSIZE], const ALfloat *data,
+                 MixGains *Gains, ALuint Counter, ALuint OutPos, ALuint BufferSize)
 {
-    ALfloat gain, step;
+    ALfloat DrySend, Step;
     ALuint c;
 
-    for(c = 0;c < OutChans;c++)
+    for(c = 0;c < MaxChannels;c++)
     {
         ALuint pos = 0;
-        gain = Gains[c].Current;
-        step = Gains[c].Step;
-        if(step != 0.0f && Counter > 0)
+        DrySend = Gains->Current[c];
+        Step = Gains->Step[c];
+        if(Step != 1.0f && Counter > 0)
         {
-            ALuint minsize = minu(BufferSize, Counter);
-            for(;pos < minsize;pos++)
+            for(;pos < BufferSize && pos < Counter;pos++)
             {
-                OutBuffer[c][OutPos+pos] += data[pos]*gain;
-                gain += step;
+                OutBuffer[c][OutPos+pos] += data[pos]*DrySend;
+                DrySend *= Step;
             }
             if(pos == Counter)
-                gain = Gains[c].Target;
-            Gains[c].Current = gain;
+                DrySend = Gains->Target[c];
+            Gains->Current[c] = DrySend;
         }
 
-        if(!(fabsf(gain) > GAIN_SILENCE_THRESHOLD))
+        if(!(DrySend > GAIN_SILENCE_THRESHOLD))
             continue;
         for(;pos < BufferSize;pos++)
-            OutBuffer[c][OutPos+pos] += data[pos]*gain;
+            OutBuffer[c][OutPos+pos] += data[pos]*DrySend;
     }
 }
 
-/* Basically the inverse of the above. Rather than one input going to multiple
- * outputs (each with its own gain), it's multiple inputs (each with its own
- * gain) going to one output. This applies one row (vs one column) of a matrix
- * transform. And as the matrices are more or less static once set up, no
- * stepping is necessary.
- */
-void MixRow_C(ALfloat *OutBuffer, const ALfloat *Mtx, ALfloat (*restrict data)[BUFFERSIZE], ALuint InChans, ALuint BufferSize)
+
+void MixSend_C(ALfloat (*restrict OutBuffer)[BUFFERSIZE], const ALfloat *data,
+               MixGainMono *Gain, ALuint Counter, ALuint OutPos, ALuint BufferSize)
 {
-    ALuint c, i;
+    ALfloat WetSend, Step;
 
-    for(c = 0;c < InChans;c++)
     {
-        ALfloat gain = Mtx[c];
-        if(!(fabsf(gain) > GAIN_SILENCE_THRESHOLD))
-            continue;
+        ALuint pos = 0;
+        WetSend = Gain->Current;
+        Step = Gain->Step;
+        if(Step != 1.0f && Counter > 0)
+        {
+            for(;pos < BufferSize && pos < Counter;pos++)
+            {
+                OutBuffer[0][OutPos+pos] += data[pos]*WetSend;
+                WetSend *= Step;
+            }
+            if(pos == Counter)
+                WetSend = Gain->Target;
+            Gain->Current = WetSend;
+        }
 
-        for(i = 0;i < BufferSize;i++)
-            OutBuffer[i] += data[c][i] * gain;
+        if(!(WetSend > GAIN_SILENCE_THRESHOLD))
+            return;
+        for(;pos < BufferSize;pos++)
+            OutBuffer[0][OutPos+pos] += data[pos] * WetSend;
     }
 }

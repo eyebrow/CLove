@@ -5,21 +5,6 @@
 #include "threads.h"
 
 
-typedef struct ClockLatency {
-    ALint64 ClockTime;
-    ALint64 Latency;
-} ClockLatency;
-
-/* Helper to get the current clock time from the device's ClockBase, and
- * SamplesDone converted from the sample rate.
- */
-inline ALuint64 GetDeviceClockTime(ALCdevice *device)
-{
-    return device->ClockBase + (device->SamplesDone * DEVICE_CLOCK_RES /
-                                device->Frequency);
-}
-
-
 struct ALCbackendVtable;
 
 typedef struct ALCbackend {
@@ -35,7 +20,7 @@ void ALCbackend_Destruct(ALCbackend *self);
 ALCboolean ALCbackend_reset(ALCbackend *self);
 ALCenum ALCbackend_captureSamples(ALCbackend *self, void *buffer, ALCuint samples);
 ALCuint ALCbackend_availableSamples(ALCbackend *self);
-ClockLatency ALCbackend_getClockLatency(ALCbackend *self);
+ALint64 ALCbackend_getLatency(ALCbackend *self);
 void ALCbackend_lock(ALCbackend *self);
 void ALCbackend_unlock(ALCbackend *self);
 
@@ -52,7 +37,7 @@ struct ALCbackendVtable {
     ALCenum (*const captureSamples)(ALCbackend*, void*, ALCuint);
     ALCuint (*const availableSamples)(ALCbackend*);
 
-    ClockLatency (*const getClockLatency)(ALCbackend*);
+    ALint64 (*const getLatency)(ALCbackend*);
 
     void (*const lock)(ALCbackend*);
     void (*const unlock)(ALCbackend*);
@@ -69,7 +54,7 @@ DECLARE_THUNK(T, ALCbackend, ALCboolean, start)                               \
 DECLARE_THUNK(T, ALCbackend, void, stop)                                      \
 DECLARE_THUNK2(T, ALCbackend, ALCenum, captureSamples, void*, ALCuint)        \
 DECLARE_THUNK(T, ALCbackend, ALCuint, availableSamples)                       \
-DECLARE_THUNK(T, ALCbackend, ClockLatency, getClockLatency)                   \
+DECLARE_THUNK(T, ALCbackend, ALint64, getLatency)                             \
 DECLARE_THUNK(T, ALCbackend, void, lock)                                      \
 DECLARE_THUNK(T, ALCbackend, void, unlock)                                    \
 static void T##_ALCbackend_Delete(void *ptr)                                  \
@@ -85,7 +70,7 @@ static const struct ALCbackendVtable T##_ALCbackend_vtable = {                \
     T##_ALCbackend_stop,                                                      \
     T##_ALCbackend_captureSamples,                                            \
     T##_ALCbackend_availableSamples,                                          \
-    T##_ALCbackend_getClockLatency,                                           \
+    T##_ALCbackend_getLatency,                                                \
     T##_ALCbackend_lock,                                                      \
     T##_ALCbackend_unlock,                                                    \
                                                                               \
@@ -138,14 +123,9 @@ static const struct ALCbackendFactoryVtable T##_ALCbackendFactory_vtable = {  \
 ALCbackendFactory *ALCpulseBackendFactory_getFactory(void);
 ALCbackendFactory *ALCalsaBackendFactory_getFactory(void);
 ALCbackendFactory *ALCossBackendFactory_getFactory(void);
-ALCbackendFactory *ALCjackBackendFactory_getFactory(void);
-ALCbackendFactory *ALCsolarisBackendFactory_getFactory(void);
 ALCbackendFactory *ALCmmdevBackendFactory_getFactory(void);
 ALCbackendFactory *ALCdsoundBackendFactory_getFactory(void);
-ALCbackendFactory *ALCwinmmBackendFactory_getFactory(void);
-ALCbackendFactory *ALCportBackendFactory_getFactory(void);
 ALCbackendFactory *ALCnullBackendFactory_getFactory(void);
-ALCbackendFactory *ALCwaveBackendFactory_getFactory(void);
 ALCbackendFactory *ALCloopbackFactory_getFactory(void);
 
 ALCbackend *create_backend_wrapper(ALCdevice *device, const BackendFuncs *funcs, ALCbackend_Type type);

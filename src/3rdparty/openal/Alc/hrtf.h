@@ -4,29 +4,9 @@
 #include "AL/al.h"
 #include "AL/alc.h"
 
-#include "alstring.h"
+enum DevFmtChannels;
 
-
-struct Hrtf {
-    ALuint sampleRate;
-    ALuint irSize;
-    ALubyte evCount;
-
-    const ALubyte *azCount;
-    const ALushort *evOffset;
-    const ALshort *coeffs;
-    const ALubyte *delays;
-
-    const char *filename;
-    struct Hrtf *next;
-};
-
-typedef struct HrtfEntry {
-    al_string name;
-
-    const struct Hrtf *hrtf;
-} HrtfEntry;
-TYPEDEF_VECTOR(HrtfEntry, vector_HrtfEntry)
+struct Hrtf;
 
 #define HRIR_BITS        (7)
 #define HRIR_LENGTH      (1<<HRIR_BITS)
@@ -35,11 +15,14 @@ TYPEDEF_VECTOR(HrtfEntry, vector_HrtfEntry)
 #define HRTFDELAY_FRACONE (1<<HRTFDELAY_BITS)
 #define HRTFDELAY_MASK    (HRTFDELAY_FRACONE-1)
 
+const struct Hrtf *GetHrtf(ALCdevice *device);
+ALCboolean FindHrtfFormat(const ALCdevice *device, enum DevFmtChannels *chans, ALCuint *srate);
+
 void FreeHrtfs(void);
 
-vector_HrtfEntry EnumerateHrtf(const_al_string devname);
-void FreeHrtfList(vector_HrtfEntry *list);
-
-void GetLerpedHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azimuth, ALfloat spread, ALfloat gain, ALfloat (*coeffs)[2], ALuint *delays);
+ALuint GetHrtfIrSize(const struct Hrtf *Hrtf);
+ALfloat CalcHrtfDelta(ALfloat oldGain, ALfloat newGain, const ALfloat olddir[3], const ALfloat newdir[3]);
+void GetLerpedHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azimuth, ALfloat gain, ALfloat (*coeffs)[2], ALuint *delays);
+ALuint GetMovingHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azimuth, ALfloat gain, ALfloat delta, ALint counter, ALfloat (*coeffs)[2], ALuint *delays, ALfloat (*coeffStep)[2], ALint *delayStep);
 
 #endif /* ALC_HRTF_H */

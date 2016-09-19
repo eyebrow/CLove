@@ -46,10 +46,6 @@
 
 #define PHI 0.618033989
 
-#ifndef M_PI
-#define M_PI 3.14
-#endif
-
 typedef struct {
     float x,y;
 } SDL_FloatPoint;

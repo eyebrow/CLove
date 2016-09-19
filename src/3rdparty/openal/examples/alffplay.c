@@ -17,7 +17,6 @@
 #include <libavformat/avio.h>
 #include <libavutil/time.h>
 #include <libavutil/avstring.h>
-#include <libavutil/channel_layout.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 
@@ -350,7 +349,7 @@ static int synchronize_audio(MovieState *movState)
     ref_clock = get_master_clock(movState);
     diff = ref_clock - get_audio_clock(&movState->audio);
 
-    if(!(fabs(diff) < AV_NOSYNC_THRESHOLD))
+    if(!(diff < AV_NOSYNC_THRESHOLD))
     {
         /* Difference is TOO big; reset diff stuff */
         movState->audio.diff_accum = 0.0;
@@ -548,7 +547,6 @@ static int audio_thread(void *userdata)
     MovieState *movState = (MovieState*)userdata;
     uint8_t *samples = NULL;
     ALsizei buffer_len;
-    ALenum fmt;
 
     alGenBuffers(AUDIO_BUFFER_QUEUE_SIZE, movState->audio.buffer);
     alGenSources(1, &movState->audio.source);
@@ -558,107 +556,56 @@ static int audio_thread(void *userdata)
 
     av_new_packet(&movState->audio.pkt, 0);
 
-    /* Find a suitable format for OpenAL. */
-    movState->audio.format = AL_NONE;
+    /* Find a suitable format for OpenAL. Currently does not handle surround
+     * sound (everything non-mono becomes stereo). */
     if(movState->audio.st->codec->sample_fmt == AV_SAMPLE_FMT_U8 ||
        movState->audio.st->codec->sample_fmt == AV_SAMPLE_FMT_U8P)
     {
         movState->audio.dst_sample_fmt = AV_SAMPLE_FMT_U8;
         movState->audio.frame_size = 1;
-        if(movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_7POINT1 &&
-           alIsExtensionPresent("AL_EXT_MCFORMATS") &&
-           (fmt=alGetEnumValue("AL_FORMAT_71CHN8")) != AL_NONE && fmt != -1)
-        {
-            movState->audio.dst_ch_layout = movState->audio.st->codec->channel_layout;
-            movState->audio.frame_size *= 8;
-            movState->audio.format = fmt;
-        }
-        if((movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_5POINT1 ||
-            movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_5POINT1_BACK) &&
-           alIsExtensionPresent("AL_EXT_MCFORMATS") &&
-           (fmt=alGetEnumValue("AL_FORMAT_51CHN8")) != AL_NONE && fmt != -1)
-        {
-            movState->audio.dst_ch_layout = movState->audio.st->codec->channel_layout;
-            movState->audio.frame_size *= 6;
-            movState->audio.format = fmt;
-        }
         if(movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_MONO)
         {
             movState->audio.dst_ch_layout = AV_CH_LAYOUT_MONO;
             movState->audio.frame_size *= 1;
             movState->audio.format = AL_FORMAT_MONO8;
         }
-        if(movState->audio.format == AL_NONE)
+        else
         {
             movState->audio.dst_ch_layout = AV_CH_LAYOUT_STEREO;
             movState->audio.frame_size *= 2;
             movState->audio.format = AL_FORMAT_STEREO8;
         }
     }
-    if((movState->audio.st->codec->sample_fmt == AV_SAMPLE_FMT_FLT ||
-        movState->audio.st->codec->sample_fmt == AV_SAMPLE_FMT_FLTP) &&
-       alIsExtensionPresent("AL_EXT_FLOAT32"))
+    else if((movState->audio.st->codec->sample_fmt == AV_SAMPLE_FMT_FLT ||
+             movState->audio.st->codec->sample_fmt == AV_SAMPLE_FMT_FLTP) &&
+            alIsExtensionPresent("AL_EXT_FLOAT32"))
     {
         movState->audio.dst_sample_fmt = AV_SAMPLE_FMT_FLT;
         movState->audio.frame_size = 4;
-        if(movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_7POINT1 &&
-           alIsExtensionPresent("AL_EXT_MCFORMATS") &&
-           (fmt=alGetEnumValue("AL_FORMAT_71CHN32")) != AL_NONE && fmt != -1)
-        {
-            movState->audio.dst_ch_layout = movState->audio.st->codec->channel_layout;
-            movState->audio.frame_size *= 8;
-            movState->audio.format = fmt;
-        }
-        if((movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_5POINT1 ||
-            movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_5POINT1_BACK) &&
-           alIsExtensionPresent("AL_EXT_MCFORMATS") &&
-           (fmt=alGetEnumValue("AL_FORMAT_51CHN32")) != AL_NONE && fmt != -1)
-        {
-            movState->audio.dst_ch_layout = movState->audio.st->codec->channel_layout;
-            movState->audio.frame_size *= 6;
-            movState->audio.format = fmt;
-        }
         if(movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_MONO)
         {
             movState->audio.dst_ch_layout = AV_CH_LAYOUT_MONO;
             movState->audio.frame_size *= 1;
             movState->audio.format = AL_FORMAT_MONO_FLOAT32;
         }
-        if(movState->audio.format == AL_NONE)
+        else
         {
             movState->audio.dst_ch_layout = AV_CH_LAYOUT_STEREO;
             movState->audio.frame_size *= 2;
             movState->audio.format = AL_FORMAT_STEREO_FLOAT32;
         }
     }
-    if(movState->audio.format == AL_NONE)
+    else
     {
         movState->audio.dst_sample_fmt = AV_SAMPLE_FMT_S16;
         movState->audio.frame_size = 2;
-        if(movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_7POINT1 &&
-           alIsExtensionPresent("AL_EXT_MCFORMATS") &&
-           (fmt=alGetEnumValue("AL_FORMAT_71CHN16")) != AL_NONE && fmt != -1)
-        {
-            movState->audio.dst_ch_layout = movState->audio.st->codec->channel_layout;
-            movState->audio.frame_size *= 8;
-            movState->audio.format = fmt;
-        }
-        if((movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_5POINT1 ||
-            movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_5POINT1_BACK) &&
-           alIsExtensionPresent("AL_EXT_MCFORMATS") &&
-           (fmt=alGetEnumValue("AL_FORMAT_51CHN16")) != AL_NONE && fmt != -1)
-        {
-            movState->audio.dst_ch_layout = movState->audio.st->codec->channel_layout;
-            movState->audio.frame_size *= 6;
-            movState->audio.format = fmt;
-        }
         if(movState->audio.st->codec->channel_layout == AV_CH_LAYOUT_MONO)
         {
             movState->audio.dst_ch_layout = AV_CH_LAYOUT_MONO;
             movState->audio.frame_size *= 1;
             movState->audio.format = AL_FORMAT_MONO16;
         }
-        if(movState->audio.format == AL_NONE)
+        else
         {
             movState->audio.dst_ch_layout = AV_CH_LAYOUT_STEREO;
             movState->audio.frame_size *= 2;
@@ -684,9 +631,7 @@ static int audio_thread(void *userdata)
         movState->audio.dst_ch_layout,
         movState->audio.dst_sample_fmt,
         movState->audio.st->codec->sample_rate,
-        movState->audio.st->codec->channel_layout ?
-            movState->audio.st->codec->channel_layout :
-            (uint64_t)av_get_default_channel_layout(movState->audio.st->codec->channels),
+        movState->audio.st->codec->channel_layout,
         movState->audio.st->codec->sample_fmt,
         movState->audio.st->codec->sample_rate,
         0, NULL
@@ -942,7 +887,7 @@ static void update_picture(MovieState *movState, bool *first_update, SDL_Window 
         void *pixels = NULL;
         int pitch = 0;
 
-        if(movState->video.st->codec->pix_fmt == AV_PIX_FMT_YUV420P)
+        if(movState->video.st->codec->pix_fmt == PIX_FMT_YUV420P)
             SDL_UpdateYUVTexture(vp->bmp, NULL,
                 frame->data[0], frame->linesize[0],
                 frame->data[1], frame->linesize[1],
@@ -960,7 +905,7 @@ static void update_picture(MovieState *movState, bool *first_update, SDL_Window 
             if(!movState->video.swscale_ctx)
                 movState->video.swscale_ctx = sws_getContext(
                     w, h, movState->video.st->codec->pix_fmt,
-                    w, h, AV_PIX_FMT_YUV420P, SWS_X, NULL, NULL, NULL
+                    w, h, PIX_FMT_YUV420P, SWS_X, NULL, NULL, NULL
                 );
 
             /* point pict at the queue */
@@ -1391,7 +1336,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    if(!alIsExtensionPresent("AL_SOFT_source_length"))
+    if(!alIsExtensionPresent("AL_SOFTX_source_length")) /* FIXME */
     {
         fprintf(stderr, "Required AL_SOFT_source_length not supported - exiting\n");
         return 1;

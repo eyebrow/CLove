@@ -12,6 +12,7 @@ struct ALeffect;
 enum {
     EAXREVERB = 0,
     REVERB,
+    AUTOWAH,
     CHORUS,
     COMPRESSOR,
     DISTORTION,
@@ -50,6 +51,7 @@ const struct ALeffectVtable T##_vtable = {  \
 
 extern const struct ALeffectVtable ALeaxreverb_vtable;
 extern const struct ALeffectVtable ALreverb_vtable;
+extern const struct ALeffectVtable ALautowah_vtable;
 extern const struct ALeffectVtable ALchorus_vtable;
 extern const struct ALeffectVtable ALcompressor_vtable;
 extern const struct ALeffectVtable ALdistortion_vtable;
@@ -92,6 +94,13 @@ typedef union ALeffectProps {
     } Reverb;
 
     struct {
+        ALfloat AttackTime;
+        ALfloat ReleaseTime;
+        ALfloat PeakGain;
+        ALfloat Resonance;
+    } Autowah;
+
+    struct {
         ALint Waveform;
         ALint Phase;
         ALfloat Rate;
@@ -123,6 +132,7 @@ typedef union ALeffectProps {
     } Echo;
 
     struct {
+        ALfloat Delay;
         ALfloat LowCutoff;
         ALfloat LowGain;
         ALfloat Mid1Center;
@@ -167,19 +177,10 @@ typedef struct ALeffect {
     ALuint id;
 } ALeffect;
 
-inline void LockEffectsRead(ALCdevice *device)
-{ LockUIntMapRead(&device->EffectMap); }
-inline void UnlockEffectsRead(ALCdevice *device)
-{ UnlockUIntMapRead(&device->EffectMap); }
-inline void LockEffectsWrite(ALCdevice *device)
-{ LockUIntMapWrite(&device->EffectMap); }
-inline void UnlockEffectsWrite(ALCdevice *device)
-{ UnlockUIntMapWrite(&device->EffectMap); }
-
 inline struct ALeffect *LookupEffect(ALCdevice *device, ALuint id)
-{ return (struct ALeffect*)LookupUIntMapKeyNoLock(&device->EffectMap, id); }
+{ return (struct ALeffect*)LookupUIntMapKey(&device->EffectMap, id); }
 inline struct ALeffect *RemoveEffect(ALCdevice *device, ALuint id)
-{ return (struct ALeffect*)RemoveUIntMapKeyNoLock(&device->EffectMap, id); }
+{ return (struct ALeffect*)RemoveUIntMapKey(&device->EffectMap, id); }
 
 inline ALboolean IsReverbEffect(ALenum type)
 { return type == AL_EFFECT_REVERB || type == AL_EFFECT_EAXREVERB; }

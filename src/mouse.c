@@ -38,6 +38,10 @@ static int buttonEnum(const char *str) {
     res = SDL_BUTTON_RIGHT;
   if (strncmp (str,"m",1) == 0)
     res = SDL_BUTTON_MIDDLE;
+  if (strncmp (str,"x1",2) == 0)
+    res = SDL_BUTTON_X1;
+  if (strncmp (str,"x2",2) == 0)
+    res = SDL_BUTTON_X2;
   return res;
 #endif
 #ifdef WINDOWS
@@ -151,7 +155,7 @@ void mouse_mousereleased(int x, int y, int button) {
 
 void mouse_mousepressed(int x, int y, int button) {
 #ifdef UNIX
-  if (button == SDL_BUTTON_WHEEL_UP || button == SDL_BUTTON_WHEEL_DOWN) {
+  if (button == -1 || button == 1) {
       l_mouse_pressed(moduleData.x, moduleData.y, button);
       mouse_mousemoved(moduleData.x, moduleData.y);
     }else{

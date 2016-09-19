@@ -24,17 +24,17 @@ static int l_graphics_window_getHeight(lua_State* state) {
 }
 
 static int l_graphics_window_setTitle(lua_State* state){
-  graphics_setTitle(lua_tostring(state, 1));
-  return 1;
+  graphics_setTitle(l_tools_toStringOrError(state, 1));
+  return 0;
 }
 
 static int l_graphics_window_setMode(lua_State* state){
-  graphics_setMode(lua_tointeger(state, 1), lua_tointeger(state, 2));
-  return 1;
+  graphics_setMode(l_tools_toNumberOrError(state, 1), l_tools_toNumberOrError(state, 2));
+  return 0;
 }
 
 static int l_graphics_window_setFullscreen(lua_State* state){
-  graphics_setFullscreen(lua_toboolean(state, 1), lua_tostring(state, 2));
+  graphics_setFullscreen(l_tools_toBooleanOrError(state, 1), l_tools_toStringOrError(state, 2));
   return 1;
 }
 
