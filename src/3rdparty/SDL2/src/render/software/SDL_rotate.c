@@ -51,7 +51,7 @@ typedef struct tColorRGBA {
     Uint8 b;
     Uint8 a;
 } tColorRGBA;
-
+#define M_PI 3.14
 /* !
 \brief A 8bit Y/palette pixel.
 */

@@ -18,10 +18,10 @@ typedef enum {
 
 void graphics_geometry_init();
 
-void graphics_geometry_fillRectangle(int type, float x, float y, float z,
+void graphics_geometry_fillRectangle(int type, float x, float y,
                                      float w, float h,
-                                     float rotation, float rx, float ry, float rz,
-                                     float sx, float sy, float sz,
+                                     float rotation,
+                                     float sx, float sy,
                                      float ox, float oy);
 
 void graphics_geometry_fillCircle(float x,float y, float radius, int segments);

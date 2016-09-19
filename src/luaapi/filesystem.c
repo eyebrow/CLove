@@ -13,16 +13,16 @@
 #include "tools.h"
 #include "../filesystem/filesystem.h"
 
-
+  
 static int l_filesystem_read(lua_State* state) {
   // TODO implement max length
   char const* filename = l_tools_toStringOrError(state, 1);
   char* data = NULL;
   int len = filesystem_read(filename, &data);
   if(len < 0) {
-      lua_pushstring(state, "could not read file");
-      return lua_error(state);
-    }
+    lua_pushstring(state, "could not read file");
+    return lua_error(state);
+  }
 
   lua_pushstring(state, data);
   free(data);
@@ -30,35 +30,10 @@ static int l_filesystem_read(lua_State* state) {
   return 2;
 }
 
-static int l_filesystem_contain(lua_State* state)  {
-  const char* a = l_tools_toStringOrError(state, 1);
-  const char* b = l_tools_toStringOrError(state, 2);
-  if ( filesystem_contain(a, b))
-    lua_pushboolean(state, 1);
-  else
-    lua_pushboolean(state, 0);
-  return 1;
-}
-
-static int l_filesystem_compare(lua_State* state)  {
-  const char* a = l_tools_toStringOrError(state, 1);
-  const char* b = l_tools_toStringOrError(state, 2);
-  int l = l_tools_toNumberOrError(state, 3);
-  if ( filesystem_compare(a, b, l))
-    lua_pushboolean(state, 1);
-  else
-    lua_pushboolean(state, 0);
-  return 1;
-}
-
 static int l_filesystem_exists(lua_State* state)
 {
   const char* filename = l_tools_toStringOrError(state, 1);
-  if (filesystem_exists(filename))
-    lua_pushboolean(state,1);
-  else
-    lua_pushboolean(state, 0);
-  return 1;
+  return filesystem_exists(filename);
 }
 
 static int l_filesystem_write(lua_State* state)
@@ -82,9 +57,9 @@ static int l_filesystem_load(lua_State* state) {
   char* data = NULL;
   int len = filesystem_read(filename, &data);
   if(len < 0) {
-      lua_pushstring(state, "could not read file");
-      return lua_error(state);
-    }
+    lua_pushstring(state, "could not read file");
+    return lua_error(state);
+  }
 
   luaL_loadstring(state, data);
   free(data);
@@ -104,8 +79,6 @@ static luaL_Reg const regFuncs[] = {
   {"exists", l_filesystem_exists},
   {"write", l_filesystem_write},
   {"append", l_filesystem_append},
-  {"compare", l_filesystem_compare},
-  {"contain", l_filesystem_contain},
   {NULL, NULL}
 };
 

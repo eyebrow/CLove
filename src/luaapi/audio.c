@@ -21,18 +21,18 @@ static int l_audio_newSource(lua_State *state) {
   audio_StaticSource *src = lua_newuserdata(state, sizeof(audio_StaticSource));
   int succesfuly_loaded = audio_loadStatic(src, filename);
   if(succesfuly_loaded == -1){
-    lua_pushstring(state, "Could not load sound file: ");
-    lua_pushstring(state, lua_tostring(state, 1));
-    lua_pushstring(state, ", reason: unknow file type");
-    lua_concat(state, 3);
-    return lua_error(state);
-  }else if(succesfuly_loaded == 0){
-    lua_pushstring(state, "Could not load sound file: ");
-    lua_pushstring(state, lua_tostring(state, 1));
-    lua_pushstring(state, ", reason: file does not exist");
-    lua_concat(state, 3);
-    return lua_error(state);
-  }
+      lua_pushstring(state, "Could not load sound file: ");
+      lua_pushstring(state, lua_tostring(state, 1));
+      lua_pushstring(state, ", reason: unknow file type");
+      lua_concat(state, 3);
+      return lua_error(state);
+    }else if(succesfuly_loaded == 0){
+      lua_pushstring(state, "Could not load sound file: ");
+      lua_pushstring(state, lua_tostring(state, 1));
+      lua_pushstring(state, ", reason: file does not exist");
+      lua_concat(state, 3);
+      return lua_error(state);
+    }
 
   lua_rawgeti(state, LUA_REGISTRYINDEX, moduleData.audioDataMT);
 

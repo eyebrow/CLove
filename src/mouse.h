@@ -9,27 +9,6 @@
 
 #pragma once
 
-#include "graphics/graphics.h"
-
-#ifdef UNIX
-#include "3rdparty/SDL2/include/SDL.h"
-#endif
-
-#ifdef WINDOWS
-
-#include "3rdparty/glfw/include/GLFW/glfw3.h"
-
-void mouse_setcallback();
-
-#define MAX_MOUSE 32
-
-// Don't know if this is the best approach but I don't care at this point
-static bool mousePressed[MAX_MOUSE];
-static bool mouseRelased[MAX_MOUSE];
-static int mouseButton;
-double mouseScrollY;
-#endif
-
 void mouse_mousemoved(int x, int y);
 int mouse_getwheel();
 void mouse_mousewheel(int y);

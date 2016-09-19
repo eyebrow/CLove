@@ -3,30 +3,28 @@
 CLove
 =====
 CLove is a simple and easy to learn and use game framework tested on
-OSX/Linux/Windows, made in C with OpenGLES 2 which uses Lua as scripting language.
+Mac/Linux/PC, made in C with OpenGLES 2 which uses Lua as scripting langauge.
 
 How to build
 ============
-Download or clone CLove.
-- On Linux based systems: download cmake and make (sudo apt-get install cmake make). Call "cmake ../ && make" from a new folder called "build".
-- On OS X: download cmake and make (sudo brew install cmake make). Call "cmake ../ && make" from a new folder called "build".
-- On Windows: download MinGW, add gcc and g++ to your system path. After that download QT Community and build CLove using it.
-
+In order to build CLove you'll need CMake and GCC. Download or clone CLove 
+and call "cmake ../ && make" from a new folder called "build". If you are on
+Windows then you'll need CMake GUI.
 
 Features
 ========
 - Lua scripting language
-- Easy to learn and use api
-- Cross Platform
+- Easy to learn and use api 
+- Cross Platform 
 - Powerful Batch system
-- Image loading and drawing
+- Image loader & drawing
 - Image creation from scratch or from a template & save(png,bmp,tga)
-- Sound loading and playing (Vorbis and Wav)
+- Sound loader & playing (Vorbis and Wav)
 - Primitives drawing
 - Filesystem functions
-- OpenGL ES 2.0
-- Font loading and drawing
-- Keyboard and Mouse functions
+- OpenGL ES 2.0 
+- Font loading & drawing
+- Keyboard & Mouse functions
 - Physics system thanks to ChipMunk
 
 Examples (see examples folder)
@@ -35,7 +33,7 @@ Examples (see examples folder)
 local image = love.graphics.newImage("image.png")
 
 function love.draw()
-	--draw the loaded image named "image" at the postion X:200, Y:200
+   --draw the loaded image named "image" at the postion X:200, Y:200
 	love.graphics.draw(image, 200, 200)
 	--draw a circle at X:100 Y:100 with the radius of 32 and number of
 	--segments(points) of 24
@@ -47,6 +45,6 @@ Images of running CLove demos
 -----------------------------
 ![Image 1:](data/1.png?raw=true "Web")
 ![Image 2:](data/2.png?raw=true "Linux")
-![Image 2:](data/3.png?raw=true "OS X")
+![Image 2:](data/3.png?raw=true "Os X")
 
 

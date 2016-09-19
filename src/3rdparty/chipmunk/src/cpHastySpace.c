@@ -6,12 +6,7 @@
 
 #include <pthread.h>
 //#include <sys/param.h >
-
-#ifdef _WIN32
-#include <sys/param.h>
-#else
 #include <sys/sysctl.h>
-#endif
 
 #include "chipmunk/chipmunk_private.h"
 #include "chipmunk/cpHastySpace.h"

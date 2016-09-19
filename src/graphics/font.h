@@ -6,7 +6,6 @@
 #   This project is free software; you can redistribute it and/or modify it
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
-
 #pragma once
 
 #include <math.h>
@@ -74,19 +73,8 @@ typedef enum {
   graphics_TextAlign_justify
 } graphics_TextAlign;
 
-void graphics_Font_print(graphics_Font* font, char const* text,
-                         int x, int y, int z,
-                         float r, float rx, float ry, float rz,
-                         float sx, float sy, float sz,
-                         float ox, float oy,
-                         float kx, float ky);
-void graphics_Font_printf(graphics_Font* font, char const* text,
-                          int px, int py, int pz,
-                          int limit, graphics_TextAlign align,
-                          float r, float rx, float ry, float rz,
-                          float sx, float sy, float sz,
-                          float ox, float oy,
-                          float kx, float ky);
+void graphics_Font_print(graphics_Font* font, char const* text, int x, int y, float r, float sx, float sy, float ox, float oy, float kx, float ky);
+void graphics_Font_printf(graphics_Font* font, char const* text, int px, int py, int limit, graphics_TextAlign align, float r, float sx, float sy, float ox, float oy, float kx, float ky);
 
 void graphics_Font_setFilter(graphics_Font *font, graphics_Filter const* filter);
 void graphics_Font_getFilter(graphics_Font *font, graphics_Filter *filter);

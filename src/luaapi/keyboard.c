@@ -14,7 +14,6 @@
 static struct {
   lua_State *luaState;
   bool keyRepeat;
-
 } moduleData;
 
 
@@ -28,9 +27,7 @@ int l_keyboard_setKeyRepeat(lua_State* state) {
   return 0;
 }
 
-#ifdef UNIX
 int l_keyboard_isDown(lua_State* state) {
-
   bool any = false;
   int top = lua_gettop(state);
   for(int i = 0; i < top; ++i) {
@@ -42,10 +39,8 @@ int l_keyboard_isDown(lua_State* state) {
     }
 
   lua_pushboolean(state, any);
-
   return 1;
 }
-#endif
 
 int l_keyboard_setTextInput(lua_State* state) {
   bool enable = lua_toboolean(state, 1);
@@ -62,42 +57,22 @@ int l_keyboard_hasTextInput(lua_State* state) {
   return 1;
 }
 
-#ifdef WINDOWS
-int l_keyboard_isDown(lua_State* state) {
+static luaL_Reg const regFuncs[] = {
+  {"hasKeyRepeat", l_keyboard_hasKeyRepeat},
+  {"setKeyRepeat", l_keyboard_setKeyRepeat},
+  {"isDown",       l_keyboard_isDown},
+  {"setTextInput", l_keyboard_setTextInput},
+  {"hasTextInput", l_keyboard_hasTextInput},
+  {NULL, NULL}
+};
 
-  bool any = false;
-  int top = lua_gettop(state);
-  for(int i = 0; i < top; ++i) {
-      any = any || keyboard_ispressed(returnGLFWStringToKey(l_tools_toStringOrError(state, i+1)));
-      if(any)
-        break;
-    }
+void l_keyboard_register(lua_State* state) {
+  moduleData.luaState = state;
+  moduleData.keyRepeat = false;
 
-  lua_pushboolean(state, any);
-
-  return 1;
+  l_tools_registerModule(state, "keyboard", regFuncs);
 }
 
-void l_keyboard_keypressed(const char* key, bool repeat) {
-  lua_getglobal(moduleData.luaState, "love");
-  lua_pushstring(moduleData.luaState, "keypressed");
-  lua_rawget(moduleData.luaState, -2);
-  lua_pushstring(moduleData.luaState, key);
-  lua_pushboolean(moduleData.luaState, repeat);
-  lua_call(moduleData.luaState, 2, 0);
-}
-
-void l_keyboard_keyreleased(const char *key) {
-  lua_getglobal(moduleData.luaState, "love");
-  lua_pushstring(moduleData.luaState, "keyreleased");
-  lua_rawget(moduleData.luaState, -2);
-  lua_pushstring(moduleData.luaState, key);
-  lua_call(moduleData.luaState, 1, 0);
-}
-
-#endif
-
-#ifdef UNIX
 void l_keyboard_keypressed(SDL_Keycode key, bool isrepeat) {
   if(isrepeat && !moduleData.keyRepeat) {
       return;
@@ -118,28 +93,11 @@ void l_keyboard_keyreleased(SDL_Keycode key) {
   lua_pushstring(moduleData.luaState, keyboard_getKeyName(key));
   lua_call(moduleData.luaState, 1, 0);
 }
-#endif
 
-void l_keyboard_textInput(const char* text) {
+void l_keyboard_textInput(char const* text) {
   lua_getglobal(moduleData.luaState, "love");
   lua_pushstring(moduleData.luaState, "textinput");
   lua_rawget(moduleData.luaState, -2);
   lua_pushstring(moduleData.luaState, text);
   lua_call(moduleData.luaState, 1, 0);
-}
-
-static luaL_Reg const regFuncs[] = {
-  {"hasKeyRepeat", l_keyboard_hasKeyRepeat},
-  {"setKeyRepeat", l_keyboard_setKeyRepeat},
-  {"isDown",       l_keyboard_isDown},
-  {"setTextInput", l_keyboard_setTextInput},
-  {"hasTextInput", l_keyboard_hasTextInput},
-  {NULL, NULL}
-};
-
-void l_keyboard_register(lua_State* state) {
-  moduleData.luaState = state;
-  moduleData.keyRepeat = false;
-
-  l_tools_registerModule(state, "keyboard", regFuncs);
 }

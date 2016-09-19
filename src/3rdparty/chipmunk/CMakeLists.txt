@@ -7,16 +7,27 @@ endif ()
 
 project(chipmunk)
 
+# to change the prefix, run cmake with the parameter:
+#   -D CMAKE_INSTALL_PREFIX=/my/prefix
+
+# to change the build type, run cmake with the parameter:
+#   -D CMAKE_BUILD_TYPE=<build-type>
+# run "cmake --help-variable CMAKE_BUILD_TYPE" for details
 if(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
 endif()
 
-
+# to manually select install locations of libraries and executables
+#   -D LIB_INSTALL_DIR mylib
+#   -D BIN_INSTALL_DIR newbin
 set(LIB_INSTALL_DIR lib CACHE STRING "Install location of libraries")
 set(BIN_INSTALL_DIR bin CACHE STRING "Install location of executables")
 
+# other options for the build, you can i.e. activate the shared library by passing
+#   -D BUILD_SHARED=ON
+# to cmake. Other options analog
 if(ANDROID)
   option(BUILD_DEMOS "Build the demo applications" OFF)
   option(INSTALL_DEMOS "Install the demo applications" OFF)

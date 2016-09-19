@@ -9,6 +9,8 @@
 
 #include "../mouse.h"
 #include "tools.h"
+#include "../3rdparty/SDL2/include/SDL.h"
+
 
 static struct {
   lua_State *luaState;
@@ -18,7 +20,6 @@ static struct {
 static int l_mouse_isDown(lua_State *state) {
   const char *name = luaL_checkstring(state, 1);
   int res = mouse_isDown(name);
-
   if(res < 0) {
       luaL_error(state, "bad button name '%s'", name);
     }
@@ -39,13 +40,13 @@ static int l_mouse_getPosition(lua_State *state) {
 static int l_mouse_getX(lua_State *state) {
   lua_pushinteger(state, mouse_getX());
   return 1;
-}
+} 
 
 
 static int l_mouse_getY(lua_State *state) {
   lua_pushinteger(state, mouse_getY());
   return 1;
-}
+} 
 
 
 static int l_mouse_setPosition(lua_State *state) {
@@ -53,7 +54,7 @@ static int l_mouse_setPosition(lua_State *state) {
   int y = luaL_checknumber(state, 2);
   mouse_setPosition(x, y);
   return 0;
-}
+} 
 
 static int l_mouse_isVisible(lua_State *state) {
   lua_pushboolean(state, mouse_isVisible());
@@ -69,13 +70,13 @@ static int l_mouse_setX(lua_State *state) {
   int x = luaL_checknumber(state, 1);
   mouse_setX(x);
   return 0;
-}
+} 
 
 static int l_mouse_setY(lua_State *state) {
   int y = luaL_checknumber(state, 1);
   mouse_setY(y);
   return 0;
-}
+} 
 
 static luaL_Reg const regFuncs[] = {
   { "isDown",         l_mouse_isDown        },
@@ -98,7 +99,6 @@ void l_mouse_register(lua_State* state) {
 
 static const char *buttonStr(int x) {
   switch (x) {
-#ifdef UNIX
     case SDL_BUTTON_LEFT:
       return "l";
       break;
@@ -108,27 +108,12 @@ static const char *buttonStr(int x) {
     case SDL_BUTTON_MIDDLE:
       return "m";
       break;
-#endif
-
-#ifdef WINDOWS
-    case GLFW_MOUSE_BUTTON_LEFT:
-      return "l";
-      break;
-    case GLFW_MOUSE_BUTTON_RIGHT:
-      return "r";
-      break;
-    case GLFW_MOUSE_BUTTON_MIDDLE:
-      return "m";
-      break;
-      /* TODO
-    case GLFW_MOUSE_BUTTON_WHEEL_UP:
+    case SDL_BUTTON_WHEEL_UP:
       return "wu";
       break;
-    case GLFW_MOUSE_BUTTON_DOWN:
+    case SDL_BUTTON_WHEEL_DOWN:
       return "wd";
       break;
-      */
-#endif
 
     }
   return "?";
@@ -160,7 +145,7 @@ void l_mouse_wheelmoved(int y) {
   lua_getglobal(moduleData.luaState, "love");
   lua_pushstring(moduleData.luaState, "wheelmoved");
   lua_rawget(moduleData.luaState, -2);
-  lua_pushinteger(moduleData.luaState, y);
+  lua_pushinteger(moduleData.luaState, mouse_getwheel());
   lua_call(moduleData.luaState, 1, 0);
   lua_settop(moduleData.luaState, lua_gettop(moduleData.luaState));
 }

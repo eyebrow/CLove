@@ -95,10 +95,10 @@ static void drawBuffer(int vertices, int indices, GLenum type) {
 }
 
 static void drawBufferSpecial(int vertices, int indices,
-			      float x, float y, float z,
-			      float r, float rx, float ry, float rz,
+			      float x, float y,
+			      float r,
 			      float w, float h,
-			      float sx, float sy, float sz,
+			      float sx, float sy,
 			      float ox, float oy, GLenum type) {
   glBindBuffer(GL_ARRAY_BUFFER, moduleData.dataVBO);
   glBufferData(GL_ARRAY_BUFFER, moduleData.currentDataSize, moduleData.data, GL_STREAM_DRAW);
@@ -110,7 +110,7 @@ static void drawBufferSpecial(int vertices, int indices,
   graphics_setShader(&moduleData.plainColorShader);
 
   mat4x4 tr;
-  m4x4_newTransform3d(&tr, vec3_new(x, y, z), r, vec3_new(rx, ry, rz), vec3_new(sx, sy, sz), ox, oy, 0, 0);
+  m4x4_newTransform2d(&tr,x,y,r,sx,sy,ox,oy,0,0);
   graphics_Quad quad = {0,0,1,1};
 
   graphics_drawArray(&quad, &tr, moduleData.dataIBO, indices,
@@ -180,10 +180,10 @@ void graphics_geometry_fillCircle(float x, float y, float radius, int segments) 
 }
 
 void graphics_geometry_fillRectangle(int type,
-                                     float x, float y, float z,
+                                     float x, float y,
                                      float w, float h,
-                                     float rotation, float rx, float ry, float rz,
-                                     float sx, float sy, float sz,
+                                     float rotation,
+                                     float sx, float sy,
                                      float ox, float oy) {
 
   growBuffers(32, 7);
@@ -264,13 +264,13 @@ void graphics_geometry_fillRectangle(int type,
 
   if (type == 1) {
       if (special)
-        drawBufferSpecial(32, 7, x, y, z, rotation, rx, ry, rz, w, h, sx, sy, sz, ox, oy, GL_TRIANGLE_STRIP);
+        drawBufferSpecial(32, 7, x, y, rotation, w, h, sx, sy, ox, oy, GL_TRIANGLE_STRIP);
       else
         drawBuffer(32, 7, GL_TRIANGLE_STRIP);
 
     }else {
       if (special)
-        drawBufferSpecial(32, 7, x, y, z, rotation, rx, ry, rz, w, h, sx, sy, sz, ox, oy, GL_LINE_STRIP);
+         drawBufferSpecial(32, 7, x, y, rotation, w, h, sx, sy, ox, oy, GL_LINE_STRIP);
       else
         drawBuffer(32, 7, GL_LINE_STRIP);
     }

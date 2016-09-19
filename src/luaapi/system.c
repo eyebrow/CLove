@@ -11,19 +11,11 @@
 #include "tools.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "../graphics/graphics.h"
 
-#ifdef UNIX
 #include "../3rdparty/SDL2/include/SDL.h"
-#endif
 
 static int l_system_get_os(lua_State* state) {
-#ifdef UNIX
   lua_pushstring (state, SDL_GetPlatform ());
-#endif
-#ifdef WINDOWS
-  lua_pushstring(state, "windows");
-#endif
  return 1;
 }
 

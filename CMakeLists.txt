@@ -136,19 +136,11 @@ set(LUA_LIBRARIES lua)
 add_subdirectory(src/3rdparty/glew/)
 set(GLEW_INCLUDE_DIR src/3rdparty/glew/include/GL/)
 
-#sdl on Windows is stupid so we'll use glfw
-if(UNIX)
-    add_subdirectory(src/3rdparty/SDL2/)
-    include_directories(src/3rdparty/SDL2/include/)
-    set(SDL_INCLUDE_DIR src/3rdparty/SDL2/include/)
-    set(SDL_LIBRARIES SDL2)
-endif()
-if(MINGW)
-    add_subdirectory(src/3rdparty/glfw)
-    include_directories(src/3rdparty/glfw/include/)
-    set(GLFW_LIBRARIES "glfw")
-endif()
-#end sdl
+add_subdirectory(src/3rdparty/SDL2/)
+include_directories(src/3rdparty/SDL2/include/)
+set(SDL_INCLUDE_DIR src/3rdparty/SDL2/include/)
+set(SDL_LIBRARIES SDL2)
+
 
 add_definitions(-DAL_LIBTYPE_STATIC)
 add_definitions(-DGLEW_STATIC)
@@ -170,7 +162,7 @@ endif()
 
 if(MINGW)
     target_link_libraries(clove ws2_32.lib glfw
-        ${GLFW_LIBRARIES} ${GLEW_LIBRARIES}
+        ${SDL_LIBRARIES} ${GLEW_LIBRARIES}
         ${CHIPMUNK_LIBRARIES}
         ${OPENGL_LIBRARIES} ${OPENAL_LIBRARIES}
         ${FREETYPE_LIBRARIES} ${LUA_LIBRARIES})

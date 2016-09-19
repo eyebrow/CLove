@@ -7,19 +7,17 @@
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
 
-#include <stdbool.h>
-
 #include "../3rdparty/lua/lauxlib.h"
 #include "../3rdparty/lua/lua.h"
 
+#include "graphics.h"
+#include "tools.h"
 #include "../graphics/graphics.h"
 #include "../graphics/matrixstack.h"
 #include "../graphics/shader.h"
 #include "../graphics/gltools.h"
-
-#include "graphics.h"
-#include "tools.h"
 #include "image.h"
+
 #include "graphics_batch.h"
 #include "graphics_image.h"
 #include "graphics_quad.h"
@@ -32,8 +30,8 @@ static int l_graphics_getBackgroundColor(lua_State* state) {
   float * colors = graphics_getBackgroundColor();
 
   for(int i = 0; i < 4; ++i) {
-      lua_pushnumber(state, (int)(colors[i] * 255));
-    }
+    lua_pushnumber(state, (int)(colors[i] * 255));
+  }
 
   return 4;
 }
@@ -42,8 +40,8 @@ static int l_graphics_getColor(lua_State* state) {
   float * colors = graphics_getColor();
 
   for(int i = 0; i < 4; ++i) {
-      lua_pushnumber(state, (int)(colors[i] * 255));
-    }
+    lua_pushnumber(state, (int)(colors[i] * 255));
+  }
 
   return 4;
 }
@@ -90,106 +88,69 @@ static int l_graphics_draw(lua_State* state) {
   int baseidx = 1;
 
   if(l_graphics_isImage(state, 1)) {
-      image = l_graphics_toImage(state, 1);
-      if(l_graphics_isQuad(state, 2)) {
-          quad = l_graphics_toQuad(state, 2);
-          baseidx = 2;
-        }
-    } else if(l_graphics_isBatch(state, baseidx)) {
-      batch = l_graphics_toBatch(state, baseidx);
-    } else {
-      lua_pushstring(state, "expected image or spritebatch");
-      lua_error(state);
+    image = l_graphics_toImage(state, 1);
+    if(l_graphics_isQuad(state, 2)) {
+      quad = l_graphics_toQuad(state, 2);
+      baseidx = 2;
     }
-
+  } else if(l_graphics_isBatch(state, baseidx)) {
+    batch = l_graphics_toBatch(state, baseidx);
+  } else {
+    lua_pushstring(state, "expected image or spritebatch");
+    lua_error(state);
+  }
+  
   float x  = luaL_optnumber(state, baseidx+1, 0.0f);
   float y  = luaL_optnumber(state, baseidx+2, 0.0f);
-
   float r  = luaL_optnumber(state, baseidx+3, 0.0f);
-
   float sx = luaL_optnumber(state, baseidx+4, 1.0f);
   float sy = luaL_optnumber(state, baseidx+5, 1.0f);
-
   float ox = luaL_optnumber(state, baseidx+6, 0.0f);
   float oy = luaL_optnumber(state, baseidx+7, 0.0f);
   float kx = luaL_optnumber(state, baseidx+8, 0.0f);
   float ky = luaL_optnumber(state, baseidx+9, 0.0f);
 
   if(image) {
-      graphics_Image_draw(&image->image, quad, x, y, r, sx, sy, ox, oy, kx, ky);
-    } else if(batch) {
-      graphics_Batch_draw(&batch->batch, x, y, r, sx, sy, ox, oy, kx, ky);
-    }
-  return 0;
-}
-
-static int l_graphics_setCamera(lua_State* state) {
-  const char* type = lua_tostring(state, 1);
-  if(strncmp(type,"2d",2) == 0){
-      float left = l_tools_toNumberOrError(state, 2);
-      float right = l_tools_toNumberOrError(state, 3);
-      float bottom = l_tools_toNumberOrError(state, 4);
-      float top = l_tools_toNumberOrError(state, 5);
-      float zNear = l_tools_toNumberOrError(state, 6);
-      float zFar = l_tools_toNumberOrError(state, 7);
-      m4x4_newOrtho(graphics_getProjectionMat(), left, right, bottom, top, zNear, zFar);
-      return 1; //succes
-    }
-  else if(strncmp(type,"3d",2) == 0) {
-      float fov = l_tools_toNumberOrError(state, 2);
-      float ratio = l_tools_toNumberOrError(state, 3);
-      float zNear = l_tools_toNumberOrError(state, 4);
-      float zFar = l_tools_toNumberOrError(state, 5);
-      m4x4_newPerspective(graphics_getProjectionMat(), fov, ratio, zNear, zFar);
-      return 1; //succes
-    }else
-    printf("%s %s %s \n", "Error, type, ", type, " is not an valid camera projection. Only ortho and perspective are valid!");
+    graphics_Image_draw(&image->image, quad, x, y, r, sx, sy, ox, oy, kx, ky);
+  } else if(batch) {
+    graphics_Batch_draw(&batch->batch, x, y, r, sx, sy, ox, oy, kx, ky);
+  }
   return 0;
 }
 
 static int l_graphics_push(lua_State* state) {
   if(matrixstack_push()) {
-      lua_pushstring(state, "Matrix stack overflow");
-      return lua_error(state);
-    }
+    lua_pushstring(state, "Matrix stack overflow");
+    return lua_error(state);
+  }
   return 0;
 }
 
 static int l_graphics_pop(lua_State* state) {
   //printf(")) Pop\n");
   if(matrixstack_pop()) {
-      lua_pushstring(state, "Matrix stack underrun");
-      return lua_error(state);
-    }
+    lua_pushstring(state, "Matrix stack underrun");
+    return lua_error(state);
+  }
   return 0;
 }
 
 static int l_graphics_translate(lua_State* state) {
   float x = l_tools_toNumberOrError(state, 1);
   float y = l_tools_toNumberOrError(state, 2);
-  float z = luaL_optinteger(state, 3, 0);
 
-  matrixstack_translate(x, y, z);
+  //printf(")) Translate %f, %f\n", x, y);
+
+  matrixstack_translate(x, y);
   return 0;
 }
 
 static int l_graphics_scale(lua_State* state) {
   float x = l_tools_toNumberOrError(state, 1);
   float y = luaL_optnumber(state, 2, x);
-  float z = luaL_optinteger(state, 3, 1);
 
 
-  matrixstack_scale(x, y, z);
-  return 0;
-}
-
-static int l_graphics_rotate(lua_State* state) {
-  float a = l_tools_toNumberOrError(state, 1);
-  float rx = luaL_optinteger(state, 2, 0);
-  float ry = luaL_optinteger(state, 3, 0);
-  float rz = luaL_optinteger(state, 4, 0);
-
-  matrixstack_rotate(a, rx, ry, rz);
+  matrixstack_scale(x, y);
   return 0;
 }
 
@@ -204,18 +165,25 @@ static int l_graphics_shear(lua_State* state) {
   return 0;
 }
 
+static int l_graphics_rotate(lua_State* state) {
+  float a = l_tools_toNumberOrError(state, 1);
+
+  matrixstack_rotate(a);
+  return 0;
+}
+
 static int l_graphics_setColorMask(lua_State* state) {
   if(lua_isnone(state, 1)) {
-      graphics_setColorMask(true, true, true, true);
-      return 0;
-    } else {
-      for(int i = 2; i < 5; ++i) {
-          if(lua_isnone(state, i)) {
-              lua_pushstring(state, "illegal paramters");
-              return lua_error(state);
-            }
-        }
+    graphics_setColorMask(true, true, true, true);
+    return 0;
+  } else {
+    for(int i = 2; i < 5; ++i) {
+      if(lua_isnone(state, i)) {
+        lua_pushstring(state, "illegal paramters");
+        return lua_error(state);
+      }
     }
+  }
 
   bool r = lua_toboolean(state, 1);
   bool g = lua_toboolean(state, 2);
@@ -263,16 +231,16 @@ static int l_graphics_getBlendMode(lua_State* state) {
 
 static int l_graphics_setScissor(lua_State* state) {
   if(lua_isnone(state, 1)) {
-      graphics_clearScissor();
-      return 0;
-    } else {
-      for(int i = 2; i < 5; ++i) {
-          if(lua_isnone(state, i)) {
-              lua_pushstring(state, "illegal paramters");
-              return lua_error(state);
-            }
-        }
+    graphics_clearScissor();
+    return 0;
+  } else {
+    for(int i = 2; i < 5; ++i) {
+      if(lua_isnone(state, i)) {
+        lua_pushstring(state, "illegal paramters");
+        return lua_error(state);
+      }
     }
+  }
 
   int x = l_tools_toNumberOrError(state, 1);
   int y = l_tools_toNumberOrError(state, 2);
@@ -288,8 +256,8 @@ static int l_graphics_getScissor(lua_State* state) {
   int x,y,w,h;
   bool scissor = graphics_getScissor(&x, &y, &w, &h);
   if(!scissor) {
-      return 0;
-    }
+    return 0;
+  }
 
   lua_pushinteger(state, x);
   lua_pushinteger(state, y);
@@ -318,7 +286,6 @@ static int l_graphics_reset(lua_State* state) {
 
 static luaL_Reg const regFuncs[] = {
   {"setBackgroundColor", l_graphics_setBackgroundColor},
-  {"setCamera",          l_graphics_setCamera},
   {"getBackgroundColor", l_graphics_getBackgroundColor},
   {"setColor",           l_graphics_setColor},
   {"getColor",           l_graphics_getColor},
@@ -346,13 +313,13 @@ static luaL_Reg const regFuncs[] = {
 
 int l_graphics_register(lua_State* state) {
   l_tools_registerModule(state, "graphics", regFuncs);
-
-  l_graphics_window_register(state);
+  
   l_graphics_shader_register(state);
   l_graphics_image_register(state);
   l_graphics_quad_register(state);
   l_graphics_font_register(state);
   l_graphics_batch_register(state);
+  l_graphics_window_register(state);
   l_graphics_geometry_register(state);
 
   return 0;

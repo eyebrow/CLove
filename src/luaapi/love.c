@@ -26,7 +26,7 @@ int l_love_register(lua_State* state) {
   lua_pushstring(state, "getVersion");
   lua_pushcfunction(state, l_love_getVersion);
   lua_rawset(state, -3);
-
+  
   lua_setglobal(state, "love");
 
   luaL_openlibs(state);

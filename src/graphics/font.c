@@ -37,10 +37,9 @@ static struct {
 
   uint32_t cp; //message to take utf8 from
   int x; // message's X
-  int y; // message's Y
-  int z;
   int storeX; // store X pos
   int storeY; // store Y pos
+  int y; // message's Y
 } moduleData;
 
 static graphics_Vertex const imageVertices[] = {
@@ -111,7 +110,7 @@ static void graphics_Font_newTexture(graphics_Font* font) {
         }
       row += b.pitch;
     }
-
+  
   graphics_Font_setWrap(font, &defaultWrap);
   graphics_Font_setFilter(font, &defaultFilter);
 
@@ -165,12 +164,8 @@ int graphics_Font_getWidth(graphics_Font* font, char const* line) {
   return sum;
 }
 
-void graphics_Font_printf(graphics_Font* font, char const* text,
-                          int px, int py, int pz,
-                          int limit, graphics_TextAlign align,
-                          float r, float rx, float ry, float rz,
-                          float sx, float sy, float sz,
-                          float ox, float oy, float kx, float ky) {
+void graphics_Font_printf(graphics_Font* font, char const* text, int px, int py, int limit, graphics_TextAlign align,
+                          float r, float sx, float sy, float ox, float oy, float kx, float ky) {
   moduleData.x = 0;
   moduleData.storeX = 0;
   moduleData.storeY = 0;
@@ -185,17 +180,17 @@ void graphics_Font_printf(graphics_Font* font, char const* text,
   while((moduleData.cp = utf8_scan(&text))) {
       font->ch = font->characters[moduleData.cp];
       glBindTexture(GL_TEXTURE_2D,font->ch.textureid);
-
-
+	
+		
       if (moduleData.storeX == 0)
         moduleData.storeX = px ;//- font->ch.sizex;
       if (moduleData.storeY == 0)
         moduleData.storeY = py + font->ch.sizey + 1;
-
+				
       moduleData.x = px + font->ch.bearingx;
       moduleData.y = py - font->ch.bearingy;
-
-
+		
+		
       if ((wrapped == 0 && ++count >= limit)){
           px = moduleData.x - (((font->ch.advancex >> 6)) * (font->ch.sizex + font->ch.bearingx));
           px = moduleData.storeX;
@@ -206,7 +201,7 @@ void graphics_Font_printf(graphics_Font* font, char const* text,
 
       moduleData.x = px + font->ch.bearingx;
       moduleData.y = py - font->ch.bearingy;
-
+		
       if (moduleData.cp == '\n'){
           px = moduleData.x - (((font->ch.advancex >> 6)) * (font->ch.sizex + font->ch.bearingx));
           if (px < moduleData.storeX)
@@ -215,11 +210,7 @@ void graphics_Font_printf(graphics_Font* font, char const* text,
           continue;
         }
 
-      m4x4_newTransform3d(&moduleData.tr2d,
-                          vec3_new(moduleData.x, moduleData.y, moduleData.z),
-                          r, vec3_new(rx, ry, rz),
-                          vec3_new(sx, sy, sz),
-                          ox, oy, kx, ky);
+      m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
 
       graphics_drawArray(&quad, &moduleData.tr2d,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
                          graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);
@@ -233,15 +224,11 @@ void graphics_Font_printf(graphics_Font* font, char const* text,
 
 }
 
-void graphics_Font_print(graphics_Font* font, char const* text,
-                         int px, int py, int pz,
-                         float r, float rx, float ry, float rz,
-                         float sx, float sy, float sz,
-                         float ox, float oy, float kx, float ky) {
+void graphics_Font_print(graphics_Font* font, char const* text, int px, int py, float r, float sx, float sy, float ox, float oy, float kx, float ky) {
   moduleData.x = 0;
   moduleData.storeX = 0;
   moduleData.y = font->face->ascender;
-
+  
   graphics_Shader* shader = graphics_getShader();
   graphics_setDefaultShader();
 
@@ -264,11 +251,7 @@ void graphics_Font_print(graphics_Font* font, char const* text,
           continue;
         }
 
-      m4x4_newTransform3d(&moduleData.tr2d,
-                          vec3_new(moduleData.x, moduleData.y, moduleData.z),
-                          r, vec3_new(rx, ry, rz),
-                          vec3_new(sx, sy, sz),
-                          ox, oy, kx, ky);
+      m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
 
       graphics_drawArray(&quad, &moduleData.tr2d,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
                          graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);

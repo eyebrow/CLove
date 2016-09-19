@@ -54,12 +54,12 @@ SDL_acos(double val)
 #else
     double result;
     if (val == -1.0) {
-        result = M_PI;
+        result = 3.14;
     } else {
         result = SDL_atan(SDL_sqrt(1.0 - val * val) / val);
         if (result < 0.0)
         {
-            result += M_PI;
+            result += 3.14;
         }
     }
     return result;
@@ -74,9 +74,9 @@ SDL_asin(double val)
 #else
     double result;
     if (val == -1.0) {
-        result = -(M_PI / 2.0);
+        result = -(3.14 / 2.0);
     } else {
-        result = (M_PI / 2.0) - SDL_acos(val);
+        result = (3.14 / 2.0) - SDL_acos(val);
     }
     return result;
 #endif

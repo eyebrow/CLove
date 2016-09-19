@@ -9,16 +9,14 @@
 
 #pragma once
 
-#include <stdbool.h>
-
+#include "../image/imagedata.h"
+#include "quad.h"
 #ifdef EMSCRIPTEN
 #include <GLES2/gl2.h>
 #else
 #include "../3rdparty/glew/include/GL/glew.h"
 #endif
 
-#include "../image/imagedata.h"
-#include "quad.h"
 #include "gltools.h"
 
 typedef enum {
@@ -51,8 +49,4 @@ void graphics_Image_getFilter(graphics_Image *img, graphics_Filter *filter);
 void graphics_Image_setWrap(graphics_Image *img, graphics_Wrap const* wrap);
 void graphics_Image_getWrap(graphics_Image *img, graphics_Wrap *wrap);
 void graphics_Image_refresh(graphics_Image *img, image_ImageData const* data);
-void graphics_Image_draw(graphics_Image const* image, graphics_Quad const* quad,float x, float y,
-                         float r,
-                         float sx, float sy,
-                         float ox, float oy,
-                         float kx, float ky);
+void graphics_Image_draw(graphics_Image const* image, graphics_Quad const* quad, float x, float y, float r, float sx, float sy, float ox, float oy, float kx, float ky);

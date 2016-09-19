@@ -48,7 +48,7 @@ static int l_graphics_Quad_setViewport(lua_State* state) {
   l_assertType(state, 1, l_graphics_isQuad);
 
   graphics_Quad *quad = l_graphics_toQuad(state, 1);
-
+  
   float x = l_tools_toNumberOrError(state, 2);
   float y = l_tools_toNumberOrError(state, 3);
   float w = l_tools_toNumberOrError(state, 4);

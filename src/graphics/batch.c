@@ -53,7 +53,7 @@ void graphics_batch_init(void) {
 }
 
 void graphics_Batch_new(graphics_Batch* batch, graphics_Image const* texture, int maxSize, graphics_BatchUsage usage) {
-
+  
 
   batch->texture = texture;
   batch->vertexData = calloc(4*maxSize, sizeof(graphics_Vertex));
@@ -137,20 +137,16 @@ static const graphics_Quad fullQuad = {
 static float const defaultColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
 
 void graphics_Batch_draw(graphics_Batch const* batch,
-                         float x, float y,
-                         float r,
-                         float sx, float sy,
-                         float ox, float oy,
-                         float kx, float ky) {
+                         float x, float y, float r, float sx, float sy,
+                         float ox, float oy, float kx, float ky) {
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, batch->texture->texID);
 
   glBufferData(GL_ARRAY_BUFFER, 4*batch->maxCount*sizeof(graphics_Vertex), batch->vertexData, batch->usage);
-  m4x4_newTransform2d(&moduleData.tr2d, x, y, r, sx, sy,
-                      ox, oy, kx, ky);
+  m4x4_newTransform2d(&moduleData.tr2d, x, y, r, sx, sy, ox, oy, kx, ky);
   float const * color = batch->colorUsed ? defaultColor : graphics_getColor();
-
+  
 
   graphics_drawArray(&fullQuad, &moduleData.tr2d, moduleData.sharedIndexBuffer, batch->insertPos*6, GL_TRIANGLES,
                      GL_UNSIGNED_SHORT,  color, 1.0f, 1.0f);

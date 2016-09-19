@@ -45,6 +45,7 @@
 #define ENABLE_DOLLAR
 
 #define PHI 0.618033989
+#define M_PI 3.14
 
 typedef struct {
     float x,y;

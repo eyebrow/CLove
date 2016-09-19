@@ -30,7 +30,7 @@ static graphics_Vertex const imageVertices[] = {
 
 static unsigned char const imageIndices[] = { 0, 1, 2, 3 };
 
-void graphics_image_init(void) {
+void graphics_image_init(void) {  
 
 }
 
@@ -50,7 +50,7 @@ static const graphics_Filter defaultFilter = {
 void graphics_Image_new_with_ImageData(graphics_Image *dst, image_ImageData *data) {
   glGenBuffers(1, &moduleData.vbo);
   glGenBuffers(1, &moduleData.ibo);
-
+  
   glBindBuffer(GL_ARRAY_BUFFER, moduleData.vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_STATIC_DRAW);
 
@@ -58,28 +58,28 @@ void graphics_Image_new_with_ImageData(graphics_Image *dst, image_ImageData *dat
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(imageIndices), imageIndices, GL_STATIC_DRAW);
 
   glEnableVertexAttribArray(0);
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(graphics_Vertex), 0);
   glEnableVertexAttribArray(1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (GLvoid const*)(2*sizeof(float)));
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(graphics_Vertex), (GLvoid const*)(2*sizeof(float)));
   glEnableVertexAttribArray(2);
-  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (GLvoid const*)(4*sizeof(float)));
+  glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(graphics_Vertex), (GLvoid const*)(4*sizeof(float)));
 
   graphics_Image_refresh(dst,data);
 }
 
 void graphics_Image_refresh(graphics_Image *img, image_ImageData const *data) {
-
+  
 
   // Create the OpenGL texture
   glGenTextures(1, &img->texID);
   glBindTexture(GL_TEXTURE_2D, img->texID);
-
+  
   graphics_Image_setFilter(img, &defaultFilter);
   graphics_Image_setWrap(img, &defaultWrap);
-
+  
   img->width = data->w;
   img->height = data->h;
-
+ 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data->w, data->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data->surface);
 }
 
@@ -110,21 +110,18 @@ void graphics_Image_getWrap(graphics_Image *img, graphics_Wrap *wrap) {
 }
 
 void graphics_Image_draw(graphics_Image const* image, graphics_Quad const* quad,
-                         float x, float y,
-                         float r,
-                         float sx, float sy,
+                         float x, float y, float r, float sx, float sy,
                          float ox, float oy, float kx, float ky) {
-
-  mat4x4 tr;
-  glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(float), imageVertices, GL_STREAM_DRAW);
-
-  m4x4_newTransform2d(&tr, x, y, r, sx, sy, ox, oy, kx, ky);
-
+  
+  mat4x4 tr2d; 
+  glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_STREAM_DRAW);
+  m4x4_newTransform2d(&tr2d, x, y, r, sx, sy, ox, oy, kx, ky);
+  
   glEnable(GL_TEXTURE_2D);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, image->texID);
-
-  graphics_drawArray(quad, &tr,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
-                     graphics_getColor(), image->width * quad->w, image->height * quad->h);
+  
+ graphics_drawArray(quad, &tr2d,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
+                    graphics_getColor(), image->width * quad->w, image->height * quad->h);
 
 }
