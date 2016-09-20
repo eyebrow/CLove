@@ -15,7 +15,7 @@ const static int stackSize = 32;
 
 static struct {
   int head;
-  mat4x4 stack[stackSize];
+  mat4x4* stack;
 } moduleData;
 
 inline mat4x4* matrixstack_head() {
@@ -23,6 +23,7 @@ inline mat4x4* matrixstack_head() {
 }
 
 void matrixstack_init(void) {
+  moduleData.stack = malloc(sizeof(stackSize));
   moduleData.head = 0;
   m4x4_newIdentity(matrixstack_head());
 }

@@ -23,6 +23,7 @@ void audio_init(void) {
   if(!alcMakeContextCurrent(moduleData.context)) {
     printf("%s \n", "Failed to initialite audio context");
   }
+  printf("%s %s \n ", "Debug: OpenAL version: ", alGetString(AL_VERSION));
 }
 
 void audio_setVolume(double value){

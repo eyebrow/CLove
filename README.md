@@ -7,9 +7,17 @@ Mac/Linux/PC, made in C with OpenGLES 2 which uses Lua as scripting langauge.
 
 How to build
 ============
-In order to build CLove you'll need CMake and GCC. Download or clone CLove 
-and call "cmake ../ && make" from a new folder called "build". If you are on
-Windows then you'll need CMake GUI.
+On Windows: 
+- Download and install mingw and let the setup configure the path for you.
+After that check if you got gcc & g++ installed.
+- Download and install CMake and let the setup configure the path for you.
+- Download DX SDK 2010 (required by SDL2): http://www.microsoft.com/en-us/download/details.aspx?id=6812
+- Download and install QT Community the Open Source Edition but only install the core of it since
+you wont need all the stuff that QT comes with
+- Restart the PC
+On Linux & os X
+- Download and install cmake,gcc,g++(optional git)(on os x you can install these using brew)
+- Download and install QT Community 
 
 Features
 ========

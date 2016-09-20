@@ -14,9 +14,9 @@ project(clove)
 if (UNIX)
     add_definitions(-std=gnu99 -O3)
 endif()
-#if (MINGW)
-# add_definitions(-std=c99 -O3)
-#endif()
+if (MINGW)
+    add_definitions(-std=c99 -O3)
+endif()
 
 IF(MINGW)
 FIND_PACKAGE(OpenGL REQUIRED)
@@ -161,7 +161,7 @@ if(UNIX)
 endif()
 
 if(MINGW)
-    target_link_libraries(clove ws2_32.lib glfw
+    target_link_libraries(clove ws2_32.lib
         ${SDL_LIBRARIES} ${GLEW_LIBRARIES}
         ${CHIPMUNK_LIBRARIES}
         ${OPENGL_LIBRARIES} ${OPENAL_LIBRARIES}
