@@ -25,7 +25,10 @@ macro(MESSAGE_WARN _TEXT)
 endmacro()
 
 macro(MESSAGE_ERROR _TEXT)
-  message(FATAL_ERROR "*** ERROR: ${_TEXT}")
+    # This comment line will most likely blow up the whole
+    # SDL at a certain point but otherwhise we're forced to install dx sdx june 2010 on
+    # windows
+    # message(FATAL_ERROR "*** ERROR: ${_TEXT}")
 endmacro()
 
 macro(MESSAGE_BOOL_OPTION _NAME _VALUE)

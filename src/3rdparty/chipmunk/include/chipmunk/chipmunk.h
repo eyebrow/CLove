@@ -1,15 +1,15 @@
 /* Copyright (c) 2013 Scott Lembcke and Howling Moon Software
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -25,13 +25,17 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifdef WIN32
-	// For alloca().
-	#include <malloc.h>
-	#define CP_EXPORT __declspec(dllexport)
+#if _WIN32 || WIN64
+#define WINDOWS
+#endif
+
+#ifdef WINDOWS
+// For alloca().
+#include <malloc.h>
+#define CP_EXPORT __declspec(dllexport)
 #else
-	#include <alloca.h>
-	#define CP_EXPORT
+#include <alloca.h>
+#define CP_EXPORT
 #endif
 
 #ifdef __cplusplus
@@ -40,39 +44,39 @@ extern "C" {
 
 CP_EXPORT void cpMessage(const char *condition, const char *file, int line, int isError, int isHardError, const char *message, ...);
 #ifdef NDEBUG
-	#define	cpAssertWarn(__condition__, ...)
-	#define	cpAssertSoft(__condition__, ...)
+#define	cpAssertWarn(__condition__, ...)
+#define	cpAssertSoft(__condition__, ...)
 #else
-	#define cpAssertSoft(__condition__, ...) if(!(__condition__)){cpMessage(#__condition__, __FILE__, __LINE__, 1, 0, __VA_ARGS__); abort();}
-	#define cpAssertWarn(__condition__, ...) if(!(__condition__)) cpMessage(#__condition__, __FILE__, __LINE__, 0, 0, __VA_ARGS__)
+#define cpAssertSoft(__condition__, ...) if(!(__condition__)){cpMessage(#__condition__, __FILE__, __LINE__, 1, 0, __VA_ARGS__); abort();}
+#define cpAssertWarn(__condition__, ...) if(!(__condition__)) cpMessage(#__condition__, __FILE__, __LINE__, 0, 0, __VA_ARGS__)
 #endif
 
 // Hard assertions are used in situations where the program definitely will crash anyway, and the reason is inexpensive to detect.
 #define cpAssertHard(__condition__, ...) if(!(__condition__)){cpMessage(#__condition__, __FILE__, __LINE__, 1, 1, __VA_ARGS__); abort();}
 
 #include "chipmunk_types.h"
-	
+
 /// @defgroup misc Misc
 /// @{
 
 /// Allocated size for various Chipmunk buffers
 #ifndef CP_BUFFER_BYTES
-	#define CP_BUFFER_BYTES (32*1024)
+#define CP_BUFFER_BYTES (32*1024)
 #endif
 
 #ifndef cpcalloc
-	/// Chipmunk calloc() alias.
-	#define cpcalloc calloc
+/// Chipmunk calloc() alias.
+#define cpcalloc calloc
 #endif
 
 #ifndef cprealloc
-	/// Chipmunk realloc() alias.
-	#define cprealloc realloc
+/// Chipmunk realloc() alias.
+#define cprealloc realloc
 #endif
 
 #ifndef cpfree
-	/// Chipmunk free() alias.
-	#define cpfree free
+/// Chipmunk free() alias.
+#define cpfree free
 #endif
 
 typedef struct cpArray cpArray;
@@ -172,16 +176,16 @@ CP_EXPORT int cpConvexHull(int count, const cpVect *verts, cpVect *result, int *
 /// @c count_var and @c verts_var are the names of the variables the macro creates to store the result.
 /// The output vertex array is allocated on the stack using alloca() so it will be freed automatically, but cannot be returned from the current scope.
 #define CP_CONVEX_HULL(__count__, __verts__, __count_var__, __verts_var__) \
-cpVect *__verts_var__ = (cpVect *)alloca(__count__*sizeof(cpVect)); \
-int __count_var__ = cpConvexHull(__count__, __verts__, __verts_var__, NULL, 0.0); \
+    cpVect *__verts_var__ = (cpVect *)alloca(__count__*sizeof(cpVect)); \
+    int __count_var__ = cpConvexHull(__count__, __verts__, __verts_var__, NULL, 0.0); \
 
 /// Returns the closest point on the line segment ab, to the point p.
 static inline cpVect
 cpClosetPointOnSegment(const cpVect p, const cpVect a, const cpVect b)
 {
-	cpVect delta = cpvsub(a, b);
-	cpFloat t = cpfclamp01(cpvdot(delta, cpvsub(p, b))/cpvlengthsq(delta));
-	return cpvadd(b, cpvmult(delta, t));
+    cpVect delta = cpvsub(a, b);
+    cpFloat t = cpfclamp01(cpvdot(delta, cpvsub(p, b))/cpvlengthsq(delta));
+    return cpvadd(b, cpvmult(delta, t));
 }
 
 #if defined(__has_extension)

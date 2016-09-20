@@ -11,23 +11,13 @@ On Windows:
 - Download and install mingw and let the setup configure the path for you.
 After that check if you got gcc & g++ installed.
 - Download and install CMake and let the setup configure the path for you.
-- Download DX SDK 2010 (required by SDL2, only if you got errors related to SDL on build)
-  http://www.microsoft.com/en-us/download/details.aspx?id=6812
+- Download DX SDK 2010 (required by SDL2): http://www.microsoft.com/en-us/download/details.aspx?id=6812
 - Download and install QT Community the Open Source Edition but only install the core of it since
 you wont need all the stuff that QT comes with
-- After the build has been finised you must go into the build directory -> src 
-  and copy sdl2.dll openal.dll and place them in the directory where clove and your main.lua are
-- Restart the PC to be sure the paths are set
-- Profit $_$
-
-On Linux & os X:
+- Restart the PC
+On Linux & os X
 - Download and install cmake,gcc,g++(optional git)(on os x you can install these using brew)
 - Download and install QT Community 
-- Profit ^_^
-
-Errors/Bugs:
-	If anything goes wrong please let me know and I'll do my best to help you out.
-	Post a new issue or hit me up on IRC. I'm under the name Murii on sdl/opengl/love2d/programming channels
 
 Features
 ========

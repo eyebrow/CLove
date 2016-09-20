@@ -11,11 +11,19 @@
 #include "matrixstack.h"
 #include <string.h>
 
+#include <stdlib.h>
+#include <stdio.h>
+
 const static int stackSize = 32;
 
 static struct {
   int head;
+#if _WIN32 || _WIN64
   mat4x4* stack;
+#else
+  mat4x4 stack[stackSize];
+#endif
+
 } moduleData;
 
 inline mat4x4* matrixstack_head() {
@@ -23,15 +31,17 @@ inline mat4x4* matrixstack_head() {
 }
 
 void matrixstack_init(void) {
+#if _WIN32 || _WIN64
   moduleData.stack = malloc(sizeof(stackSize));
+#endif
   moduleData.head = 0;
   m4x4_newIdentity(matrixstack_head());
 }
 
 int matrixstack_push(void) {
   if(moduleData.head == stackSize - 1) {
-    return 1;
-  }
+      return 1;
+    }
 
   memcpy(matrixstack_head() + 1, matrixstack_head(), sizeof(mat4x4));
   ++moduleData.head;
@@ -40,8 +50,8 @@ int matrixstack_push(void) {
 
 int matrixstack_pop(void) {
   if(moduleData.head == 0) {
-    return 1;
-  }
+      return 1;
+    }
 
   --moduleData.head;
   return 0;
