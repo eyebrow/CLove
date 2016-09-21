@@ -117,6 +117,11 @@ INCLUDE_DIRECTORIES(src/3rdparty/stb)
 add_subdirectory(src/3rdparty/freetype)
 set(FREETYPE_INCLUDE_DIR src/3rdparty/freetype/include)
 
+#libzip
+add_subdirectory(src/3rdparty/physfs)
+set(LIBZIP_INCLUDE_DIR src/3rdparty/physfs)
+set(LIBZIP_LIBRARIES physfs)
+
 #openal
 add_subdirectory(src/3rdparty/openal)
 set(OPENAL_INCLUDE_DIR src/3rdparty/openal/include/)
@@ -130,11 +135,11 @@ set(LUA_LIBRARIES lua)
 add_subdirectory(src/3rdparty/glew/)
 set(GLEW_INCLUDE_DIR src/3rdparty/glew/include/GL/)
 
+#sdl2
 add_subdirectory(src/3rdparty/SDL2/)
 include_directories(src/3rdparty/SDL2/include/)
 set(SDL_INCLUDE_DIR src/3rdparty/SDL2/include/)
 set(SDL_LIBRARIES SDL2)
-
 
 add_definitions(-DAL_LIBTYPE_STATIC)
 add_definitions(-DGLEW_STATIC)
@@ -155,20 +160,21 @@ endif()
 
 if(MINGW)
     target_link_libraries(clove ws2_32.lib
+        ${LIBZIP_LIBRARIES}
         ${SDL_LIBRARIES} ${GLEW_LIBRARIES}
         ${OPENGL_LIBRARIES} ${OPENAL_LIBRARIES}
         ${FREETYPE_LIBRARIES} ${LUA_LIBRARIES})
 endif()
 
 if(APPLE)
-    target_link_libraries(clove
+    target_link_libraries(clove ${LIBZIP_LIBRARIES}
         ${SDL_LIBRARIES} ${GLEW_LIBRARIES}
         ${OPENGL_LIBRARIES} ${OPENAL_LIBRARIES}
         ${FREETYPE_LIBRARIES} ${LUA_LIBRARIES})
 endif()
 
 if(UNIX)
-    target_link_libraries(clove
+    target_link_libraries(clove ${LIBZIP_LIBRARIES}
         ${SDL_LIBRARIES} ${GLEW_LIBRARIES}
         ${OPENGL_LIBRARIES} ${OPENAL_LIBRARIES}
         ${FREETYPE_LIBRARIES} ${LUA_LIBRARIES})

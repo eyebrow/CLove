@@ -7,6 +7,7 @@
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
 #include "../3rdparty/lua/lauxlib.h"
+#include "../3rdparty/lua/lua.h"
 
 #include "../graphics/graphics.h"
 #include "graphics_window.h"
@@ -27,8 +28,19 @@ static int l_graphics_window_setTitle(lua_State* state){
   return 1;
 }
 
+// This function is not compatible 1:1 with love2d
 static int l_graphics_window_setMode(lua_State* state){
-  graphics_setMode(l_tools_toNumberOrError(state, 1), l_tools_toNumberOrError(state, 2));
+  float w = l_tools_toNumberOrError(state, 1);
+  float h = l_tools_toNumberOrError(state, 2);
+  bool fullscreen = lua_toboolean(state, 3);
+  int m_s_x = luaL_optinteger(state, 4, 1);
+  int m_s_y = luaL_optinteger(state, 5, 1);
+  int ma_s_x = luaL_optinteger(state, 6, w);
+  int ma_s_y = luaL_optinteger(state, 7, h);
+  bool border = !lua_toboolean(state, 8);
+  int x = luaL_optinteger(state, 9, -1);
+  int y = luaL_optinteger(state, 10, -1);
+  graphics_setMode(w, h, fullscreen, m_s_x, m_s_y, ma_s_x, ma_s_y, border, x, y);
   return 1;
 }
 

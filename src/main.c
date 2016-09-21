@@ -11,6 +11,10 @@
 # include <emscripten.h>
 #endif
 #include <stdio.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "3rdparty/lua/lua.h"
 #include "3rdparty/lua/lauxlib.h"
@@ -30,6 +34,7 @@
 #include "luaapi/timer.h"
 #include "luaapi/math.h"
 #include "luaapi/system.h"
+#include "tools/utils.c"
 #include "love.h"
 
 #include "graphics/graphics.h"
@@ -38,6 +43,8 @@
 #include "keyboard.h"
 #include "mouse.h"
 #include "timer/timer.h"
+
+#include "3rdparty/physfs/physfs.h"
 
 int lua_errorhandler(lua_State *state) {
   lua_Debug debug;
@@ -204,11 +211,33 @@ int main(int argc, char* argv[]) {
   l_running = 1;
   audio_init();
 
-  if(luaL_dofile(lua, "main.lua")){
-      printf("Error: %s\n", lua_tostring(lua, -1));
-      l_no_game(lua,&config);
+  bool use_argv = false;
+  PHYSFS_file* myfile;
+  char myBuf[2048] = {0};   //TODO check too see when this fails(if ever)
+  PHYSFS_init(argv[1]);
+  use_argv = true;
+  if(PHYSFS_addToSearchPath(argv[1], 1)){
+      if(PHYSFS_exists(argv[2]))
+        {
+          myfile = PHYSFS_openRead(argv[2]);
+          PHYSFS_sint64 fileLngth = PHYSFS_fileLength(myfile);
+          PHYSFS_read (myfile, myBuf, 1, fileLngth);
+          if(luaL_loadbuffer(lua, myBuf, strlen(myBuf), "line") || lua_pcall(lua, 0, 0, 0)){
+              printf("Error loading from argv: %s\n", lua_tostring(lua, -1));
+              l_no_game(lua,&config);
+            }
+
+        }
     }
-  
+  else // look for main.lua ;)
+    {
+      if(luaL_dofile(lua,"main.lua")){
+          printf("Error: %s\n", lua_tostring(lua, -1));
+          l_no_game(lua,&config);
+        }
+    }
+
+
   love_Version const * version = love_getVersion();
   printf("%s %s %d.%d.%d \n", "Love version name: ",version->codename,version->major,version->minor,version->revision);
 
@@ -242,5 +271,9 @@ int main(int argc, char* argv[]) {
   graphics_destroyWindow();
   audio_close ();
   lua_close(lua);
+
+  PHYSFS_close(myfile);
+  if(use_argv)
+    PHYSFS_deinit();
   return 1;
 }

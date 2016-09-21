@@ -10,7 +10,6 @@
 #include "graphics_geometry.h"
 #include "../graphics/geometry.h"
 #include "tools.h"
-#include "../tools/log.c"
 
 #include <stdio.h>
 #include <stdlib.h>

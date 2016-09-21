@@ -24,6 +24,7 @@ Features
 - Lua scripting language
 - Easy to learn and use api 
 - Cross Platform 
+- Possibility of hiding the code inside .zip files and load the data from there
 - Powerful Batch system
 - Image loader & drawing
 - Image creation from scratch or from a template & save(png,bmp,tga)

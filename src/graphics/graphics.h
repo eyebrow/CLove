@@ -46,7 +46,9 @@ int graphics_setFocus(int value);
 int graphics_getWidth(void);
 int graphics_getHeight(void);
 int graphics_setTitle(const char* title);
-int graphics_setMode(int width, int height);
+int graphics_setMode(int width, int height,
+                     bool fullscreen, int min_size_x, int min_size_y, int max_size_x, int max_size_y, bool border,
+                     int x, int y);
 int graphics_setFullscreen(int value, const char* mode);
 int graphics_isCreated();
 void graphics_destroyWindow();

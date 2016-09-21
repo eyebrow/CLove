@@ -37,6 +37,7 @@ static struct {
 #ifndef EMSCRIPTEN
   SDL_Window* window;
   SDL_GLContext context;
+  SDL_WindowFlags w_flags;
 #endif
   SDL_Surface* surface;
   graphics_Color backgroundColor;
@@ -80,6 +81,7 @@ void graphics_init(int width, int height) {
   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE, 32);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
   
   moduleData.width = width;
@@ -87,7 +89,14 @@ void graphics_init(int width, int height) {
   moduleData.x = SDL_WINDOWPOS_CENTERED;
   moduleData.y = SDL_WINDOWPOS_CENTERED;
   moduleData.title = "CLove: Untitled window";
-  moduleData.window = SDL_CreateWindow(moduleData.title, moduleData.x, moduleData.y, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+
+  /*
+   * By default the window is resisable by the user. This can't be stoped if you set the minimum
+   * resizable value to the value of window's width/height
+  */
+  moduleData.w_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+
+  moduleData.window = SDL_CreateWindow(moduleData.title, moduleData.x, moduleData.y, width, height, moduleData.w_flags);
   if(!moduleData.window)
     printf("Error: Could not create window :O");
   moduleData.context = SDL_GL_CreateContext(moduleData.window);
@@ -241,12 +250,22 @@ int graphics_setPosition(int x, int y)
   return 1;
 }
 
-int graphics_setMode(int width, int height){
+int graphics_setMode(int width, int height,
+                     bool fullscreen, int min_size_x, int min_size_y, int max_size_x, int max_size_y, bool border,
+                     int x, int y){
 #ifndef EMSCRIPTEN
   moduleData.width = width;
   moduleData.height = height;
   SDL_SetWindowSize(moduleData.window, width, height);
-  graphics_setPosition(-1, -1);
+  if (fullscreen)
+    SDL_SetWindowFullscreen(moduleData.window, SDL_WINDOW_FULLSCREEN);
+  SDL_SetWindowMinimumSize(moduleData.window, min_size_x, min_size_y);
+  SDL_SetWindowMaximumSize(moduleData.window, max_size_x, max_size_y);
+  SDL_SetWindowBordered(moduleData.window, border);
+  if(x != -1 || y != -1)
+    SDL_SetWindowPosition(moduleData.window, x, y);
+  else if( x == -1 && y == -1)
+    graphics_setPosition(-1, -1);
 #else
   //moduleData.surface = SDL_SetVideoMode(width, height, 0, SDL_OPENGL);
   SDL_SetWindowSize(moduleData.window,width,height);
