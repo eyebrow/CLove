@@ -214,7 +214,11 @@ int main(int argc, char* argv[]) {
   bool use_argv = false;
   PHYSFS_file* myfile;
   char myBuf[2048] = {0};   //TODO check too see when this fails(if ever)
+#ifdef CLOVE_MACOSX || CLOVE_LINUX
   PHYSFS_init(argv[1]);
+#elif CLOVE_WINDOWS
+  PHYSFS_init(NULL);
+#endif
   use_argv = true;
   if(PHYSFS_addToSearchPath(argv[1], 1)){
       if(PHYSFS_exists(argv[2]))
