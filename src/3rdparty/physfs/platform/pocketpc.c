@@ -161,9 +161,9 @@ char *__PHYSFS_platformGetUserDir(void)
 } /* __PHYSFS_platformGetUserDir */
 
 
-void *__PHYSFS_platformGetThreadID(void)
+PHYSFS_uint64 __PHYSFS_platformGetThreadID(void)
 {
-    return((void *)1);  /* single threaded. */
+    return(1);  /* single threaded. */
 } /* __PHYSFS_platformGetThreadID */
 
 
@@ -467,7 +467,7 @@ PHYSFS_sint64 __PHYSFS_platformTell(void *opaque)
     LowPos = SetFilePointer(Handle, 0, &HighPos, FILE_CURRENT);
     if ((LowPos == INVALID_SET_FILE_POINTER) && (GetLastError() != NO_ERROR))
     {
-        BAIL_MACRO(win32strerror(), -1);
+        BAIL_MACRO(win32strerror(), 0);
     } /* if */
     else
     {
@@ -505,18 +505,14 @@ PHYSFS_sint64 __PHYSFS_platformFileLength(void *opaque)
 
 int __PHYSFS_platformEOF(void *opaque)
 {
-    const PHYSFS_sint64 FileLength = __PHYSFS_platformFileLength(opaque);
     PHYSFS_sint64 FilePosition;
     int retval = 0;
 
-    if (FileLength == 0)
-        return 1;  /* we're definitely at EOF. */
-
     /* Get the current position in the file */
-    if ((FilePosition = __PHYSFS_platformTell(opaque)) != -1)
+    if ((FilePosition = __PHYSFS_platformTell(opaque)) != 0)
     {
         /* Non-zero if EOF is equal to the file length */
-        retval = (FilePosition == FileLength);
+        retval = FilePosition == __PHYSFS_platformFileLength(opaque);
     } /* if */
 
     return(retval);

@@ -214,7 +214,9 @@ int main(int argc, char* argv[]) {
   bool use_argv = false;
   PHYSFS_file* myfile;
   char myBuf[2048] = {0};   //TODO check too see when this fails(if ever)
-#ifdef CLOVE_MACOSX || CLOVE_LINUX
+#ifdef CLOVE_MACOSX
+  PHYSFS_init(argv[1]);
+#elif CLOVE_LINUX
   PHYSFS_init(argv[1]);
 #elif CLOVE_WINDOWS
   PHYSFS_init(NULL);
@@ -226,6 +228,7 @@ int main(int argc, char* argv[]) {
           myfile = PHYSFS_openRead(argv[2]);
           PHYSFS_sint64 fileLngth = PHYSFS_fileLength(myfile);
           PHYSFS_read (myfile, myBuf, 1, fileLngth);
+
           if(luaL_loadbuffer(lua, myBuf, strlen(myBuf), "line") || lua_pcall(lua, 0, 0, 0)){
               printf("Error loading from argv: %s\n", lua_tostring(lua, -1));
               l_no_game(lua,&config);
@@ -243,7 +246,18 @@ int main(int argc, char* argv[]) {
 
 
   love_Version const * version = love_getVersion();
-  printf("%s %s %d.%d.%d \n", "Love version name: ",version->codename,version->major,version->minor,version->revision);
+  char* get_os = "";
+#ifdef CLOVE_MACOSX
+  get_os = "osx";
+#elif CLOVE_LINUX
+  get_os = "linux";
+#elif CLOVE_WINDOWS
+  get_os = "windows";
+#else
+  get_os = "unknown";
+#endif
+  printf("%s %s %d.%d.%d %s %s \n", "CLove:",
+         version->codename,version->major,version->minor,version->revision, "running on:", get_os);
 
   lua_pushcfunction(lua, lua_errorhandler);
   lua_getglobal(lua, "love");

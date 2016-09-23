@@ -1,4 +1,11 @@
-local a = "vlad"
+	
+	local dir = "" -- put a dir
+	local files = love.filesystem.enumerate(dir)
+	for k, file in ipairs(files) do
+		print(k .. ". " .. file) --outputs something like "1. main.lua"
+	end
+
+	local a = "vlad"
  	local b = "vlad"
  	print("\n")
  	print("is " .. a .. " the same as " .. b .. "?")

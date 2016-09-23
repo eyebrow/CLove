@@ -16,7 +16,6 @@
 #include <IOKit/storage/IOCDMedia.h>
 #include <IOKit/storage/IODVDMedia.h>
 #include <sys/mount.h>
-#include <sys/stat.h>
 
 /* Seems to get defined in some system header... */
 #ifdef Free
@@ -220,15 +219,12 @@ static char *convertCFString(CFStringRef cfstr)
 char *__PHYSFS_platformCalcBaseDir(const char *argv0)
 {
     ProcessSerialNumber psn = { 0, kCurrentProcess };
-    struct stat statbuf;
     FSRef fsref;
     CFRange cfrange;
     CFURLRef cfurl = NULL;
     CFStringRef cfstr = NULL;
     CFMutableStringRef cfmutstr = NULL;
     char *retval = NULL;
-    char *cstr = NULL;
-    int rc = 0;
 
     BAIL_IF_MACRO(GetProcessBundleLocation(&psn, &fsref) != noErr, NULL, NULL);
     cfurl = CFURLCreateFromFSRef(cfallocator, &fsref);
@@ -240,46 +236,27 @@ char *__PHYSFS_platformCalcBaseDir(const char *argv0)
     CFRelease(cfstr);
     BAIL_IF_MACRO(cfmutstr == NULL, NULL, NULL);
 
-    /* we have to decide if we got a binary's path, or the .app dir... */
-    cstr = convertCFString(cfmutstr);
-    if (cstr == NULL)
+    /* Find last dirsep so we can chop the binary's filename from the path. */
+    cfrange = CFStringFind(cfmutstr, CFSTR("/"), kCFCompareBackwards);
+    if (cfrange.location == kCFNotFound)
     {
+        assert(0);  /* shouldn't ever hit this... */
         CFRelease(cfmutstr);
         return(NULL);
     } /* if */
 
-    rc = stat(cstr, &statbuf);
-    allocator.Free(cstr);  /* done with this. */
-    if (rc == -1)
-    {
-        CFRelease(cfmutstr);
-        return(NULL);  /* maybe default behaviour will work? */
-    } /* if */
+    /* chop the "/exename" from the end of the path string... */
+    cfrange.length = CFStringGetLength(cfmutstr) - cfrange.location;
+    CFStringDelete(cfmutstr, cfrange);
 
-    if (S_ISREG(statbuf.st_mode))
-    {
-        /* Find last dirsep so we can chop the filename from the path. */
-        cfrange = CFStringFind(cfmutstr, CFSTR("/"), kCFCompareBackwards);
-        if (cfrange.location == kCFNotFound)
-        {
-            assert(0);  /* shouldn't ever hit this... */
-            CFRelease(cfmutstr);
-            return(NULL);
-        } /* if */
+    /* If we're an Application Bundle, chop everything but the base. */
+    cfrange = CFStringFind(cfmutstr, CFSTR("/Contents/MacOS"),
+                           kCFCompareCaseInsensitive |
+                           kCFCompareBackwards |
+                           kCFCompareAnchored);
 
-        /* chop the "/exename" from the end of the path string... */
-        cfrange.length = CFStringGetLength(cfmutstr) - cfrange.location;
-        CFStringDelete(cfmutstr, cfrange);
-
-        /* If we're an Application Bundle, chop everything but the base. */
-        cfrange = CFStringFind(cfmutstr, CFSTR("/Contents/MacOS"),
-                               kCFCompareCaseInsensitive |
-                               kCFCompareBackwards |
-                               kCFCompareAnchored);
-
-        if (cfrange.location != kCFNotFound)
-            CFStringDelete(cfmutstr, cfrange);  /* chop that, too. */
-    } /* if */
+    if (cfrange.location != kCFNotFound)
+        CFStringDelete(cfmutstr, cfrange);  /* chop that, too. */
 
     retval = convertCFString(cfmutstr);
     CFRelease(cfmutstr);
@@ -376,9 +353,9 @@ int __PHYSFS_platformSetDefaultAllocator(PHYSFS_Allocator *a)
 } /* __PHYSFS_platformSetDefaultAllocator */
 
 
-void *__PHYSFS_platformGetThreadID(void)
+PHYSFS_uint64 __PHYSFS_platformGetThreadID(void)
 {
-    return( (void *) ((size_t) MPCurrentTaskID()) );
+    return( (PHYSFS_uint64) ((size_t) MPCurrentTaskID()) );
 } /* __PHYSFS_platformGetThreadID */
 
 

@@ -106,9 +106,6 @@ OS/2 updates:
 Bug fixes:
     Patrice Mandin
 
-Bug fixes:
-    Lauri Kasanen
-
 Other stuff:
     Your name here! Patches go to icculus@icculus.org ...
 
