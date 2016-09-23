@@ -18,7 +18,6 @@
 #endif
 #include "physfs.h"
 #include "zlib.h"
-#include "AES/fileenc.h"
 
 #define __PHYSICSFS_INTERNAL__
 #include "physfs_internal.h"
@@ -69,11 +68,6 @@ typedef struct _ZIPentry
     PHYSFS_uint16 version;              /* version made by                */
     PHYSFS_uint16 version_needed;       /* version needed to extract      */
     PHYSFS_uint16 compression_method;   /* compression method             */
-	PHYSFS_uint8  encrypted;			/* Encryption method (only AES)   */
-	PHYSFS_uint8  aes_key_strength;		/* 128, 192 or 256 bit keys       */
-	PHYSFS_uint8  salt[16];
-	PHYSFS_uint16 pass_verification;
-	PHYSFS_uint8  auth_code[10];
     PHYSFS_uint32 crc;                  /* crc-32                         */
     PHYSFS_uint32 compressed_size;      /* compressed size                */
     PHYSFS_uint32 uncompressed_size;    /* uncompressed size              */
@@ -99,9 +93,8 @@ typedef struct
     void *handle;                         /* physical file handle.      */
     PHYSFS_uint32 compressed_position;    /* offset in compressed data. */
     PHYSFS_uint32 uncompressed_position;  /* tell() position.           */
-    PHYSFS_uint8* buffer;                 /* decompression buffer.      */
-    z_stream      stream;                 /* zlib stream state.         */
-	fcrypt_ctx    zctx;
+    PHYSFS_uint8 *buffer;                 /* decompression buffer.      */
+    z_stream stream;                      /* zlib stream state.         */
 } ZIPfileinfo;
 
 
@@ -110,24 +103,8 @@ typedef struct
 #define ZIP_CENTRAL_DIR_SIG         0x02014b50
 #define ZIP_END_OF_CENTRAL_DIR_SIG  0x06054b50
 
-/* AES specific */
-#define ZIP_AES_HEADER_ID			0x9901
-
-#define ZIP_AE1_VENDOR_VERSION		0x0001
-#define ZIP_AE2_VENDOR_VERSION		0x0002
-
-#define ZIP_AES_VENDOR_ID			0x4541 /* 'AE' little endian */
-
-#define ZIP_AES_128_BITS			0x01
-#define ZIP_AES_192_BITS			0x02
-#define ZIP_AES_256_BITS			0x03
-
 /* compression methods... */
-#define COMPMETH_NONE				0x00
-#define COMPMETH_AES				0x63
-#define COMPMETH_UNKNOWN			0x10
-
-#define AES_ENCRYPTED 0x01
+#define COMPMETH_NONE 0
 /* ...and others... */
 
 
@@ -220,23 +197,10 @@ static int readui16(void *in, PHYSFS_uint16 *val)
     return(1);
 } /* readui16 */
 
-/*
- * Read an unsigned 8-bit int and swap to native byte order.
- */
-static int readui8(void *in, PHYSFS_uint8 *val)
-{
-    PHYSFS_uint8 v;
-    BAIL_IF_MACRO(__PHYSFS_platformRead(in, &v, sizeof (v), 1) != 1, NULL, 0);
-    *val = v;
-    return(1);
-} /* readui8*/
-
 
 static PHYSFS_sint64 ZIP_read(fvoid *opaque, void *buf,
                               PHYSFS_uint32 objSize, PHYSFS_uint32 objCount)
 {
-	int total, i = 0;
-	
     ZIPfileinfo *finfo = (ZIPfileinfo *) opaque;
     ZIPentry *entry = finfo->entry;
     PHYSFS_sint64 retval = 0;
@@ -256,24 +220,9 @@ static PHYSFS_sint64 ZIP_read(fvoid *opaque, void *buf,
 
     if (entry->compression_method == COMPMETH_NONE)
     {
-		if (entry->encrypted == AES_ENCRYPTED)
-		{
-			retval = __PHYSFS_platformRead(finfo->handle, buf, objSize, objCount);
-			total = maxread;
-			while (total > 16)
-			{
-				fcrypt_decrypt(((char*)buf) + i, 16, &finfo->zctx);
-				i += 16;
-				total -= 16;
-			}
-			if (total > 0)
-			{ fcrypt_decrypt(((char*)buf) + i, total, &finfo->zctx); }
-		}
-		else
-		{
-			retval = __PHYSFS_platformRead(finfo->handle, buf, objSize, objCount);
-		}
+        retval = __PHYSFS_platformRead(finfo->handle, buf, objSize, objCount);
     } /* if */
+
     else
     {
         finfo->stream.next_out = buf;
@@ -297,21 +246,9 @@ static PHYSFS_sint64 ZIP_read(fvoid *opaque, void *buf,
                     br = __PHYSFS_platformRead(finfo->handle,
                                                finfo->buffer,
                                                1, (PHYSFS_uint32) br);
-					if (br <= 0) { break; }
+                    if (br <= 0)
+                        break;
 
-					if (entry->encrypted == AES_ENCRYPTED)
-					{
-						total = br;
-						i = 0;
-						while (total > 16)
-						{
-							fcrypt_decrypt(finfo->buffer + i, 16, &finfo->zctx);
-							i += 16;
-							total -= 16;
-						}
-						if (total > 0)
-						{ fcrypt_decrypt(finfo->buffer + i, total, &finfo->zctx); }
-					}
                     finfo->compressed_position += (PHYSFS_uint32) br;
                     finfo->stream.next_in = finfo->buffer;
                     finfo->stream.avail_in = (PHYSFS_uint32) br;
@@ -426,8 +363,6 @@ static int ZIP_fileClose(fvoid *opaque)
 
     if (finfo->entry->compression_method != COMPMETH_NONE)
         inflateEnd(&finfo->stream);
-
-	/* FIXME clean AES context */
 
     if (finfo->buffer != NULL)
         allocator.Free(finfo->buffer);
@@ -600,6 +535,8 @@ static ZIPentry *zip_find_entry(ZIPinfo *info, const char *path, int *isDir)
 
         else /* substring match...might be dir or entry or nothing. */
         {
+            int i;
+
             if (isDir != NULL)
             {
                 *isDir = (thispath[pathlen] == '/');
@@ -609,12 +546,27 @@ static ZIPentry *zip_find_entry(ZIPinfo *info, const char *path, int *isDir)
 
             if (thispath[pathlen] == '\0') /* found entry? */
                 return(&a[middle]);
-            /* adjust search params, try again. */
-            else if (thispath[pathlen] > '/')
-                hi = middle - 1;
-            else
-                lo = middle + 1;
-        } /* if */
+
+            /* substring match; search remaining space to find it... */
+            for (i = lo; i < hi; i++)
+            {
+                thispath = a[i].name;
+                if (strncmp(path, thispath, pathlen) == 0)
+                {
+                    if (isDir != NULL)
+                    {
+                        *isDir = (thispath[pathlen] == '/');
+                        if (*isDir)
+                            return(NULL);
+                    } /* if */
+
+                    if (thispath[pathlen] == '\0') /* found entry? */
+                        return(&a[i]);
+                } /* if */
+            } /* for */
+            break;
+
+        } /* else */
     } /* while */
 
     if (isDir != NULL)
@@ -693,6 +645,7 @@ static void zip_expand_symlink_path(char *path)
         else
         {
             prevptr = ptr;
+            ptr++;
         } /* else */
     } /* while */
 } /* zip_expand_symlink_path */
@@ -796,11 +749,9 @@ static int zip_parse_local(void *in, ZIPentry *entry)
 {
     PHYSFS_uint32 ui32;
     PHYSFS_uint16 ui16;
-	PHYSFS_uint8  ui8;
     PHYSFS_uint16 fnamelen;
     PHYSFS_uint16 extralen;
 
-	int i;
     /*
      * crc and (un)compressed_size are always zero if this is a "JAR"
      *  archive created with Sun's Java tools, apparently. We only
@@ -808,77 +759,25 @@ static int zip_parse_local(void *in, ZIPentry *entry)
      *  aren't zero. That seems to work well.
      */
 
-	// Local file header signature
     BAIL_IF_MACRO(!__PHYSFS_platformSeek(in, entry->offset), NULL, 0);
     BAIL_IF_MACRO(!readui32(in, &ui32), NULL, 0);
     BAIL_IF_MACRO(ui32 != ZIP_LOCAL_FILE_SIG, ERR_CORRUPTED, 0);
-	// Version needed to extract (minimum)
     BAIL_IF_MACRO(!readui16(in, &ui16), NULL, 0);
     BAIL_IF_MACRO(ui16 != entry->version_needed, ERR_CORRUPTED, 0);
-	// General purpose bit flag
     BAIL_IF_MACRO(!readui16(in, &ui16), NULL, 0);  /* general bits. */
-	// Compression method
     BAIL_IF_MACRO(!readui16(in, &ui16), NULL, 0);
-	if (ui16 != COMPMETH_AES) 
-	{ BAIL_IF_MACRO(ui16 != entry->compression_method, ERR_CORRUPTED, 0); }
-	// File last modification time
-	// File last modification date
+    BAIL_IF_MACRO(ui16 != entry->compression_method, ERR_CORRUPTED, 0);
     BAIL_IF_MACRO(!readui32(in, &ui32), NULL, 0);  /* date/time */
-	// CRC-32
     BAIL_IF_MACRO(!readui32(in, &ui32), NULL, 0);
     BAIL_IF_MACRO(ui32 && (ui32 != entry->crc), ERR_CORRUPTED, 0);
-	// Compressed size
     BAIL_IF_MACRO(!readui32(in, &ui32), NULL, 0);
     BAIL_IF_MACRO(ui32 && (ui32 != entry->compressed_size), ERR_CORRUPTED, 0);
-	// Uncompressed size
     BAIL_IF_MACRO(!readui32(in, &ui32), NULL, 0);
     BAIL_IF_MACRO(ui32 && (ui32 != entry->uncompressed_size),ERR_CORRUPTED,0);
-	// File name length (n)
     BAIL_IF_MACRO(!readui16(in, &fnamelen), NULL, 0);
-	// Extra field length (m) // 16-bit ID code and a 16-bit length.
     BAIL_IF_MACRO(!readui16(in, &extralen), NULL, 0);
 
-	// set offset to data contents
-	entry->offset += fnamelen + extralen + 30;
-
-	if (entry->encrypted == AES_ENCRYPTED)
-	{
-		BAIL_IF_MACRO(!__PHYSFS_platformSeek(in, entry->offset), NULL, 0);
-
-		/* Read Salt value (8, 12 or 16 bytes) */
-		if (entry->aes_key_strength == ZIP_AES_128_BITS)
-		{
-			for(i = 0; i < 8; i++)
-			{
-				BAIL_IF_MACRO(!readui8(in, &ui8), NULL, 0);
-				entry->salt[i] = ui8;
-			}
-			entry->offset += 8;
-		}
-		if (entry->aes_key_strength == ZIP_AES_192_BITS)
-		{
-			for(i = 0; i < 12; i++)
-			{
-				BAIL_IF_MACRO(!readui8(in, &ui8), NULL, 0);
-				entry->salt[i] = ui8;
-			}
-			entry->offset += 12;
-		}
-		if (entry->aes_key_strength == ZIP_AES_256_BITS)
-		{
-			for(i = 0; i < 16; i++)
-			{
-				BAIL_IF_MACRO(!readui8(in, &ui8), NULL, 0);
-				entry->salt[i] = ui8;
-			}
-			entry->offset += 16;
-		}
-
-		BAIL_IF_MACRO(!readui16(in, &entry->pass_verification), NULL, 0);
-		entry->offset += 2;
-		/* FIXME save auth code and check integrity */
-		/* Lets ignore the CRC and Auth code for simplicity */
-	}
+    entry->offset += fnamelen + extralen + 30;
     return(1);
 } /* zip_parse_local */
 
@@ -1019,51 +918,28 @@ static int zip_load_entry(void *in, ZIPentry *entry, PHYSFS_uint32 ofs_fixup)
     PHYSFS_uint32 external_attr;
     PHYSFS_uint16 ui16;
     PHYSFS_uint32 ui32;
-    PHYSFS_sint64 si64, si64_2;
-
-	PHYSFS_uint16 extra_header, extra_size, zip_vendor;
+    PHYSFS_sint64 si64;
 
     /* sanity check with central directory signature... */
     BAIL_IF_MACRO(!readui32(in, &ui32), NULL, 0);
     BAIL_IF_MACRO(ui32 != ZIP_CENTRAL_DIR_SIG, ERR_CORRUPTED, 0);
 
     /* Get the pertinent parts of the record... */
-	// Version made by
     BAIL_IF_MACRO(!readui16(in, &entry->version), NULL, 0);
-	// Version needed to extract (minimum)
     BAIL_IF_MACRO(!readui16(in, &entry->version_needed), NULL, 0);
-	// General purpose bit flag
     BAIL_IF_MACRO(!readui16(in, &ui16), NULL, 0);  /* general bits */
-	// Compression method
     BAIL_IF_MACRO(!readui16(in, &entry->compression_method), NULL, 0);
-	if (entry->compression_method == COMPMETH_AES)
-	{
-		entry->compression_method = COMPMETH_UNKNOWN;
-		entry->encrypted = AES_ENCRYPTED;
-	}
-	// File last modification time
-	// File last modification date
     BAIL_IF_MACRO(!readui32(in, &ui32), NULL, 0);
     entry->last_mod_time = zip_dos_time_to_physfs_time(ui32);
-	// CRC-32
     BAIL_IF_MACRO(!readui32(in, &entry->crc), NULL, 0);
-	// Compressed size
     BAIL_IF_MACRO(!readui32(in, &entry->compressed_size), NULL, 0);
-	// Uncompressed size
     BAIL_IF_MACRO(!readui32(in, &entry->uncompressed_size), NULL, 0);
-	// File name length (n)
     BAIL_IF_MACRO(!readui16(in, &fnamelen), NULL, 0);
-	// Extra field length (m)
     BAIL_IF_MACRO(!readui16(in, &extralen), NULL, 0);
-	// File comment length (k)
     BAIL_IF_MACRO(!readui16(in, &commentlen), NULL, 0);
-	// Disk number where file starts
     BAIL_IF_MACRO(!readui16(in, &ui16), NULL, 0);  /* disk number start */
-	// Internal file attributes
     BAIL_IF_MACRO(!readui16(in, &ui16), NULL, 0);  /* internal file attribs */
-	// External file attributes
     BAIL_IF_MACRO(!readui32(in, &external_attr), NULL, 0);
-	// Relative offset of local file header.
     BAIL_IF_MACRO(!readui32(in, &entry->offset), NULL, 0);
     entry->offset += ofs_fixup;
 
@@ -1071,7 +947,6 @@ static int zip_load_entry(void *in, ZIPentry *entry, PHYSFS_uint32 ofs_fixup)
     entry->resolved = (zip_has_symlink_attr(entry, external_attr)) ?
                             ZIP_UNRESOLVED_SYMLINK : ZIP_UNRESOLVED_FILE;
 
-	// File name
     entry->name = (char *) allocator.Malloc(fnamelen + 1);
     BAIL_IF_MACRO(entry->name == NULL, ERR_OUT_OF_MEMORY, 0);
     if (__PHYSFS_platformRead(in, entry->name, fnamelen, 1) != 1)
@@ -1080,42 +955,11 @@ static int zip_load_entry(void *in, ZIPentry *entry, PHYSFS_uint32 ofs_fixup)
     entry->name[fnamelen] = '\0';  /* null-terminate the filename. */
     zip_convert_dos_path(entry, entry->name);
 
-	si64 = __PHYSFS_platformTell(in);
+    si64 = __PHYSFS_platformTell(in);
     if (si64 == -1)
         goto zip_load_entry_puked;
 
-	/* START Read extra field for AES encryption */
-	if (entry->encrypted == AES_ENCRYPTED)
-	{
-aes_field_search:
-		BAIL_IF_MACRO(!readui16(in, &extra_header), NULL, 0);
-		if (extra_header == ZIP_AES_HEADER_ID)
-		{
-			BAIL_IF_MACRO(!readui16(in, &extra_size), NULL, 0);
-			BAIL_IF_MACRO(!readui16(in, &zip_vendor), NULL, 0);
-
-			if ((zip_vendor == ZIP_AE1_VENDOR_VERSION) || (zip_vendor == ZIP_AE2_VENDOR_VERSION))
-			{
-				BAIL_IF_MACRO(!readui16(in, &zip_vendor), NULL, 0); /* 'AE' */
-				BAIL_IF_MACRO(zip_vendor != ZIP_AES_VENDOR_ID, NULL, 0);
-				BAIL_IF_MACRO(!readui8(in, &entry->aes_key_strength), NULL, 0);		/* Key Strength */
-				BAIL_IF_MACRO(!readui16(in, &entry->compression_method), NULL, 0);  /* Compression method */
-			}
-		}
-		else
-		{
-			BAIL_IF_MACRO(!readui16(in, &extra_size), NULL, 0);
-			si64_2 = __PHYSFS_platformTell(in);
-			if (si64_2 == -1)
-			{ goto zip_load_entry_puked; }
-			if (!__PHYSFS_platformSeek(in, si64_2 + extra_size))
-			{ goto zip_load_entry_puked; }
-			goto aes_field_search;
-		}
-	}
-	/* END Read extra field for AES encryption */
-
-    /* seek to the start of the next entry in the central directory... */
+        /* seek to the start of the next entry in the central directory... */
     if (!__PHYSFS_platformSeek(in, si64 + extralen + commentlen))
         goto zip_load_entry_puked;
 
@@ -1518,8 +1362,6 @@ static fvoid *ZIP_openRead(dvoid *opaque, const char *fnm, int *fileExists)
     ZIPfileinfo *finfo = NULL;
     void *in;
 
-	PHYSFS_uint16 pass_verifier;
-
     *fileExists = (entry != NULL);
     BAIL_IF_MACRO(entry == NULL, NULL, NULL);
 
@@ -1539,7 +1381,6 @@ static fvoid *ZIP_openRead(dvoid *opaque, const char *fnm, int *fileExists)
     initializeZStream(&finfo->stream);
     if (finfo->entry->compression_method != COMPMETH_NONE)
     {
-		/* Initialize zlib (no decompression here) */
         if (zlib_err(inflateInit2(&finfo->stream, -MAX_WBITS)) != Z_OK)
         {
             ZIP_fileClose(finfo);
@@ -1553,20 +1394,7 @@ static fvoid *ZIP_openRead(dvoid *opaque, const char *fnm, int *fileExists)
             BAIL_MACRO(ERR_OUT_OF_MEMORY, NULL);
         } /* if */
     } /* if */
-	if (finfo->entry->encrypted == AES_ENCRYPTED)
-	{
-		int rc;
-		/* FIXME: Allocate fcrypt context on demand */
-		rc = fcrypt_init(finfo->entry->aes_key_strength,		/* extra data value indicating key size */
-							 "1234",								/* the password */
-							 5,										/* number of bytes in password */
-							 finfo->entry->salt,					/* the salt */
-							 (unsigned char *)&pass_verifier,		/* on return contains password verifier */
-							 &finfo->zctx);							/* encryption context */
 
-		BAIL_IF_MACRO(rc != 0, NULL, NULL);
-		BAIL_IF_MACRO(finfo->entry->pass_verification != pass_verifier, NULL, NULL);
-	}
     return(finfo);
 } /* ZIP_openRead */
 
