@@ -36,6 +36,11 @@ Features
 - Keyboard & Mouse functions
 - Physics system thanks to ChipMunk
 
+Contributing
+========
+If you want to contribute to the project, feel free to work on what you please. I want to do a lot of the other stuff myself too ;).
+Please try to replicate the code style of the existing code, I might refuse to pull your changes otherwise.
+
 Examples (see examples folder)
 --------
 ```lua
