@@ -186,6 +186,20 @@ void main_loop(void *data) {
     }
 }
 
+static const char* get_filename_ext(const char *filename) {
+  const char *dot = strrchr(filename, '.');
+  if(!dot || dot == filename) return "";
+  return dot+1;
+}
+
+static char* concat(const char *s1, const char *s2)
+{
+  char *result = malloc(strlen(s1)+strlen(s2)+1);//+1 for the zero-terminator
+  strcpy(result, s1);
+  strcat(result, s2);
+  return result;
+}
+
 int main(int argc, char* argv[]) {
   lua_State *lua = luaL_newstate();
   luaL_openlibs(lua);
@@ -211,39 +225,29 @@ int main(int argc, char* argv[]) {
   l_running = 1;
   audio_init();
 
-  bool use_argv = false;
-  PHYSFS_file* myfile;
-  char myBuf[2048] = {0};   //TODO check too see when this fails(if ever)
-#ifdef CLOVE_MACOSX
-  PHYSFS_init(argv[1]);
-#elif CLOVE_LINUX
-  PHYSFS_init(argv[1]);
-#elif CLOVE_WINDOWS
-  PHYSFS_init(NULL);
-#endif
-  use_argv = true;
-  if(PHYSFS_addToSearchPath(argv[1], 1)){
-      if(PHYSFS_exists(argv[2]))
-        {
-          myfile = PHYSFS_openRead(argv[2]);
-          PHYSFS_sint64 fileLngth = PHYSFS_fileLength(myfile);
-          PHYSFS_read (myfile, myBuf, 1, fileLngth);
+  /*
+   * Since 24.09.16 boot_lua was introduced which means .zip files
+   * are being used for executing games, just like Love2d does.
+   * It took me several days to make this feature to work, so
+   * appreciate it ^_^!
+   */
+  const char* boot_lua = "local dir = love.filesystem.getSource()"
+                         "love.filesystem.requireDir(dir)"
+                         "if love.filesystem.exists('main.lua') then "
+                         "love.filesystem.require('main.lua')"
+                         "end";
 
-          if(luaL_loadbuffer(lua, myBuf, strlen(myBuf), "line") || lua_pcall(lua, 0, 0, 0)){
-              printf("Error loading from argv: %s\n", lua_tostring(lua, -1));
-              l_no_game(lua,&config);
-            }
-
+  if(filesystem_exists("boot.lua")){
+      if(luaL_dofile(lua,"boot.lua")){
+          printf("Error: %s\n", lua_tostring(lua, -1));
+          l_no_game(lua,&config);
         }
-    }
-  else // look for main.lua ;)
-    {
-      if(luaL_dofile(lua,"main.lua")){
+    } else {
+      if(luaL_loadbuffer(lua, boot_lua,strlen(boot_lua),"main.lua") || lua_pcall(lua, 0, 0, 0)){
           printf("Error: %s\n", lua_tostring(lua, -1));
           l_no_game(lua,&config);
         }
     }
-
 
   love_Version const * version = love_getVersion();
   char* get_os = "";
@@ -290,8 +294,7 @@ int main(int argc, char* argv[]) {
   audio_close ();
   lua_close(lua);
 
-  PHYSFS_close(myfile);
-  if(use_argv)
+  if(PHYSFS_isInit())
     PHYSFS_deinit();
   return 1;
 }
