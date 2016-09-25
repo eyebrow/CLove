@@ -14,9 +14,10 @@ After that check if you got gcc & g++ installed.
 - Download DX SDK 2010 (required by SDL2): http://www.microsoft.com/en-us/download/details.aspx?id=6812
 - Download and install QT Community the Open Source Edition but only install the core of it since
 you wont need all the stuff that QT comes with
+- When building CLove be sure that QT uses your brand new installation of mingw
 - Restart the PC
 
-On Linux & os X:
+On Linux & OS X:
 - Download and install cmake,gcc,g++(optional git)(on os x you can install these using brew)
 - Download and install QT Community 
 
@@ -39,7 +40,7 @@ Features
 
 Contributing
 ========
-If you want to contribute to the project, feel free to work on what you please. I want to do a lot of the other stuff myself too ;).
+If you want to contribute to the project, feel free to work on what you please. I want to do a lot of the other stuff myself too.
 Please try to replicate the code style of the existing code, I might refuse to pull your changes otherwise.
 
 Examples (see examples folder)
