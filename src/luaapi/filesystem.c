@@ -70,15 +70,16 @@ static int l_filesystem_set_require_dir(lua_State* state)
   const char* dir = lua_tostring(state, 1);
 
   PHYSFS_init(dir);
-  PHYSFS_addToSearchPath(dir, 1);
-  PHYSFS_mount(dir, "/", 1);
+  if(!PHYSFS_addToSearchPath(dir, 1))
+    printf("%s %s \n", "No folder/.zip named ", dir);
+  if(!PHYSFS_mount(dir, "/", 1))
+    printf("%s %s \n", "No folder/.zip named ", dir);
 
   return 1;
 }
 
 static int l_filesystem_require(lua_State* state)
 {
-
   if(!lua_isstring(state, 1))
     return luaL_error(state, "The argument must be a string.");
 
@@ -87,6 +88,8 @@ static int l_filesystem_require(lua_State* state)
   char myBuf[2048] = {0};
 
   PHYSFS_file* myfile = PHYSFS_openRead(filename);
+  if(!myfile)
+    printf("%s %s \n", "No .lua file named in this directory ", filename);
   PHYSFS_sint64 fileLngth = PHYSFS_fileLength(myfile);
   PHYSFS_read (myfile, myBuf, 1, fileLngth);
 

@@ -15,7 +15,8 @@ After that check if you got gcc & g++ installed.
 - Download and install QT Community the Open Source Edition but only install the core of it since
 you wont need all the stuff that QT comes with
 - Restart the PC
-On Linux & os X
+
+On Linux & os X:
 - Download and install cmake,gcc,g++(optional git)(on os x you can install these using brew)
 - Download and install QT Community 
 
