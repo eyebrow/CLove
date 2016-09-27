@@ -139,8 +139,6 @@ static int l_graphics_translate(lua_State* state) {
   float x = l_tools_toNumberOrError(state, 1);
   float y = l_tools_toNumberOrError(state, 2);
 
-  //printf(")) Translate %f, %f\n", x, y);
-
   matrixstack_translate(x, y);
   return 0;
 }
@@ -149,8 +147,14 @@ static int l_graphics_scale(lua_State* state) {
   float x = l_tools_toNumberOrError(state, 1);
   float y = luaL_optnumber(state, 2, x);
 
-
   matrixstack_scale(x, y);
+  return 0;
+}
+
+static int l_graphics_rotate(lua_State* state) {
+  float a = l_tools_toNumberOrError(state, 1);
+
+  matrixstack_rotate(a);
   return 0;
 }
 
@@ -162,13 +166,6 @@ static int l_graphics_origin(lua_State* state) {
 static int l_graphics_shear(lua_State* state) {
   lua_pushstring(state, "not implemented");
   lua_error(state);
-  return 0;
-}
-
-static int l_graphics_rotate(lua_State* state) {
-  float a = l_tools_toNumberOrError(state, 1);
-
-  matrixstack_rotate(a);
   return 0;
 }
 

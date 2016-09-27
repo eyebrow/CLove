@@ -72,7 +72,7 @@ void main_loop(void *data) {
   MainLoopData* loopData = (MainLoopData*)data;
 
   timer_step();
-  matrixstack_origin();
+  //matrixstack_origin();
   lua_rawgeti(loopData->luaState, LUA_REGISTRYINDEX, loopData->errhand);
   lua_getglobal(loopData->luaState, "love");
   lua_pushstring(loopData->luaState, "update");
@@ -88,15 +88,23 @@ void main_loop(void *data) {
 
   graphics_clear();
 
-  if(lua_pcall(loopData->luaState, 1, 0, 0)) {
-
-
+  if(lua_pcall(loopData->luaState, 1, 0, 1)) {
+      char const *msg = lua_tostring(loopData->luaState, -1);
+      graphics_setBackgroundColor(0.66f, 0.27f, 0.27f, 1.0f);
+      graphics_setColor(1.0f, 1.0f, 1.0f, 0.8f);
+      if (once) {
+          graphics_Font_new(&font, 0, 12);
+          graphics_Font_new(&font_big, 0, 32);
+          once = false;
+        }
+      graphics_Font_print(&font_big, "Love error menu", graphics_getWidth() / 2 - 150, 40, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+      graphics_Font_print(&font, msg, 10, 140, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     }
 
   lua_pushstring(loopData->luaState, "draw");
   lua_rawget(loopData->luaState, -2);
 
-  if(lua_pcall(loopData->luaState, 0, 0, 0)) {
+  if(lua_pcall(loopData->luaState, 0, 0, 1)) {
       char const *msg = lua_tostring(loopData->luaState, -1);
       graphics_setBackgroundColor(0.66f, 0.27f, 0.27f, 1.0f);
       graphics_setColor(1.0f, 1.0f, 1.0f, 0.8f);

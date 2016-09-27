@@ -118,14 +118,14 @@ void graphics_init(int width, int height) {
 
   if(res != GLEW_OK)
     printf("Error: Could not init glew!");
+
   glViewport(0, 0, width, height);
 
   matrixstack_init();
   
-  //m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
-  //m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
-  m4x4_newIdentity(&moduleData.projectionMatrix);
-  m4x4_newOrtho(&moduleData.projectionMatrix,0,width,height,0,1,100);
+  m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
+   m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
+
   moduleData.isCreated = 1;
 
   graphics_setColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -258,8 +258,9 @@ int graphics_setMode(int width, int height,
   moduleData.width = width;
   moduleData.height = height;
   SDL_SetWindowSize(moduleData.window, width, height);
-  m4x4_newIdentity(&moduleData.projectionMatrix);
-  m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 1, 100);
+  m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
+  m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
+
   if (fullscreen)
     SDL_SetWindowFullscreen(moduleData.window, SDL_WINDOW_FULLSCREEN);
   SDL_SetWindowMinimumSize(moduleData.window, min_size_x, min_size_y);

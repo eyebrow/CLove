@@ -38,6 +38,10 @@ void matrixstack_init(void) {
   m4x4_newIdentity(matrixstack_head());
 }
 
+void matrixstack_origin(void) {
+  m4x4_newIdentity(matrixstack_head());
+}
+
 int matrixstack_push(void) {
   if(moduleData.head == stackSize - 1) {
       return 1;
@@ -46,10 +50,6 @@ int matrixstack_push(void) {
   memcpy(matrixstack_head() + 1, matrixstack_head(), sizeof(mat4x4));
   ++moduleData.head;
   return 0;
-}
-
-void matrixstack_origin(void) {
-  m4x4_newIdentity(matrixstack_head());
 }
 
 int matrixstack_pop(void) {
