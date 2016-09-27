@@ -48,6 +48,10 @@ int matrixstack_push(void) {
   return 0;
 }
 
+void matrixstack_origin(void) {
+  m4x4_newIdentity(matrixstack_head());
+}
+
 int matrixstack_pop(void) {
   if(moduleData.head == 0) {
       return 1;
@@ -62,11 +66,7 @@ void matrixstack_translate(float x, float y) {
 }
 
 void matrixstack_scale(float x, float y) {
-  m4x4_scale(matrixstack_head(), x, y, 0.0f);
-}
-
-void matrixstack_origin(void) {
-  m4x4_newIdentity(matrixstack_head());
+ m4x4_scale(matrixstack_head(), x, y, 0.0f);
 }
 
 void matrixstack_rotate(float a) {

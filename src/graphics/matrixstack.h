@@ -14,6 +14,7 @@
 void matrixstack_init(void);
 int matrixstack_push(void);
 int matrixstack_pop(void);
+void matrixstack_origin(void);
 mat4x4 * matrixstack_head(void);
 void matrixstack_translate(float x, float y);
 void matrixstack_scale(float x, float y);

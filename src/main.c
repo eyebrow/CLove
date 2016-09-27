@@ -34,10 +34,12 @@
 #include "luaapi/timer.h"
 #include "luaapi/math.h"
 #include "luaapi/system.h"
+#include "luaapi/errorhandler.h"
 #include "tools/utils.c"
 #include "love.h"
 
 #include "graphics/graphics.h"
+#include "graphics/matrixstack.h"
 #include "filesystem/filesystem.h"
 #include "audio/audio.h"
 #include "keyboard.h"
@@ -45,22 +47,6 @@
 #include "timer/timer.h"
 
 #include "3rdparty/physfs/physfs.h"
-
-int lua_errorhandler(lua_State *state) {
-  lua_Debug debug;
-  int level = 0;
-  while(lua_getstack(state, level, &debug)) {
-      lua_getinfo(state, "Sl", &debug);
-      lua_pushstring(state, debug.short_src);
-      lua_pushstring(state, ":");
-      lua_pushnumber(state, debug.currentline);
-      lua_pushstring(state, "\n");
-      ++level;
-    }
-  
-  lua_concat(state, 4*level+1);
-  return 1;
-}
 
 typedef struct {
   lua_State *luaState;
@@ -78,10 +64,15 @@ void quit_function(lua_State* state)
   lua_pop(state, 1);
 }
 
+graphics_Font font;
+graphics_Font font_big;
+bool once = true;
+
 void main_loop(void *data) {
   MainLoopData* loopData = (MainLoopData*)data;
-  
+
   timer_step();
+  matrixstack_origin();
   lua_rawgeti(loopData->luaState, LUA_REGISTRYINDEX, loopData->errhand);
   lua_getglobal(loopData->luaState, "love");
   lua_pushstring(loopData->luaState, "update");
@@ -95,32 +86,28 @@ void main_loop(void *data) {
         }
     }
 
+  graphics_clear();
+
   if(lua_pcall(loopData->luaState, 1, 0, 0)) {
-      printf("Lua error: %s\n", lua_tostring(loopData->luaState, -1));
-#ifdef EMSCRIPTEN
-      quit_function(loopData->luaState);
-      emscripten_force_exit(1);
-#else
-      exit(1);
-#endif
+
+
     }
 
-  graphics_clear();
-  
   lua_pushstring(loopData->luaState, "draw");
   lua_rawget(loopData->luaState, -2);
 
   if(lua_pcall(loopData->luaState, 0, 0, 0)) {
-      printf("Lua error: %s\n", lua_tostring(loopData->luaState, -1));
-#ifdef EMSCRIPTEN
-      quit_function(loopData->luaState);
-      emscripten_force_exit(1);
-      l_running = 0;
-#else
-      l_running = 0;
-#endif
+      char const *msg = lua_tostring(loopData->luaState, -1);
+      graphics_setBackgroundColor(0.66f, 0.27f, 0.27f, 1.0f);
+      graphics_setColor(1.0f, 1.0f, 1.0f, 0.8f);
+      if (once) {
+          graphics_Font_new(&font, 0, 12);
+          graphics_Font_new(&font_big, 0, 32);
+          once = false;
+        }
+      graphics_Font_print(&font_big, "Love error menu", graphics_getWidth() / 2 - 150, 40, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+      graphics_Font_print(&font, msg, 10, 140, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
     }
-
   graphics_swap();
 
   lua_pop(loopData->luaState, 1);
@@ -186,20 +173,6 @@ void main_loop(void *data) {
     }
 }
 
-static const char* get_filename_ext(const char *filename) {
-  const char *dot = strrchr(filename, '.');
-  if(!dot || dot == filename) return "";
-  return dot+1;
-}
-
-static char* concat(const char *s1, const char *s2)
-{
-  char *result = malloc(strlen(s1)+strlen(s2)+1);//+1 for the zero-terminator
-  strcpy(result, s1);
-  strcat(result, s2);
-  return result;
-}
-
 int main(int argc, char* argv[]) {
   lua_State *lua = luaL_newstate();
   luaL_openlibs(lua);
@@ -246,12 +219,10 @@ int main(int argc, char* argv[]) {
   if(filesystem_exists("boot.lua")){
       if(luaL_dofile(lua,"boot.lua")){
           printf("Error: %s\n", lua_tostring(lua, -1));
-          l_no_game(lua,&config);
         }
     } else {
       if(luaL_dofile(lua,"main.lua")) {
           printf("Error: %s\n", lua_tostring(lua, -1));
-          l_no_game(lua,&config);
         }
     }
 
@@ -259,7 +230,7 @@ int main(int argc, char* argv[]) {
   printf("%s %s %d.%d.%d %s %s \n", "CLove:",
          version->codename,version->major,version->minor,version->revision, "running on:", get_os);
 
-  lua_pushcfunction(lua, lua_errorhandler);
+  lua_pushcfunction(lua, errorhandler);
   lua_getglobal(lua, "love");
   lua_pushstring(lua, "load");
   lua_rawget(lua, -2);
@@ -268,7 +239,8 @@ int main(int argc, char* argv[]) {
     }
   lua_pop(lua, 1);
 
-  lua_pushcfunction(lua, lua_errorhandler);
+  lua_pushcfunction(lua, errorhandler);
+
   MainLoopData mainLoopData = {
     .luaState = lua,
     .errhand = luaL_ref(lua, LUA_REGISTRYINDEX)

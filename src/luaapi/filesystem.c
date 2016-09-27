@@ -103,6 +103,7 @@ static int l_filesystem_require(lua_State* state)
   int status = 0;
 
   status = luaL_loadbuffer(state, (const char *)myBuf, fileLngth, filename) || lua_pcall(state, 0,0,0);
+  if(status != 0) luaL_error(state,lua_tostring(state,-1));
 
   PHYSFS_close(myfile);
 

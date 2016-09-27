@@ -30,7 +30,6 @@ static int l_geometry_circle(lua_State* state) {
     graphics_geometry_drawCircle(x, y, radius, segments);
   else if(strncmp(type,"fill", 4) == 0)
     graphics_geometry_fillCircle(x, y, radius, segments);
-
   return 1;
 }
 
@@ -57,8 +56,10 @@ static int l_geometry_rectangle(lua_State* state) {
   else if(strncmp(type,"fill", 4) == 0)
     graphics_geometry_fillRectangle(1, x, y, w, h, r, sx, sy, ox, oy);
   else
-    printf("%s \n", "Error: Only 'line' and 'fill' modes are correct");
-  
+    {
+      luaL_argerror(state,1,"expected string");
+      lua_error(state);
+    }
   return 1;
 }
 
