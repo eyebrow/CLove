@@ -224,42 +224,38 @@ int main(int argc, char* argv[]) {
   graphics_init(config.window.width, config.window.height);
   l_running = 1;
   audio_init();
-
+  char* get_os = "";
+#ifdef CLOVE_MACOSX
+  get_os = "osx";
+  PHYSFS_init(argv[0]);
+#elif CLOVE_LINUX
+  get_os = "linux";
+  PHYSFS_init(argv[0]);
+#elif CLOVE_WINDOWS
+  get_os = "windows";
+  PHYSFS_init(NULL);
+#else
+  get_os = "unknown";
+#endif
   /*
-   * Since 24.09.16 boot_lua was introduced which means .zip files
+   * Since 24.09.16 boot from zip was introduced which means .zip files
    * are being used for executing games, just like Love2d does.
    * It took me several days to make this feature to work, so
    * appreciate it ^_^!
    */
-  const char* boot_lua = "local dir = love.filesystem.getSource()"
-                         "love.filesystem.requireDir(dir)"
-                         "if love.filesystem.exists('main.lua') then "
-                         "love.filesystem.require('main.lua')"
-                         "end";
-
   if(filesystem_exists("boot.lua")){
       if(luaL_dofile(lua,"boot.lua")){
           printf("Error: %s\n", lua_tostring(lua, -1));
           l_no_game(lua,&config);
         }
     } else {
-      if(luaL_loadbuffer(lua, boot_lua,strlen(boot_lua),"main.lua") || lua_pcall(lua, 0, 0, 0)){
+      if(luaL_dofile(lua,"main.lua")) {
           printf("Error: %s\n", lua_tostring(lua, -1));
           l_no_game(lua,&config);
         }
     }
 
   love_Version const * version = love_getVersion();
-  char* get_os = "";
-#ifdef CLOVE_MACOSX
-  get_os = "osx";
-#elif CLOVE_LINUX
-  get_os = "linux";
-#elif CLOVE_WINDOWS
-  get_os = "windows";
-#else
-  get_os = "unknown";
-#endif
   printf("%s %s %d.%d.%d %s %s \n", "CLove:",
          version->codename,version->major,version->minor,version->revision, "running on:", get_os);
 

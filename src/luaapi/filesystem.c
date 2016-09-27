@@ -57,22 +57,30 @@ static int l_filesystem_append(lua_State* state)
 
 static int l_filesystem_getSource(lua_State* state)
 {
-  PHYSFS_init(NULL);
   lua_pushstring(state, PHYSFS_getBaseDir());
   return 1;
 }
 
-static int l_filesystem_set_require_dir(lua_State* state)
+static int l_filesystem_setSource(lua_State* state)
+{
+  const char* p = l_tools_toStringOrError(state, 1);
+
+  int a = PHYSFS_addToSearchPath(p, 1);
+  if(!a)
+    printf("%s %s \n", "Couldn't set source", p);
+
+  return 1;
+}
+
+static int l_filesystem_set_requireDir(lua_State* state)
 {
   if(!lua_isstring(state, 1))
     return luaL_error(state, "The argument must be a string.");
 
   const char* dir = lua_tostring(state, 1);
 
-  PHYSFS_init(dir);
-  if(!PHYSFS_addToSearchPath(dir, 1))
-    printf("%s %s \n", "No folder/.zip named ", dir);
-  if(!PHYSFS_mount(dir, "/", 1))
+  int m = PHYSFS_mount(dir, "/", 1);
+  if(!m)
     printf("%s %s \n", "No folder/.zip named ", dir);
 
   return 1;
@@ -89,11 +97,12 @@ static int l_filesystem_require(lua_State* state)
 
   PHYSFS_file* myfile = PHYSFS_openRead(filename);
   if(!myfile)
-    printf("%s %s \n", "No .lua file named in this directory ", filename);
+    printf("%s %s \n", "No .lua file named in directory ", filename);
   PHYSFS_sint64 fileLngth = PHYSFS_fileLength(myfile);
   PHYSFS_read (myfile, myBuf, 1, fileLngth);
+  int status = 0;
 
-  int status = luaL_loadbuffer(state, myBuf, fileLngth, filename) || lua_pcall(state, 0, 0, 0);
+  status = luaL_loadbuffer(state, (const char *)myBuf, fileLngth, filename) || lua_pcall(state, 0,0,0);
 
   PHYSFS_close(myfile);
 
@@ -144,7 +153,7 @@ static int l_filesystem_enumerate(lua_State* state) {
   int index = 1;
 
   if( n != 1 )
-    return luaL_error(state, "Function requires a single parameter.");
+    return luaL_error(state, "Function s a single parameter.");
 
   lua_newtable(state);
 
@@ -216,7 +225,8 @@ static int l_filesystem_isFile(lua_State* state) {
 
 static luaL_Reg const regFuncs[] = {
   {"load", l_filesystem_load},
-  {"requireDir",l_filesystem_set_require_dir},
+  {"setSource",l_filesystem_setSource},
+  {"requireDir",l_filesystem_set_requireDir},
   {"getSource", l_filesystem_getSource},
   {"require", l_filesystem_require},
   {"isFile", l_filesystem_isFile},
