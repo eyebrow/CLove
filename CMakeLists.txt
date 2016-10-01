@@ -101,6 +101,8 @@ FILE(
     src/3rdparty/noise/*.h
     src/3rdparty/slre/*.c
     src/3rdparty/slre/*.h
+    src/3rdparty/CMath/*.h
+    src/3rdparty/CMath/*.c
     )
 
 set(clove_package "clove")

@@ -123,8 +123,7 @@ void graphics_init(int width, int height) {
 
   matrixstack_init();
   
-  m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
-   m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
+  m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 0.1f, 100.0f);
 
   moduleData.isCreated = 1;
 
@@ -258,8 +257,8 @@ int graphics_setMode(int width, int height,
   moduleData.width = width;
   moduleData.height = height;
   SDL_SetWindowSize(moduleData.window, width, height);
-  m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
-  m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
+
+  m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 0.1f, 100.0f);
 
   if (fullscreen)
     SDL_SetWindowFullscreen(moduleData.window, SDL_WINDOW_FULLSCREEN);

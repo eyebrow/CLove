@@ -127,7 +127,6 @@ static int l_graphics_push(lua_State* state) {
 }
 
 static int l_graphics_pop(lua_State* state) {
-  //printf(")) Pop\n");
   if(matrixstack_pop()) {
     lua_pushstring(state, "Matrix stack underrun");
     return lua_error(state);
@@ -138,16 +137,18 @@ static int l_graphics_pop(lua_State* state) {
 static int l_graphics_translate(lua_State* state) {
   float x = l_tools_toNumberOrError(state, 1);
   float y = l_tools_toNumberOrError(state, 2);
+  float z = luaL_optinteger(state, 3, 1);
 
-  matrixstack_translate(x, y);
+  matrixstack_translate(x, y, z);
   return 0;
 }
 
 static int l_graphics_scale(lua_State* state) {
   float x = l_tools_toNumberOrError(state, 1);
   float y = luaL_optnumber(state, 2, x);
+  float z = luaL_optnumber(state, 3, 1);
 
-  matrixstack_scale(x, y);
+  matrixstack_scale(x, y, z);
   return 0;
 }
 
