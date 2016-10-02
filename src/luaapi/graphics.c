@@ -30,8 +30,8 @@ static int l_graphics_getBackgroundColor(lua_State* state) {
   float * colors = graphics_getBackgroundColor();
 
   for(int i = 0; i < 4; ++i) {
-    lua_pushnumber(state, (int)(colors[i] * 255));
-  }
+      lua_pushnumber(state, (int)(colors[i] * 255));
+    }
 
   return 4;
 }
@@ -40,8 +40,8 @@ static int l_graphics_getColor(lua_State* state) {
   float * colors = graphics_getColor();
 
   for(int i = 0; i < 4; ++i) {
-    lua_pushnumber(state, (int)(colors[i] * 255));
-  }
+      lua_pushnumber(state, (int)(colors[i] * 255));
+    }
 
   return 4;
 }
@@ -88,17 +88,17 @@ static int l_graphics_draw(lua_State* state) {
   int baseidx = 1;
 
   if(l_graphics_isImage(state, 1)) {
-    image = l_graphics_toImage(state, 1);
-    if(l_graphics_isQuad(state, 2)) {
-      quad = l_graphics_toQuad(state, 2);
-      baseidx = 2;
+      image = l_graphics_toImage(state, 1);
+      if(l_graphics_isQuad(state, 2)) {
+          quad = l_graphics_toQuad(state, 2);
+          baseidx = 2;
+        }
+    } else if(l_graphics_isBatch(state, baseidx)) {
+      batch = l_graphics_toBatch(state, baseidx);
+    } else {
+      lua_pushstring(state, "expected image or spritebatch");
+      lua_error(state);
     }
-  } else if(l_graphics_isBatch(state, baseidx)) {
-    batch = l_graphics_toBatch(state, baseidx);
-  } else {
-    lua_pushstring(state, "expected image or spritebatch");
-    lua_error(state);
-  }
   
   float x  = luaL_optnumber(state, baseidx+1, 0.0f);
   float y  = luaL_optnumber(state, baseidx+2, 0.0f);
@@ -111,26 +111,26 @@ static int l_graphics_draw(lua_State* state) {
   float ky = luaL_optnumber(state, baseidx+9, 0.0f);
 
   if(image) {
-    graphics_Image_draw(&image->image, quad, x, y, r, sx, sy, ox, oy, kx, ky);
-  } else if(batch) {
-    graphics_Batch_draw(&batch->batch, x, y, r, sx, sy, ox, oy, kx, ky);
-  }
+      graphics_Image_draw(&image->image, quad, x, y, r, sx, sy, ox, oy, kx, ky);
+    } else if(batch) {
+      graphics_Batch_draw(&batch->batch, x, y, r, sx, sy, ox, oy, kx, ky);
+    }
   return 0;
 }
 
 static int l_graphics_push(lua_State* state) {
   if(matrixstack_push()) {
-    lua_pushstring(state, "Matrix stack overflow");
-    return lua_error(state);
-  }
+      lua_pushstring(state, "Matrix stack overflow");
+      return lua_error(state);
+    }
   return 0;
 }
 
 static int l_graphics_pop(lua_State* state) {
   if(matrixstack_pop()) {
-    lua_pushstring(state, "Matrix stack underrun");
-    return lua_error(state);
-  }
+      lua_pushstring(state, "Matrix stack underrun");
+      return lua_error(state);
+    }
   return 0;
 }
 
@@ -153,9 +153,48 @@ static int l_graphics_scale(lua_State* state) {
 }
 
 static int l_graphics_rotate(lua_State* state) {
-  float a = l_tools_toNumberOrError(state, 1);
+  float top = lua_gettop(state);
+  float a = 0;
+  float x = 0;
+  float y = 0;
+  float z = 0;
 
-  matrixstack_rotate(a);
+  if(top == 1) {
+      a = l_tools_toNumberOrError(state, 1);
+      matrixstack_rotate(a);
+    }else if(top == 4){
+      a = l_tools_toNumberOrError(state, 1);
+      x = l_tools_toNumberOrError(state, 2);
+      y = l_tools_toNumberOrError(state, 3);
+      z = l_tools_toNumberOrError(state, 4);
+      matrixstack_rotate_3d(a, x, y, z);
+    }else {
+      luaL_error(state,"love.graphics.rotate accepts 1 or 4 parms");
+    }
+
+  return 0;
+}
+
+static int l_graphics_setCamera(lua_State* state) {
+  const char* type = l_tools_toStringOrError(state, 1);
+
+  if (strncmp(type, "2d", 2) == 0){
+      float left = luaL_optnumber(state, 2, 0);
+      float right = luaL_optnumber(state, 3, graphics_getWidth());
+      float bottom = luaL_optnumber(state, 4, graphics_getHeight());
+      float top = luaL_optnumber(state, 5, 0);
+      float zNear = luaL_optnumber(state, 6, 0.1f);
+      float zFar = luaL_optnumber(state, 7, 100);
+      graphics_set_camera_2d(left, right, bottom, top, zNear, zFar);
+    }else if (strncmp(type, "3d", 2) == 0){
+      float fov = luaL_optnumber(state, 2, 70);
+      float ratio = luaL_optnumber(state, 3, graphics_getWidth() / graphics_getHeight());
+      float zNear = luaL_optnumber(state, 4, 0.1f);
+      float zFar = luaL_optnumber(state, 5, 100);
+      graphics_set_camera_3d(fov, ratio, zNear, zFar);
+    }else
+    luaL_error(state, "No camera type named: ", type);
+
   return 0;
 }
 
@@ -172,16 +211,16 @@ static int l_graphics_shear(lua_State* state) {
 
 static int l_graphics_setColorMask(lua_State* state) {
   if(lua_isnone(state, 1)) {
-    graphics_setColorMask(true, true, true, true);
-    return 0;
-  } else {
-    for(int i = 2; i < 5; ++i) {
-      if(lua_isnone(state, i)) {
-        lua_pushstring(state, "illegal paramters");
-        return lua_error(state);
-      }
+      graphics_setColorMask(true, true, true, true);
+      return 0;
+    } else {
+      for(int i = 2; i < 5; ++i) {
+          if(lua_isnone(state, i)) {
+              lua_pushstring(state, "illegal paramters");
+              return lua_error(state);
+            }
+        }
     }
-  }
 
   bool r = lua_toboolean(state, 1);
   bool g = lua_toboolean(state, 2);
@@ -229,16 +268,16 @@ static int l_graphics_getBlendMode(lua_State* state) {
 
 static int l_graphics_setScissor(lua_State* state) {
   if(lua_isnone(state, 1)) {
-    graphics_clearScissor();
-    return 0;
-  } else {
-    for(int i = 2; i < 5; ++i) {
-      if(lua_isnone(state, i)) {
-        lua_pushstring(state, "illegal paramters");
-        return lua_error(state);
-      }
+      graphics_clearScissor();
+      return 0;
+    } else {
+      for(int i = 2; i < 5; ++i) {
+          if(lua_isnone(state, i)) {
+              lua_pushstring(state, "illegal paramters");
+              return lua_error(state);
+            }
+        }
     }
-  }
 
   int x = l_tools_toNumberOrError(state, 1);
   int y = l_tools_toNumberOrError(state, 2);
@@ -254,8 +293,8 @@ static int l_graphics_getScissor(lua_State* state) {
   int x,y,w,h;
   bool scissor = graphics_getScissor(&x, &y, &w, &h);
   if(!scissor) {
-    return 0;
-  }
+      return 0;
+    }
 
   lua_pushinteger(state, x);
   lua_pushinteger(state, y);
@@ -292,6 +331,7 @@ static luaL_Reg const regFuncs[] = {
   {"push",               l_graphics_push},
   {"pop",                l_graphics_pop},
   {"origin",             l_graphics_origin},
+  {"setCamera",          l_graphics_setCamera},
   {"rotate",             l_graphics_rotate},
   {"scale",              l_graphics_scale},
   {"shear",              l_graphics_shear},

@@ -55,6 +55,8 @@ void graphics_destroyWindow();
 const char* graphics_getTitle();
 int graphics_setPosition(int x, int y);
 
+void graphics_set_camera_3d(float fov, float ratio, float zNear, float zFar);
+void graphics_set_camera_2d(float left, float right, float bottom, float top, float zNear, float zFar);
 void graphics_setColorMask(bool r, bool g, bool b, bool a);
 void graphics_getColorMask(bool *r, bool *g, bool *b, bool *a);
 graphics_BlendMode graphics_getBlendMode();

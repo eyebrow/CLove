@@ -258,6 +258,7 @@ int graphics_setMode(int width, int height,
   moduleData.height = height;
   SDL_SetWindowSize(moduleData.window, width, height);
 
+  m4x4_newIdentity(&moduleData.projectionMatrix);
   m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 0.1f, 100.0f);
 
   if (fullscreen)
@@ -307,6 +308,16 @@ int graphics_setFullscreen(int value, const char* mode){
 int graphics_isCreated()
 {
   return moduleData.isCreated;
+}
+
+void graphics_set_camera_2d(float left, float right, float bottom, float top, float zNear, float zFar) {
+  m4x4_newIdentity(&moduleData.projectionMatrix);
+  m4x4_newOrtho(&moduleData.projectionMatrix, left, right, bottom, top, zNear, zFar);
+}
+
+void graphics_set_camera_3d(float fov, float ratio, float zNear, float zFar) {
+  m4x4_newIdentity(&moduleData.projectionMatrix);
+  m4x4_newPerspective(&moduleData.projectionMatrix, fov, ratio, zNear, zFar);
 }
 
 float* graphics_getColor(void) {
