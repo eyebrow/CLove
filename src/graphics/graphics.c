@@ -180,10 +180,7 @@ void graphics_swap(void) {
 
 
 void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ibo, GLuint count, GLenum type, GLenum indexType, float const* useColor, float ws, float hs) {
-  
-  mat4x4 tr;
-  m4x4_mulM4x4(&tr, tr2d, matrixstack_head());
-
+  // tr = proj * view * model * vpos;
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), 0);
   glEnableVertexAttribArray(1);
@@ -193,7 +190,8 @@ void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ib
   
   graphics_Shader_activate(
         &moduleData.projectionMatrix,
-        &tr,
+        matrixstack_head(),
+        tr2d,
         quad,
         useColor,
         ws,
@@ -318,6 +316,9 @@ void graphics_set_camera_2d(float left, float right, float bottom, float top, fl
 void graphics_set_camera_3d(float fov, float ratio, float zNear, float zFar) {
   m4x4_newIdentity(&moduleData.projectionMatrix);
   m4x4_newPerspective(&moduleData.projectionMatrix, fov, ratio, zNear, zFar);
+
+  m4x4_newLookAt(&moduleData.projectionMatrix,vec3_new(0,8,8),vec3_new(0,0,0),vec3_new(0,-1, 0));
+
 }
 
 float* graphics_getColor(void) {

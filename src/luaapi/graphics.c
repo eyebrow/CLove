@@ -162,7 +162,7 @@ static int l_graphics_rotate(lua_State* state) {
   if(top == 1) {
       a = l_tools_toNumberOrError(state, 1);
       matrixstack_rotate(a);
-    }else if(top == 4){
+    }else if(top == 4){ // one of X,Y or Z must be different than 0 !
       a = l_tools_toNumberOrError(state, 1);
       x = l_tools_toNumberOrError(state, 2);
       y = l_tools_toNumberOrError(state, 3);

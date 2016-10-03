@@ -33,8 +33,9 @@ GLchar const *defaultVertexSource =
 
 static GLchar const vertexHeader[] =
   "#version 120\n"
-  "uniform   mat4 transform;\n"  
   "uniform   mat4 projection;\n"
+  "uniform   mat4 view;\n"
+  "uniform   mat4 model;\n"
   "uniform   mat2 textureRect;\n"
   "uniform   vec2 size;\n"
   "#define extern uniform\n"
@@ -47,7 +48,7 @@ static GLchar const vertexHeader[] =
 
 static GLchar const vertexFooter[] =
   "void main() {\n"
-  "  gl_Position = position(projection * transform, vec4(vPos * size, 1.0, 1.0));\n"
+  "  gl_Position = position(projection*view*model,vec4(vPos * size, 1.0, 1.0));\n"
   "  fUV = vUV * textureRect[1] + textureRect[0];\n"
   "  fColor = vColor;\n"
   "}\n";
@@ -238,8 +239,9 @@ graphics_ShaderUniformType graphics_shader_toLoveType(GLenum type) {
 }
 
 static void readShaderUniforms(graphics_Shader *shader) {
-  shader->uniformLocations.transform   = glGetUniformLocation(shader->program, "transform");
   shader->uniformLocations.projection  = glGetUniformLocation(shader->program, "projection");
+  shader->uniformLocations.view  = glGetUniformLocation(shader->program, "view");
+  shader->uniformLocations.model  = glGetUniformLocation(shader->program, "model");
   shader->uniformLocations.textureRect = glGetUniformLocation(shader->program, "textureRect");
   shader->uniformLocations.tex         = glGetUniformLocation(shader->program, DEFAULT_SAMPLER);
   shader->uniformLocations.color       = glGetUniformLocation(shader->program, "color");
@@ -359,7 +361,7 @@ void graphics_Shader_free(graphics_Shader* shader) {
   glDeleteProgram(shader->program);
 }
 
-void graphics_Shader_activate(mat4x4 const* projection, mat4x4 const* transform, graphics_Quad const* textureRect, float const* useColor, float ws, float hs) {
+void graphics_Shader_activate(mat4x4 const* projection,mat4x4 const* view,mat4x4 const* model, graphics_Quad const* textureRect, float const* useColor, float ws, float hs) {
 
   glUseProgram(moduleData.activeShader->program);
 
@@ -367,10 +369,11 @@ void graphics_Shader_activate(mat4x4 const* projection, mat4x4 const* transform,
 
   glUniform1i(moduleData.activeShader->uniformLocations.tex,               0);
   glUniformMatrix4fv(moduleData.activeShader->uniformLocations.projection,  1, 0, (GLfloat const*)projection);
+  glUniformMatrix4fv(moduleData.activeShader->uniformLocations.view,  1, 0, (GLfloat const*)view);
+  glUniformMatrix4fv(moduleData.activeShader->uniformLocations.model,  1, 0, (GLfloat const*)model);
   glUniformMatrix2fv(moduleData.activeShader->uniformLocations.textureRect, 1, 0, (GLfloat const*)textureRect);
   glUniform4fv(moduleData.activeShader->uniformLocations.color,1,useColor);
   glUniform2fv(moduleData.activeShader->uniformLocations.size,1,s);
-  glUniformMatrix4fv(moduleData.activeShader->uniformLocations.transform,   1, 0, (GLfloat const*)transform);
 
   for(int i = 0; i < moduleData.activeShader->textureUnitCount; ++i) {
       glActiveTexture(GL_TEXTURE0 + moduleData.activeShader->textureUnits[i].unit);
