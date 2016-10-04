@@ -36,6 +36,10 @@ static int buttonEnum(const char *str) {
     res = SDL_BUTTON_RIGHT;
   if (strncmp (str,"m",1) == 0)
     res = SDL_BUTTON_MIDDLE;
+  if (strncmp (str,"x1",2) == 0)
+    res = SDL_BUTTON_X1;
+  if (strncmp (str,"x2",2) == 0)
+    res = SDL_BUTTON_X2;
   return res;
 }
 

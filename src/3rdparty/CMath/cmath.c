@@ -72,6 +72,13 @@ float v2_dot(vec2 a, vec2 b)          {
 vec3 vec3_new(float x, float y, float z) {
   return (vec3){x,y,z};
 }
+vec3 vec3_newv(vec3 a) {
+  vec3 b;
+  a.x = b.x;
+  a.y = b.y;
+  a.z = b.z;
+  return b;
+}
 vec3 v3_add(vec3 a, vec3 b)          {
   return (vec3){ a.x + b.x, a.y + b.y, a.z + b.z };
 }
@@ -327,31 +334,15 @@ void m4x4_newPerspective(mat4x4* projectionMatrix, float fov, float ratio, float
  * multiplications.
  */
 void m4x4_newLookAt(mat4x4* in, vec3 pos, vec3 target, vec3 up) {
-  vec3 lftN = v3_norm(v3_cross(target, up));
-  vec3 upN = v3_norm(v3_cross(lftN, target));
-  vec3 dirN = v3_norm(target);
+  vec3 z_a = v3_norm(v3_sub(target, pos));
+  vec3 x_a = v3_norm(v3_cross(up,    z_a));
+  vec3 y_a = v3_cross(z_a, x_a);
 
-
-  in->m[0][0] =  lftN.x;
-  in->m[0][1] =  lftN.x;
-  in->m[0][2] =  -dirN.x;
-  in->m[0][3] = 0.0f;
-
-  in->m[1][0] = lftN.y;
-  in->m[1][1] = upN.y;
-  in->m[1][2] = -dirN.y;
-  in->m[1][3] = 0.0f;
-
-  in->m[2][0] = lftN.z;
-  in->m[2][1] = upN.z;
-  in->m[2][2] =   -dirN.z;
-  in->m[2][3] = -1.0f;
-
-  in->m[3][0] =    -v3_dot(lftN,pos);
-  in->m[3][1] =   -v3_dot(upN,pos);
-  in->m[3][2] =  v3_dot(dirN,pos);
-  in->m[3][3] = 1.0f;
-
+  return m4x4_set(in,
+                  x_a.x,           y_a.x,          z_a.x,          0,
+                  x_a.y,           y_a.y,           z_a.y,        0,
+                  x_a.z,           y_a.z,           z_a.z,        0,
+                  -v3_dot(x_a, pos),  -v3_dot(y_a, pos),  -v3_dot(z_a, pos),  1);
 }
 
 

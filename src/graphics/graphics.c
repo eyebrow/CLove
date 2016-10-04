@@ -313,12 +313,13 @@ void graphics_set_camera_2d(float left, float right, float bottom, float top, fl
   m4x4_newOrtho(&moduleData.projectionMatrix, left, right, bottom, top, zNear, zFar);
 }
 
+void graphics_set_look_at(float px, float py, float pz,float tx,float ty,float tz, float ux, float uy, float uz) {
+  m4x4_newLookAt(matrixstack_head(), vec3_new(px, py, pz), vec3_new(tx, ty, tz), vec3_new(ux, uy, uz));
+}
+
 void graphics_set_camera_3d(float fov, float ratio, float zNear, float zFar) {
   m4x4_newIdentity(&moduleData.projectionMatrix);
   m4x4_newPerspective(&moduleData.projectionMatrix, fov, ratio, zNear, zFar);
-
-  m4x4_newLookAt(&moduleData.projectionMatrix,vec3_new(0,8,8),vec3_new(0,0,0),vec3_new(0,-1, 0));
-
 }
 
 float* graphics_getColor(void) {

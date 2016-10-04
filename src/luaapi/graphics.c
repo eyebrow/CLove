@@ -9,6 +9,7 @@
 
 #include "../3rdparty/lua/lauxlib.h"
 #include "../3rdparty/lua/lua.h"
+#include "../3rdparty/CMath/cmath.h"
 
 #include "graphics.h"
 #include "tools.h"
@@ -131,6 +132,20 @@ static int l_graphics_pop(lua_State* state) {
       lua_pushstring(state, "Matrix stack underrun");
       return lua_error(state);
     }
+  return 0;
+}
+
+static int l_graphics_set_look_at(lua_State* state) {
+  float px = l_tools_toNumberOrError(state, 1);
+  float py = l_tools_toNumberOrError(state, 2);
+  float pz = l_tools_toNumberOrError(state, 3);
+  float tx = l_tools_toNumberOrError(state, 4);
+  float ty = l_tools_toNumberOrError(state, 5);
+  float tz = l_tools_toNumberOrError(state, 6);
+  float ux = l_tools_toNumberOrError(state, 7);
+  float uy = l_tools_toNumberOrError(state, 8);
+  float uz = l_tools_toNumberOrError(state, 9);
+  graphics_set_look_at(px,py,pz,tx,ty,tz,ux,uy,uz);
   return 0;
 }
 
@@ -332,6 +347,7 @@ static luaL_Reg const regFuncs[] = {
   {"pop",                l_graphics_pop},
   {"origin",             l_graphics_origin},
   {"setCamera",          l_graphics_setCamera},
+  {"lookAt",             l_graphics_set_look_at},
   {"rotate",             l_graphics_rotate},
   {"scale",              l_graphics_scale},
   {"shear",              l_graphics_shear},
