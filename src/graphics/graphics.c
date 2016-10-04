@@ -123,8 +123,7 @@ void graphics_init(int width, int height) {
 
   matrixstack_init();
   
-  m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
-   m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
+  m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 0.1f, 100.0f);
 
   moduleData.isCreated = 1;
 
@@ -181,10 +180,7 @@ void graphics_swap(void) {
 
 
 void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ibo, GLuint count, GLenum type, GLenum indexType, float const* useColor, float ws, float hs) {
-  
-  mat4x4 tr;
-  m4x4_mulM4x4(&tr, tr2d, matrixstack_head());
-
+  // tr = proj * view * model * vpos;
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), 0);
   glEnableVertexAttribArray(1);
@@ -194,7 +190,8 @@ void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ib
   
   graphics_Shader_activate(
         &moduleData.projectionMatrix,
-        &tr,
+        matrixstack_head(),
+        tr2d,
         quad,
         useColor,
         ws,
@@ -258,8 +255,9 @@ int graphics_setMode(int width, int height,
   moduleData.width = width;
   moduleData.height = height;
   SDL_SetWindowSize(moduleData.window, width, height);
-  m4x4_newTranslation(&moduleData.projectionMatrix, -1.0f, 1.0f, 0.0f);
-  m4x4_scale(&moduleData.projectionMatrix, 2.0f / width, -2.0f / height, 0.0f);
+
+  m4x4_newIdentity(&moduleData.projectionMatrix);
+  m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 0.1f, 100.0f);
 
   if (fullscreen)
     SDL_SetWindowFullscreen(moduleData.window, SDL_WINDOW_FULLSCREEN);
@@ -308,6 +306,20 @@ int graphics_setFullscreen(int value, const char* mode){
 int graphics_isCreated()
 {
   return moduleData.isCreated;
+}
+
+void graphics_set_camera_2d(float left, float right, float bottom, float top, float zNear, float zFar) {
+  m4x4_newIdentity(&moduleData.projectionMatrix);
+  m4x4_newOrtho(&moduleData.projectionMatrix, left, right, bottom, top, zNear, zFar);
+}
+
+void graphics_set_look_at(float px, float py, float pz,float tx,float ty,float tz, float ux, float uy, float uz) {
+  m4x4_newLookAt(matrixstack_head(), vec3_new(px, py, pz), vec3_new(tx, ty, tz), vec3_new(ux, uy, uz));
+}
+
+void graphics_set_camera_3d(float fov, float ratio, float zNear, float zFar) {
+  m4x4_newIdentity(&moduleData.projectionMatrix);
+  m4x4_newPerspective(&moduleData.projectionMatrix, fov, ratio, zNear, zFar);
 }
 
 float* graphics_getColor(void) {

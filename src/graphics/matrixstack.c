@@ -24,6 +24,15 @@ static struct {
   mat4x4 stack[stackSize];
 #endif
 
+  float rotX;
+  float rotY;
+  float rotZ;
+  float rotAngle;
+
+  float scaleX;
+  float scaleY;
+  float scaleZ;
+
 } moduleData;
 
 inline mat4x4* matrixstack_head() {
@@ -34,6 +43,15 @@ void matrixstack_init(void) {
 #if _WIN32 || _WIN64
   moduleData.stack = malloc(sizeof(stackSize));
 #endif
+  moduleData.rotAngle = 0;
+  moduleData.rotX = 0;
+  moduleData.rotY = 0;
+  moduleData.rotZ = 0;
+
+  moduleData.scaleX = 1;
+  moduleData.scaleY = 1;
+  moduleData.scaleZ = 1;
+
   moduleData.head = 0;
   m4x4_newIdentity(matrixstack_head());
 }
@@ -61,16 +79,30 @@ int matrixstack_pop(void) {
   return 0;
 }
 
-void matrixstack_translate(float x, float y) {
-  m4x4_translate(matrixstack_head(), x, y, 0.0f);
+void matrixstack_translate(float x, float y, float z) {
+  m4x4_translate(matrixstack_head(), x, y, z);
 }
 
-void matrixstack_scale(float x, float y) {
- m4x4_scale(matrixstack_head(), x, y, 0.0f);
+void matrixstack_scale(float x, float y, float z) {
+  moduleData.scaleX = x;
+  moduleData.scaleY = y;
+  moduleData.scaleZ = z;
+  m4x4_newRotationScale(matrixstack_head(), moduleData.rotAngle,
+                        vec3_new(moduleData.rotX,moduleData.rotY,moduleData.rotZ),
+                        moduleData.scaleX, moduleData.scaleY, moduleData.scaleZ);
 }
 
 void matrixstack_rotate(float a) {
-  m4x4_rotateZ(matrixstack_head(), a);
+  moduleData.rotAngle = a;
+  m4x4_rotateZ(matrixstack_head(), moduleData.rotAngle, moduleData.scaleX, moduleData.scaleY, moduleData.scaleZ);
+}
+
+void matrixstack_rotate_3d(float r, float x, float y, float z) {
+  moduleData.rotAngle = r;
+  moduleData.rotX = x;
+  moduleData.rotY = y;
+  moduleData.rotZ = z;
+  m4x4_newRotationScale(matrixstack_head(), r, vec3_new(x,y,z), moduleData.scaleX, moduleData.scaleY, moduleData.scaleZ);
 }
 
 void matrixstack_multiply(mat4x4 const* matrix) {
