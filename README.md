@@ -24,6 +24,7 @@ On Linux & OS X:
 Features
 ========
 - Lua scripting language
+- 3D
 - Easy to learn and use api 
 - Cross Platform 
 - Possibility of hiding the code inside .zip files and load the data from there
