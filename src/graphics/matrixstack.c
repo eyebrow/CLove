@@ -8,6 +8,7 @@
 */
 
 #include "../math/vector.h"
+#include "../tools/utils.c"
 #include "matrixstack.h"
 #include <string.h>
 
@@ -18,9 +19,13 @@ const static int stackSize = 32;
 
 static struct {
   int head;
-#if _WIN32 || _WIN64
+#ifdef CLOVE_WINDOWS 
   mat4x4* stack;
-#else
+#endif
+#ifdef CLOVE_LINUX
+  mat4x4* stack;
+#endif
+#ifdef CLOVE_MACOSX
   mat4x4 stack[stackSize];
 #endif
 
@@ -40,9 +45,12 @@ inline mat4x4* matrixstack_head() {
 }
 
 void matrixstack_init(void) {
-#if _WIN32 || _WIN64
+#ifdef CLOVE_WINDOWS 
   moduleData.stack = malloc(sizeof(stackSize));
 #endif
+#ifdef CLOVE_LINUX
+  moduleData.stack = malloc(sizeof(stackSize));
+#endif 
   moduleData.rotAngle = 0;
   moduleData.rotX = 0;
   moduleData.rotY = 0;

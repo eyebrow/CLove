@@ -9,8 +9,6 @@
 
 #include "cmath.h"
 #include <tgmath.h>
-#include "util.h"
-
 
 /*
 * 2d vectors

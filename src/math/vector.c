@@ -9,7 +9,7 @@
 #include "vector.h"
 #include <tgmath.h>
 
-void m4x4_scale(mat4x4 *inout, angle, float r_x, float r_y, float r_z, float x, float y, float z) {
+void m4x4_scale(mat4x4 *inout,float angle, float r_x, float r_y, float r_z, float x, float y, float z) {
   m4x4_newRotationScale(inout, angle, vec3_new(r_x, r_y, r_z), x, y, z);
 }
 
