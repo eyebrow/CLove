@@ -258,6 +258,7 @@ int graphics_setMode(int width, int height,
 
   m4x4_newIdentity(&moduleData.projectionMatrix);
   m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 0.1f, 100.0f);
+  glViewport(0,0,width,height);
 
   if (fullscreen)
     SDL_SetWindowFullscreen(moduleData.window, SDL_WINDOW_FULLSCREEN);
