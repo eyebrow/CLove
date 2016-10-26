@@ -21,6 +21,7 @@ void m4x4_newTransform2d(mat4x4 *out, float x, float y, float r, float sx, float
 
 void m4x4_translate(mat4x4 *inout, float x, float y, float z);
 
+void m4x4_scalexyz(mat4x4 *inout, float x, float y, float z);
 void m4x4_scale(mat4x4 *inout,float angle, float r_x, float r_y, float r_z, float x, float y, float z);
 void m4x4_rotateZ(mat4x4 *inout, float a, float s_x, float s_y, float s_z) ;
 void m4x4_rotateY(mat4x4 *inout, float a, float s_x, float s_y, float s_z) ;

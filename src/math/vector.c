@@ -13,6 +13,14 @@ void m4x4_scale(mat4x4 *inout,float angle, float r_x, float r_y, float r_z, floa
   m4x4_newRotationScale(inout, angle, vec3_new(r_x, r_y, r_z), x, y, z);
 }
 
+void m4x4_scalexyz(mat4x4 *inout, float x, float y, float z) {
+  for(int i = 0; i < 3; ++i) {
+    inout->m[0][i] *= x;
+    inout->m[1][i] *= y;
+    inout->m[2][i] *= z;
+  }
+}
+
 void m4x4_translate(mat4x4 *inout, float x, float y, float z) {
   inout->m[3][0] += x * inout->m[0][0] + y * inout->m[1][0] + z * inout->m[2][0];
   inout->m[3][1] += x * inout->m[0][1] + y * inout->m[1][1] + z * inout->m[2][1];

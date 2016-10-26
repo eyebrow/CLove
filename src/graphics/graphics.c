@@ -123,6 +123,7 @@ void graphics_init(int width, int height) {
 
   matrixstack_init();
   
+  m4x4_newIdentity(&moduleData.projectionMatrix);
   m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 0.1f, 100.0f);
 
   moduleData.isCreated = 1;
@@ -181,6 +182,7 @@ void graphics_swap(void) {
 
 void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ibo, GLuint count, GLenum type, GLenum indexType, float const* useColor, float ws, float hs) {
   // tr = proj * view * model * vpos;
+
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), 0);
   glEnableVertexAttribArray(1);
@@ -256,7 +258,6 @@ int graphics_setMode(int width, int height,
   moduleData.height = height;
   SDL_SetWindowSize(moduleData.window, width, height);
 
-  m4x4_newIdentity(&moduleData.projectionMatrix);
   m4x4_newOrtho(&moduleData.projectionMatrix, 0, width, height, 0, 0.1f, 100.0f);
 
   if (fullscreen)

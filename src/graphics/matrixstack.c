@@ -49,7 +49,7 @@ void matrixstack_init(void) {
   moduleData.stack = malloc(sizeof(stackSize));
 #endif
 #ifdef CLOVE_LINUX
-  moduleData.stack = malloc(sizeof(stackSize));
+  moduleData.stack = malloc(sizeof(float)*stackSize);
 #endif 
   moduleData.rotAngle = 0;
   moduleData.rotX = 0;
