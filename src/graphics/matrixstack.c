@@ -45,7 +45,7 @@ inline mat4x4* matrixstack_head() {
 }
 
 void matrixstack_init(void) {
-#ifdef CLOVE_WINDOWS 
+#ifdef CLOVE_WINDOWS
   moduleData.stack = malloc(sizeof(stackSize));
 #endif
 #ifdef CLOVE_LINUX

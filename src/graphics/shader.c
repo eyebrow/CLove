@@ -26,7 +26,7 @@ static struct {
   int maxTextureUnits;
 } moduleData;
 
-GLchar const *defaultVertexSource = 
+GLchar const *defaultVertexSource =
     "vec4 position(mat4 transform_projection, vec4 vertex_position) {\n"
     "  return transform_projection * vertex_position;\n"
     "}\n";
@@ -60,7 +60,7 @@ static GLchar const *defaultFragmentSource =
 
 #define DEFAULT_SAMPLER "tex"
 
-static GLchar const fragmentHeader[] = 
+static GLchar const fragmentHeader[] =
     "#version 120\n"
     //"precision mediump float;\n"
     "#define Image sampler2D\n"
@@ -83,8 +83,8 @@ bool graphics_Shader_compileAndAttachShaderRaw(graphics_Shader *program, GLenum 
   glCompileShader(shader);
 
   glAttachShader(program->program, shader);
-  
-  
+
+
   GLint compileStatus;
 
   glGetShaderiv(shader,GL_COMPILE_STATUS,&compileStatus);
@@ -268,12 +268,12 @@ static void readShaderUniforms(graphics_Shader *shader) {
     }
 
   qsort(shader->uniforms, shader->uniformCount, sizeof(graphics_ShaderUniformInfo), (int(*)(void const*,void const*))compareUniformInfo);
-  
+
 }
 
 
 static void allocateTextureUnits(graphics_Shader *shader) {
-  
+
   shader->textureUnitCount = 0;
   for(int i = 0; i < shader->uniformCount; ++i) {
       if(shader->uniforms[i].type == GL_SAMPLER_2D) {
@@ -298,7 +298,7 @@ static void allocateTextureUnits(graphics_Shader *shader) {
             }
         }
     }
-  
+
 }
 
 
@@ -334,13 +334,12 @@ graphics_ShaderCompileStatus graphics_Shader_new(graphics_Shader *shader, char c
   glLinkProgram(shader->program);
 
   int linkState;
-  int linkInfoLen;
   glGetProgramiv(shader->program, GL_LINK_STATUS, &linkState);
-  glGetProgramiv(shader->program, GL_INFO_LOG_LENGTH, &linkInfoLen);
-  shader->warnings.program = realloc(shader->warnings.program, linkInfoLen);
-  glGetProgramInfoLog(shader->program, linkInfoLen, 0, shader->warnings.program);
-
-  if(!linkState) {
+  if (linkState != GL_TRUE) {
+      printf("ERROR OpenGL : unable to compile shader\n");
+      char shader_link_error[4096];
+      glGetShaderInfoLog(shader->program, sizeof(shader_link_error), NULL, shader_link_error);
+      printf("%s", shader_link_error);
       return graphics_ShaderCompileStatus_linkError;
     }
 

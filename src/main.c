@@ -264,14 +264,14 @@ int main(int argc, char* argv[]) {
   while(l_event_running()) {
       main_loop(&mainLoopData);
     }
-  if(!l_event_running())
+  if(l_event_running() <= 0)
     quit_function(lua);
 #endif
   graphics_destroyWindow();
   audio_close ();
   lua_close(lua);
 
-  if(PHYSFS_isInit())
+  if(PHYSFS_isInit() == 1)
     PHYSFS_deinit();
   return 1;
 }
