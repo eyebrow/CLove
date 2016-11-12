@@ -12,7 +12,6 @@
 #include "image.h"
 #include "quad.h"
 
-#include "../../3rdparty/freetype/include/ft2build.h"
 #include "../3rdparty/freetype/include/ft2build.h"
 #include "../3rdparty/freetype/include/freetype.h"
 #include "../3rdparty/freetype/include/ftglyph.h"
