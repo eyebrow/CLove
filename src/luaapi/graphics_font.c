@@ -32,15 +32,15 @@ static void l_graphics_loadDefaultFont() {
 
 static int l_graphics_setFont(lua_State* state) {
   lua_settop(state, 1);
-	
+
   graphics_Font* font;
   
   if (lua_isnumber(state,1)) {
-	  graphics_Font_new(&moduleData.defaultFont, NULL, lua_tonumber(state,1));
-	  font = &moduleData.defaultFont;
-  } else {
- 	  font = l_graphics_toFont(state, 1); 	 
-  }
+      graphics_Font_new(&moduleData.defaultFont, NULL, lua_tonumber(state,1));
+      font = &moduleData.defaultFont;
+    } else {
+      font = l_graphics_toFont(state, 1);
+    }
   // Release current font in Lua, so it can be GCed if needed
   if(moduleData.currentFont) {
       luaL_unref(state, LUA_REGISTRYINDEX, moduleData.currentFontRef);
@@ -73,7 +73,7 @@ static int l_graphics_printf(lua_State* state) {
 
   char const* text = lua_tostring(state, 1);
   if(!text) {
-       text = "";
+      text = "";
     }
   int x = luaL_optnumber(state, 2, 0);
   int y = luaL_optnumber(state, 3, x);
@@ -98,7 +98,7 @@ static int l_graphics_printf(lua_State* state) {
 
 static int l_graphics_print(lua_State* state) {
   if(!moduleData.currentFont) {
-     l_graphics_loadDefaultFont();
+      l_graphics_loadDefaultFont();
     }
   char const* text = lua_tostring(state, 1);
   if(!text) {
@@ -156,7 +156,7 @@ int l_graphics_newFont(lua_State* state) {
 static int l_graphics_gcFont(lua_State* state) {
   graphics_Font* font = l_graphics_toFont(state, 1);
   graphics_Font_free(font);
-  return 0;
+  return 1;
 }
 
 static int l_graphics_Font_getHeight(lua_State* state) {

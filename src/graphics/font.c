@@ -28,11 +28,7 @@
 #include FT_GLYPH_H
 static struct {
   mat4x4 tr2d;
-  FT_GlyphSlot g;
   const char* name;
-  GLuint vbo;
-  GLuint ibo;
-  GLuint vao;
   FT_Library ft;
 
   uint32_t cp; //message to take utf8 from
@@ -71,26 +67,21 @@ int graphics_font_init(void) {
   int error = FT_Init_FreeType(&moduleData.ft);
   if(error){
       printf("%s \n","Could not init freetype");
-      return 1;
+      return 0;
     }
-
-  glGenBuffers(1, &moduleData.vbo);
-  glBindBuffer(GL_ARRAY_BUFFER, moduleData.vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_STATIC_DRAW);
-
-  glGenBuffers(1, &moduleData.ibo);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, moduleData.ibo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(imageIndices), imageIndices, GL_STATIC_DRAW);
-
   return 1;
 }
 
-void graphics_Font_free(graphics_Font* font) {
-  FT_Done_Face(font->face);
+void graphics_font_freeFT() {
   FT_Done_FreeType(moduleData.ft);
+}
+
+void graphics_Font_free(graphics_Font* font) {
+  //FT_Done_Face(font->face); //TODO free this!
+  glDeleteBuffers(1, &font->vbo);
+  glDeleteBuffers(1, &font->ibo);
   glDeleteTextures(1,&font->tex);
-  glDeleteBuffers(1, &moduleData.ibo);
-  glDeleteBuffers(1, &moduleData.vbo);
+
 }
 
 static void graphics_Font_newTexture(graphics_Font* font) {
@@ -99,7 +90,7 @@ static void graphics_Font_newTexture(graphics_Font* font) {
   glGenTextures(1, &font->tex);
   glBindTexture(GL_TEXTURE_2D, font->tex);
 
-  FT_Bitmap b = moduleData.g->bitmap;
+  FT_Bitmap b = font->face->glyph->bitmap;
 
   uint8_t *buf = malloc(2*b.rows*b.width);
   uint8_t *row = b.buffer;
@@ -114,13 +105,21 @@ static void graphics_Font_newTexture(graphics_Font* font) {
   graphics_Font_setWrap(font, &defaultWrap);
   graphics_Font_setFilter(font, &defaultFilter);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, moduleData.g->bitmap.width, moduleData.g->bitmap.rows, 0,
-               GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, buf);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE_ALPHA, b.width, b.rows,
+               0, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, buf);
   free(buf);
 }
 
 
 int graphics_Font_new(graphics_Font* font, char const* filename, int ptsize) {
+  glGenBuffers(1, &font->vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, font->vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_STATIC_DRAW);
+
+  glGenBuffers(1, &font->ibo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, font->ibo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(imageIndices), imageIndices, GL_STATIC_DRAW);
+
   if(filename){
       FT_New_Face(moduleData.ft, filename, 0, &font->face);
       font->path = filename;
@@ -130,23 +129,25 @@ int graphics_Font_new(graphics_Font* font, char const* filename, int ptsize) {
   font->size = ptsize;
   FT_Set_Pixel_Sizes(font->face, 0, font->size);
 
-  moduleData.g = font->face->glyph;
+  //moduleData.g = font->face->glyph;
   // Load first 128 characters of ASCII set
   for (GLubyte c = 0; c < 128; c++){
       // Load character glyph
       if (FT_Load_Char(font->face, c, FT_LOAD_RENDER))
         continue;
 
+      FT_Bitmap b = font->face->glyph->bitmap;
+
       graphics_Font_newTexture(font);
       // Now store character for later use
       character _character = {
         font->tex,
-        moduleData.g->bitmap.width,
-        moduleData.g->bitmap.rows,
-        moduleData.g->bitmap_left,
-        moduleData.g->bitmap_top,
-        moduleData.g->advance.x,
-        moduleData.g->advance.y
+        b.width,
+        b.rows,
+        font->face->glyph->bitmap_left,
+        font->face->glyph->bitmap_top,
+        font->face->glyph->advance.x,
+        font->face->glyph->advance.y
       };
       //moduleData.characters[c] = _character;
       font->characters[c] = _character;
@@ -212,10 +213,10 @@ void graphics_Font_printf(graphics_Font* font, char const* text, int px, int py,
 
       m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
 
-      graphics_drawArray(&quad, &moduleData.tr2d,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
+      graphics_drawArray(&quad, &moduleData.tr2d,  font->ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
                          graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);
 
-      font->w = (int )&font->glyph->bitmap.width;
+      font->w = (int )&font->face->glyph->bitmap.width;
       font->w = font->w >> 6;
       px += font->ch.advancex >> 6;
       py += font->ch.advancey >> 6;
@@ -253,10 +254,10 @@ void graphics_Font_print(graphics_Font* font, char const* text, int px, int py, 
 
       m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
 
-      graphics_drawArray(&quad, &moduleData.tr2d,  moduleData.ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
+      graphics_drawArray(&quad, &moduleData.tr2d,  font->ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
                          graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);
 
-      font->w = (int )&font->glyph->bitmap.width;
+      font->w = (int )&font->face->glyph->bitmap.width;
       font->w = font->w >> 6;
       px += font->ch.advancex >> 6;
       py += font->ch.advancey >> 6;
@@ -291,6 +292,6 @@ int graphics_Font_getAscent(graphics_Font* font) {
 }
 
 int graphics_Font_getHeight(graphics_Font* font){
-  return moduleData.g->bitmap.rows;
+  return font->face->glyph->bitmap.rows;
 }
 

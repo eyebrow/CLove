@@ -28,9 +28,9 @@ typedef struct {
 } character;
 
 typedef struct {
-  unsigned int vbo;
-  unsigned int ibo;
-  unsigned int tex;
+  GLuint vbo;
+  GLuint ibo;
+  GLuint tex;
   int size;
   FT_Face face;
   FT_GlyphSlot glyph;
@@ -54,6 +54,7 @@ int graphics_font_init(void);
 int graphics_Font_new(graphics_Font* font, char const* filename, int ptsize);
 int graphics_Font_load(graphics_Font* font);
 
+void graphics_font_freeFT();
 void graphics_Font_free(graphics_Font* font);
 
 int graphics_Font_getHeight(graphics_Font* font);

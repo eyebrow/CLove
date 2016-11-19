@@ -64,11 +64,6 @@ void quit_function(lua_State* state)
   lua_pop(state, 1);
 }
 
-graphics_Font font;
-graphics_Font font_big;
-bool once = true;
-const char *msg;
-const char *msg2;
 void main_loop(void *data) {
   MainLoopData* loopData = (MainLoopData*)data;
 
@@ -77,7 +72,6 @@ void main_loop(void *data) {
   lua_rawgeti(loopData->luaState, LUA_REGISTRYINDEX, loopData->errhand);
   lua_getglobal(loopData->luaState, "love");
   lua_pushstring(loopData->luaState, "update");
-
   lua_rawget(loopData->luaState, -2);
   lua_pushnumber(loopData->luaState, timer_getDelta());
 
@@ -89,34 +83,11 @@ void main_loop(void *data) {
 
   graphics_clear();
 
-  if(lua_pcall(loopData->luaState, 1, 0, 1)) {
-      graphics_setBackgroundColor(0.66f, 0.27f, 0.27f, 1.0f);
-      graphics_setColor(1.0f, 1.0f, 1.0f, 0.8f);
-      if (once) {
-          graphics_Font_new(&font, 0, 12);
-          graphics_Font_new(&font_big, 0, 32);
-          msg = lua_tostring(loopData->luaState, -1);
-          once = false;
-        }
-      graphics_Font_print(&font_big, "CLove error menu", graphics_getWidth() / 2 - 150, 40, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-      graphics_Font_print(&font, msg, 10, 140, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-    }
-
+  lua_pcall(loopData->luaState, 1, 0, 1);
   lua_pushstring(loopData->luaState, "draw");
   lua_rawget(loopData->luaState, -2);
 
-  if(lua_pcall(loopData->luaState, 0, 0, 1)) {
-      graphics_setBackgroundColor(0.66f, 0.27f, 0.27f, 1.0f);
-      graphics_setColor(1.0f, 1.0f, 1.0f, 0.8f);
-      if (once) {
-          graphics_Font_new(&font, 0, 12);
-          graphics_Font_new(&font_big, 0, 32);
-          msg = lua_tostring(loopData->luaState, -1);
-          once = false;
-        }
-      graphics_Font_print(&font_big, "CLove error menu", graphics_getWidth() / 2 - 150, 40, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-      graphics_Font_print(&font, msg, 10, 140, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-    }
+  lua_pcall(loopData->luaState, 0, 0, 0);
   graphics_swap();
 
   lua_pop(loopData->luaState, 1);
@@ -243,9 +214,10 @@ int main(int argc, char* argv[]) {
   lua_getglobal(lua, "love");
   lua_pushstring(lua, "load");
   lua_rawget(lua, -2);
-  if(lua_pcall(lua, 0, 0, 1)) {
+
+  if(lua_pcall(lua, 0, 0, 1))
       printf("Error in love.load: %s\n", lua_tostring(lua, -1));
-    }
+
   lua_pop(lua, 1);
 
   lua_pushcfunction(lua, errorhandler);
@@ -261,13 +233,14 @@ int main(int argc, char* argv[]) {
   //TODO find a way to quit(love.event.quit) love on web?
   emscripten_set_main_loop_arg(main_loop, &mainLoopData, 0, 1);
 #else
-  while(l_event_running()) {
+  while (l_event_running())
       main_loop(&mainLoopData);
-    }
-  if(l_event_running() <= 0)
+
+  if (!l_event_running())
     quit_function(lua);
 #endif
   graphics_destroyWindow();
+  graphics_font_freeFT();
   audio_close ();
   lua_close(lua);
 
