@@ -20,6 +20,11 @@ you wont need all the stuff that QT comes with
 On Linux & OS X:
 - Download and install cmake,gcc,g++(optional git)(on os x you can install these using brew)
 - Download and install QT Community 
+- If you got problems with OpenGL on Linux(Ubuntu) install these: 
+sudo apt-get install freeglut3 freeglut3-dev libglew1.5 libglew1.5-dev 
+libglu1-mesa libglu1-mesa-dev libgl1-mesa-glx libgl1-mesa-dev
+
+
 
 Features
 ========
