@@ -87,11 +87,9 @@ void main_loop(void *data) {
   lua_pushstring(loopData->luaState, "draw");
   lua_rawget(loopData->luaState, -2);
 
-<<<<<<< HEAD
   lua_pcall(loopData->luaState, 0, 0, 0);
-=======
+
   lua_pcall(loopData->luaState, 0, 0, 1); 
->>>>>>> c50b57550fb5094424b932235100a75344f57783
   graphics_swap();
 
   lua_pop(loopData->luaState, 1);
