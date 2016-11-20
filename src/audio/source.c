@@ -30,6 +30,7 @@ void audio_SourceCommon_setLooping(audio_SourceCommon const* source, int value){
 
 void audio_SourceCommon_play(audio_SourceCommon *source) {
   source->state = audio_SourceState_playing;
+
   alSourcePlay(source->source);
 }
 

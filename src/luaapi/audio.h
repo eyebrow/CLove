@@ -9,8 +9,13 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 #include "../3rdparty/lua/lua.h"
+#include "../3rdparty/lua/lauxlib.h"
 #include "../audio/audio.h"
+
+#include "../audio/streamsource.h"
 #include "../audio/staticsource.h"
 
 typedef enum {

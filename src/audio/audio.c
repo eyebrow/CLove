@@ -8,6 +8,7 @@
 */
 
 #include "audio.h"
+#include "streamsource.h"
 #include "../3rdparty/openal/include/AL/al.h"
 #include "../3rdparty/openal/include/AL/alc.h"
 #include <stdio.h>
@@ -24,6 +25,8 @@ void audio_init(void) {
     printf("%s \n", "Failed to initialite audio context");
   }
   printf("%s %s \n ", "Debug: OpenAL version: ", alGetString(AL_VERSION));
+
+  audio_streamsource_init();
 }
 
 void audio_setVolume(double value){

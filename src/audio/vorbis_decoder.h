@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 #include "../3rdparty/openal/include/AL/al.h"
 #include "../3rdparty/stb/stb_vorbis.h"
 
@@ -21,8 +23,8 @@ typedef struct {
   int         sample_rate;
 } audio_vorbis_DecoderData;
 
-int audio_vorbis_load(ALuint buffer, char const* filename); // static
-int audio_vorbis_openStream(audio_vorbis_DecoderData* decoder, char const* filename); // stream
+bool audio_vorbis_load(ALuint buffer, char const* filename); // static
+bool audio_vorbis_openStream(audio_vorbis_DecoderData* decoder, char const* filename); // stream
 int audio_vorbis_takeStreamSamples(audio_vorbis_DecoderData* decoderData, int sampleCount); // stream
 int audio_vorbis_uploadStreamSamples(audio_vorbis_DecoderData* decoderData, ALuint buffer); // stream
 void audio_vorbis_rewindStream(audio_vorbis_DecoderData* decoderData);

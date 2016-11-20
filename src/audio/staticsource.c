@@ -22,10 +22,10 @@ static const char* get_filename_ext(const char *filename) {
   	return dot+1;
 }
 
-int audio_loadStatic(audio_StaticSource *source, char const * filename) {
-  	audio_SourceCommon_init(&source->common);
-  	
-	int err = 1; // error checker ;)
+bool audio_loadStatic(audio_StaticSource *source, char const * filename) {
+  	bool err = false;
+	
+	audio_SourceCommon_init(&source->common);
   	alGenBuffers(1, &source->buffer);
 
   	if(strncmp(get_filename_ext(filename),"wav", 3) == 0){
@@ -33,7 +33,7 @@ int audio_loadStatic(audio_StaticSource *source, char const * filename) {
   	}else if((strncmp(get_filename_ext(filename), "ogg", 3)) == 0){
     	err = audio_vorbis_load(source->buffer, filename);
   	}else
-		err = -1;
+		return false;
 
   	alSourcei(source->common.source, AL_BUFFER, source->buffer);
   	return err;

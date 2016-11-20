@@ -92,7 +92,7 @@ void main_loop(void *data) {
   lua_pcall(loopData->luaState, 0, 0, 1); 
   graphics_swap();
 
-  lua_pop(loopData->luaState, 1);
+  lua_pop(loopData->luaState, 1); 
 
   SDL_Event event;
   while(SDL_PollEvent(&event)) {
@@ -153,6 +153,7 @@ void main_loop(void *data) {
 #endif
         }
     }
+	audio_updateStreams();
 }
 
 int main(int argc, char* argv[]) {

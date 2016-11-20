@@ -11,9 +11,7 @@
 
 #include <stdlib.h>
 
-#define BUFFER_SIZE 4096
-
-int audio_vorbis_load(ALuint buffer, char const *filename) {
+bool audio_vorbis_load(ALuint buffer, char const *filename) {
   	short *data;
   	int channels;
   	int samplingrate;
@@ -25,42 +23,39 @@ int audio_vorbis_load(ALuint buffer, char const *filename) {
 	
 
   	if(len == -1) {
-    	return 0;
+    	return false;
   	}
 
   	alBufferData(buffer, channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data,
          len * sizeof(ALushort) * channels, samplingrate);
 
-  	//stb_vorbis_close(decoder->vorbis);
   	free(data);
-  	return 1;
+  	return true;
 }
 
-int audio_vorbis_openStream(audio_vorbis_DecoderData* decoder, char const *filename) { 
+bool audio_vorbis_openStream(audio_vorbis_DecoderData* decoder, char const *filename) { 
 	int err;
 	decoder->vorbis = stb_vorbis_open_filename(filename, &err, NULL);
 
    stb_vorbis_info info = stb_vorbis_get_info(decoder->vorbis);
-
-	decoder->channels = info.channels;
-	decoder->sample_rate = info.sample_rate;	
+	
+	decoder->readBufferSize = info.channels * info.sample_rate + 4096;
+	decoder->readBuffer = malloc(sizeof(ALshort) * decoder->readBufferSize);
 	decoder->preloadedSamples = 0;
 
-	decoder->readBufferSize = info.channels * info.sample_rate + BUFFER_SIZE;
-	decoder->readBuffer = malloc(sizeof(ALshort) * decoder->readBufferSize);
-
- 	stb_vorbis_close(decoder->vorbis);
-  	return 1;
+ 	//stb_vorbis_close(decoder->vorbis);
+  	return true;
 }
 
 /*
-  audio_vorbis_takeSamples must return:  	 0 if end of stream reached
-                              -1 if buffer is full
-                               n where n > 0 if n samples were preloaded
+  must return:  	 
+  0 if end of stream reached
+  -1 if buffer is full
+   n where n > 0 if n samples were preloaded
 */
 int audio_vorbis_takeStreamSamples(audio_vorbis_DecoderData* decoderData, int sampleCount) {
 
-	int safeBufferSize = sampleCount * decoderData->channels * BUFFER_SIZE;
+	int safeBufferSize = sampleCount * decoderData->channels * 4096;
 	if (safeBufferSize > decoderData->readBufferSize) {
 		decoderData->readBufferSize = safeBufferSize;
 		free(decoderData->readBuffer);
@@ -85,7 +80,7 @@ int audio_vorbis_takeStreamSamples(audio_vorbis_DecoderData* decoderData, int sa
     	for(int i = 0; i < samples; ++i) {
       	for(int c = 0; c < decoderData->channels; ++c) {
         		decoderData->readBuffer[decoderData->preloadedSamples + readSamples + decoderData->channels * i + c] 
-			  		= (ALshort)(channelData[c][i] * 0x7FFF);
+			  		= (ALshort)(channelData[c][i] * 32767);
       	}
     	}
 
@@ -98,11 +93,16 @@ int audio_vorbis_takeStreamSamples(audio_vorbis_DecoderData* decoderData, int sa
 }
 
 int audio_vorbis_uploadStreamSamples(audio_vorbis_DecoderData* decoderData, ALuint buffer) {
+	
+	stb_vorbis_info info = stb_vorbis_get_info(decoderData->vorbis);
+	int channels = info.channels >= 2 ? 2 : 1; 
 
-	int channels = decoderData->channels >= 2 ? 2 : 1;
+	if(decoderData->preloadedSamples < decoderData->readBufferSize / 2) 
+   	 audio_vorbis_takeStreamSamples(decoderData, decoderData->readBufferSize / 2);
+  	
 
 	alBufferData(buffer, channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, decoderData->readBuffer,
-         decoderData->preloadedSamples * sizeof(ALushort),	decoderData->sample_rate);
+         decoderData->preloadedSamples * sizeof(ALshort),	info.sample_rate);
 
 	decoderData->preloadedSamples = 0;
 	return 1;
