@@ -18,7 +18,6 @@ typedef struct {
   ALuint buffer;
 } audio_StaticSource;
 
-
 int audio_loadStatic(audio_StaticSource *source, char const * filename);
 void audio_StaticSource_play(audio_StaticSource *source);
 void audio_StaticSource_setLooping(audio_StaticSource *source, bool loop);

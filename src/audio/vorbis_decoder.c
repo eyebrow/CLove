@@ -11,36 +11,100 @@
 
 #include <stdlib.h>
 
-int audio_vorbis_openStream(ALuint buffer, char const *filename) { 
-	int err;
+#define BUFFER_SIZE 4096
+
+int audio_vorbis_load(ALuint buffer, char const *filename) {
+  	short *data;
+  	int channels;
+  	int samplingrate;
+  	int len = stb_vorbis_decode_filename(filename, &channels, &samplingrate, &data);
+	
 	audio_vorbis_DecoderData* decoder = malloc(sizeof(audio_vorbis_DecoderData));
- 	decoder->vorbis = stb_vorbis_open_filename(filename, &err, NULL);
+	decoder->channels = channels;
+	decoder->sample_rate = samplingrate;	
+	
+
+  	if(len == -1) {
+    	return 0;
+  	}
+
+  	alBufferData(buffer, channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data,
+         len * sizeof(ALushort) * channels, samplingrate);
+
+  	//stb_vorbis_close(decoder->vorbis);
+  	free(data);
+  	return 1;
+}
+
+int audio_vorbis_openStream(audio_vorbis_DecoderData* decoder, char const *filename) { 
+	int err;
+	decoder->vorbis = stb_vorbis_open_filename(filename, &err, NULL);
 
    stb_vorbis_info info = stb_vorbis_get_info(decoder->vorbis);
-	
+
 	decoder->channels = info.channels;
 	decoder->sample_rate = info.sample_rate;	
 	decoder->preloadedSamples = 0;
-	
-	decoder->readBufferSize = info.channels * info.sample_rate + 4096 * 10;
+
+	decoder->readBufferSize = info.channels * info.sample_rate + BUFFER_SIZE;
 	decoder->readBuffer = malloc(sizeof(ALshort) * decoder->readBufferSize);
 
-	alBufferData(buffer, info.channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, decoder->readBuffer,
-               decoder->preloadedSamples * sizeof(short) * info.channels,	decoder->sample_rate);
-
  	stb_vorbis_close(decoder->vorbis);
-  return 1;
+  	return 1;
 }
-//TODO trebuie sa fi capabil sa dai load la muzica pana in 4096 bits iar apoi sa
-//verifici intr-o metoda de update daca ai dat play la valoarea de sus si daca
-//da atunci sa incarci inca pe atat pana la finalul melodiei, good luck!
+
+/*
+  audio_vorbis_takeSamples must return:  	 0 if end of stream reached
+                              -1 if buffer is full
+                               n where n > 0 if n samples were preloaded
+*/
 int audio_vorbis_takeStreamSamples(audio_vorbis_DecoderData* decoderData, int sampleCount) {
-	
-	return 1;
+
+	int safeBufferSize = sampleCount * decoderData->channels * BUFFER_SIZE;
+	if (safeBufferSize > decoderData->readBufferSize) {
+		decoderData->readBufferSize = safeBufferSize;
+		free(decoderData->readBuffer);
+		decoderData->readBuffer = malloc(sizeof(ALshort) * safeBufferSize);
+	}	
+	int space = decoderData->readBufferSize - decoderData->preloadedSamples - 4096;
+  	if(space <= 0) {
+    	return -1;
+  	}
+
+  	if(space < sampleCount) {
+    	sampleCount = space;
+  	}
+
+  	int readSamples = 0;
+  	while(readSamples < sampleCount) {
+    	float **channelData;
+    	int samples = stb_vorbis_get_frame_float(decoderData->vorbis, NULL, &channelData);
+    	if(samples == 0) {
+      	break;
+    	}
+    	for(int i = 0; i < samples; ++i) {
+      	for(int c = 0; c < decoderData->channels; ++c) {
+        		decoderData->readBuffer[decoderData->preloadedSamples + readSamples + decoderData->channels * i + c] 
+			  		= (ALshort)(channelData[c][i] * 0x7FFF);
+      	}
+    	}
+
+    	readSamples += decoderData->channels * samples;
+  	}
+
+  	decoderData->preloadedSamples += readSamples;
+
+	return readSamples;
 }
 
 int audio_vorbis_uploadStreamSamples(audio_vorbis_DecoderData* decoderData, ALuint buffer) {
-	
+
+	int channels = decoderData->channels >= 2 ? 2 : 1;
+
+	alBufferData(buffer, channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, decoderData->readBuffer,
+         decoderData->preloadedSamples * sizeof(ALushort),	decoderData->sample_rate);
+
+	decoderData->preloadedSamples = 0;
 	return 1;
 }
 
@@ -50,11 +114,11 @@ void audio_vorbis_rewindStream(audio_vorbis_DecoderData* decoderData) {
 
 int audio_vorbis_getChannelCount(audio_vorbis_DecoderData* decoderData) {
  	stb_vorbis_info info = stb_vorbis_get_info((stb_vorbis*)decoderData);
-  return info.channels;
+  	return info.channels;
 }
 
 int audio_vorbis_getSampleRate(audio_vorbis_DecoderData* decoderData) {
- return decoderData->sample_rate;
+ 	return decoderData->sample_rate;
 }
 
 void audio_static_vorbis_flushBuffer(audio_vorbis_DecoderData* decoderData) {

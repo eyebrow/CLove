@@ -22,7 +22,7 @@ typedef struct {
 } audio_vorbis_DecoderData;
 
 int audio_vorbis_load(ALuint buffer, char const* filename); // static
-int audio_vorbis_openStream(ALuint buffer, char const* filename); // stream
+int audio_vorbis_openStream(audio_vorbis_DecoderData* decoder, char const* filename); // stream
 int audio_vorbis_takeStreamSamples(audio_vorbis_DecoderData* decoderData, int sampleCount); // stream
 int audio_vorbis_uploadStreamSamples(audio_vorbis_DecoderData* decoderData, ALuint buffer); // stream
 void audio_vorbis_rewindStream(audio_vorbis_DecoderData* decoderData);
