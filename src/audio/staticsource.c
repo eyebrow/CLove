@@ -26,12 +26,12 @@ int audio_loadStatic(audio_StaticSource *source, char const * filename) {
   audio_SourceCommon_init(&source->common);
   int loaded = 1; // error checker ;)
   alGenBuffers(1, &source->buffer);
-  if(strncmp(get_filename_ext(filename),"wav", 3) == 0){
-    loaded = audio_wav_load(source->buffer, filename);
-  }else if((strncmp(get_filename_ext(filename), "ogg", 3)) == 0){
-    loaded = audio_vorbis_load(source->buffer, filename);
-  }else
-    return -1; //Unknow file type :(
+  if(strncmp(get_filename_ext(filename), "wav", 3) == 0){
+      loaded = audio_wav_load(source->buffer, filename);
+    }else if((strncmp(get_filename_ext(filename), "ogg", 3)) == 0){
+      loaded = audio_vorbis_load(source->buffer, filename);
+    }else
+    loaded = -1; //Unknow file type :(
 
   alSourcei(source->common.source, AL_BUFFER, source->buffer);
   return loaded;
@@ -39,8 +39,8 @@ int audio_loadStatic(audio_StaticSource *source, char const * filename) {
 
 void audio_StaticSource_play(audio_StaticSource *source) {
   if(source->common.state != audio_SourceState_playing) {
-    audio_SourceCommon_play(&source->common);
-  }
+      audio_SourceCommon_play(&source->common);
+    }
 }
 
 void audio_StaticSource_setLooping(audio_StaticSource *source, bool loop) {
@@ -56,8 +56,8 @@ void audio_StaticSource_rewind(audio_StaticSource *source) {
   alSourceRewind(source->common.source);
 
   if(source->common.state == audio_SourceState_playing) {
-    audio_SourceCommon_play(&source->common);
-  }
+      audio_SourceCommon_play(&source->common);
+    }
 }
 
 void audio_StaticSource_pause(audio_StaticSource *source) {

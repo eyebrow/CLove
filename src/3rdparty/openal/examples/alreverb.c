@@ -311,7 +311,7 @@ int main(int argc, char **argv)
     /* Play the sound until it finishes. */
     alSourcePlay(source);
     do {
-        al_nssleep(10000000);
+        Sleep(10);
         alGetSourcei(source, AL_SOURCE_STATE, &state);
     } while(alGetError() == AL_NO_ERROR && state == AL_PLAYING);
 

@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU Library General Public
  *  License along with this library; if not, write to the
- *  Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *  Boston, MA  02111-1307, USA.
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
@@ -29,8 +29,6 @@
 #include "alSource.h"
 #include "alu.h"
 #include "hrtf.h"
-
-#include "compat.h"
 
 
 /* Current data set limits defined by the makehrtf utility. */
@@ -54,41 +52,70 @@ struct Hrtf {
     const ALshort *coeffs;
     const ALubyte *delays;
 
-    al_string filename;
     struct Hrtf *next;
 };
 
 static const ALchar magicMarker00[8] = "MinPHR00";
 static const ALchar magicMarker01[8] = "MinPHR01";
 
-/* First value for pass-through coefficients (remaining are 0), used for omni-
- * directional sounds. */
-static const ALfloat PassthruCoeff = 32767.0f * 0.707106781187f/*sqrt(0.5)*/;
-
 static struct Hrtf *LoadedHrtfs = NULL;
 
 /* Calculate the elevation indices given the polar elevation in radians.
- * This will return two indices between 0 and (evcount - 1) and an
+ * This will return two indices between 0 and (Hrtf->evCount - 1) and an
  * interpolation factor between 0.0 and 1.0.
  */
-static void CalcEvIndices(ALuint evcount, ALfloat ev, ALuint *evidx, ALfloat *evmu)
+static void CalcEvIndices(const struct Hrtf *Hrtf, ALfloat ev, ALuint *evidx, ALfloat *evmu)
 {
-    ev = (F_PI_2 + ev) * (evcount-1) / F_PI;
+    ev = (F_PI_2 + ev) * (Hrtf->evCount-1) / F_PI;
     evidx[0] = fastf2u(ev);
-    evidx[1] = minu(evidx[0] + 1, evcount-1);
+    evidx[1] = minu(evidx[0] + 1, Hrtf->evCount-1);
     *evmu = ev - evidx[0];
 }
 
 /* Calculate the azimuth indices given the polar azimuth in radians.  This
- * will return two indices between 0 and (azcount - 1) and an interpolation
- * factor between 0.0 and 1.0.
+ * will return two indices between 0 and (Hrtf->azCount[ei] - 1) and an
+ * interpolation factor between 0.0 and 1.0.
  */
-static void CalcAzIndices(ALuint azcount, ALfloat az, ALuint *azidx, ALfloat *azmu)
+static void CalcAzIndices(const struct Hrtf *Hrtf, ALuint evidx, ALfloat az, ALuint *azidx, ALfloat *azmu)
 {
-    az = (F_TAU + az) * azcount / F_TAU;
-    azidx[0] = fastf2u(az) % azcount;
-    azidx[1] = (azidx[0] + 1) % azcount;
+    az = (F_2PI + az) * Hrtf->azCount[evidx] / (F_2PI);
+    azidx[0] = fastf2u(az) % Hrtf->azCount[evidx];
+    azidx[1] = (azidx[0] + 1) % Hrtf->azCount[evidx];
     *azmu = az - floorf(az);
+}
+
+/* Calculates the normalized HRTF transition factor (delta) from the changes
+ * in gain and listener to source angle between updates.  The result is a
+ * normalized delta factor that can be used to calculate moving HRIR stepping
+ * values.
+ */
+ALfloat CalcHrtfDelta(ALfloat oldGain, ALfloat newGain, const ALfloat olddir[3], const ALfloat newdir[3])
+{
+    ALfloat gainChange, angleChange, change;
+
+    // Calculate the normalized dB gain change.
+    newGain = maxf(newGain, 0.0001f);
+    oldGain = maxf(oldGain, 0.0001f);
+    gainChange = fabsf(log10f(newGain / oldGain) / log10f(0.0001f));
+
+    // Calculate the normalized listener to source angle change when there is
+    // enough gain to notice it.
+    angleChange = 0.0f;
+    if(gainChange > 0.0001f || newGain > 0.0001f)
+    {
+        // No angle change when the directions are equal or degenerate (when
+        // both have zero length).
+        if(newdir[0]-olddir[0] || newdir[1]-olddir[1] || newdir[2]-olddir[2])
+            angleChange = acosf(olddir[0]*newdir[0] +
+                                olddir[1]*newdir[1] +
+                                olddir[2]*newdir[2]) / F_PI;
+
+    }
+
+    // Use the largest of the two changes for the delta factor, and apply a
+    // significance shaping function to it.
+    change = maxf(angleChange * 25.0f, gainChange) * 2.0f;
+    return minf(change, 1.0f);
 }
 
 /* Calculates static HRIR coefficients and delays for the given polar
@@ -96,30 +123,37 @@ static void CalcAzIndices(ALuint azcount, ALfloat az, ALuint *azidx, ALfloat *az
  * increase the apparent resolution of the HRIR data set.  The coefficients
  * are also normalized and attenuated by the specified gain.
  */
-void GetLerpedHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azimuth, ALfloat dirfact, ALfloat gain, ALfloat (*coeffs)[2], ALuint *delays)
+void GetLerpedHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azimuth, ALfloat gain, ALfloat (*coeffs)[2], ALuint *delays)
 {
-    ALuint evidx[2], lidx[4], ridx[4];
+    ALuint evidx[2], azidx[2];
+    ALuint lidx[4], ridx[4];
     ALfloat mu[3], blend[4];
     ALuint i;
 
-    /* Claculate elevation indices and interpolation factor. */
-    CalcEvIndices(Hrtf->evCount, elevation, evidx, &mu[2]);
+    // Claculate elevation indices and interpolation factor.
+    CalcEvIndices(Hrtf, elevation, evidx, &mu[2]);
 
-    for(i = 0;i < 2;i++)
-    {
-        ALuint azcount = Hrtf->azCount[evidx[i]];
-        ALuint evoffset = Hrtf->evOffset[evidx[i]];
-        ALuint azidx[2];
+    // Calculate azimuth indices and interpolation factor for the first
+    // elevation.
+    CalcAzIndices(Hrtf, evidx[0], azimuth, azidx, &mu[0]);
 
-        /* Calculate azimuth indices and interpolation factor for this elevation. */
-        CalcAzIndices(azcount, azimuth, azidx, &mu[i]);
+    // Calculate the first set of linear HRIR indices for left and right
+    // channels.
+    lidx[0] = Hrtf->evOffset[evidx[0]] + azidx[0];
+    lidx[1] = Hrtf->evOffset[evidx[0]] + azidx[1];
+    ridx[0] = Hrtf->evOffset[evidx[0]] + ((Hrtf->azCount[evidx[0]]-azidx[0]) % Hrtf->azCount[evidx[0]]);
+    ridx[1] = Hrtf->evOffset[evidx[0]] + ((Hrtf->azCount[evidx[0]]-azidx[1]) % Hrtf->azCount[evidx[0]]);
 
-        /* Calculate a set of linear HRIR indices for left and right channels. */
-        lidx[i*2 + 0] = evoffset + azidx[0];
-        lidx[i*2 + 1] = evoffset + azidx[1];
-        ridx[i*2 + 0] = evoffset + ((azcount-azidx[0]) % azcount);
-        ridx[i*2 + 1] = evoffset + ((azcount-azidx[1]) % azcount);
-    }
+    // Calculate azimuth indices and interpolation factor for the second
+    // elevation.
+    CalcAzIndices(Hrtf, evidx[1], azimuth, azidx, &mu[1]);
+
+    // Calculate the second set of linear HRIR indices for left and right
+    // channels.
+    lidx[2] = Hrtf->evOffset[evidx[1]] + azidx[0];
+    lidx[3] = Hrtf->evOffset[evidx[1]] + azidx[1];
+    ridx[2] = Hrtf->evOffset[evidx[1]] + ((Hrtf->azCount[evidx[1]]-azidx[0]) % Hrtf->azCount[evidx[1]]);
+    ridx[3] = Hrtf->evOffset[evidx[1]] + ((Hrtf->azCount[evidx[1]]-azidx[1]) % Hrtf->azCount[evidx[1]]);
 
     /* Calculate 4 blending weights for 2D bilinear interpolation. */
     blend[0] = (1.0f-mu[0]) * (1.0f-mu[2]);
@@ -128,12 +162,12 @@ void GetLerpedHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azi
     blend[3] = (     mu[1]) * (     mu[2]);
 
     /* Calculate the HRIR delays using linear interpolation. */
-    delays[0] = fastf2u((Hrtf->delays[lidx[0]]*blend[0] + Hrtf->delays[lidx[1]]*blend[1] +
-                         Hrtf->delays[lidx[2]]*blend[2] + Hrtf->delays[lidx[3]]*blend[3]) *
-                        dirfact + 0.5f) << HRTFDELAY_BITS;
-    delays[1] = fastf2u((Hrtf->delays[ridx[0]]*blend[0] + Hrtf->delays[ridx[1]]*blend[1] +
-                         Hrtf->delays[ridx[2]]*blend[2] + Hrtf->delays[ridx[3]]*blend[3]) *
-                        dirfact + 0.5f) << HRTFDELAY_BITS;
+    delays[0] = fastf2u(Hrtf->delays[lidx[0]]*blend[0] + Hrtf->delays[lidx[1]]*blend[1] +
+                        Hrtf->delays[lidx[2]]*blend[2] + Hrtf->delays[lidx[3]]*blend[3] +
+                        0.5f) << HRTFDELAY_BITS;
+    delays[1] = fastf2u(Hrtf->delays[ridx[0]]*blend[0] + Hrtf->delays[ridx[1]]*blend[1] +
+                        Hrtf->delays[ridx[2]]*blend[2] + Hrtf->delays[ridx[3]]*blend[3] +
+                        0.5f) << HRTFDELAY_BITS;
 
     /* Calculate the sample offsets for the HRIR indices. */
     lidx[0] *= Hrtf->irSize;
@@ -151,24 +185,17 @@ void GetLerpedHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azi
      */
     if(gain > 0.0001f)
     {
-        ALfloat c;
-
-        i = 0;
-        c = (Hrtf->coeffs[lidx[0]+i]*blend[0] + Hrtf->coeffs[lidx[1]+i]*blend[1] +
-             Hrtf->coeffs[lidx[2]+i]*blend[2] + Hrtf->coeffs[lidx[3]+i]*blend[3]);
-        coeffs[i][0] = lerp(PassthruCoeff, c, dirfact) * gain * (1.0f/32767.0f);
-        c = (Hrtf->coeffs[ridx[0]+i]*blend[0] + Hrtf->coeffs[ridx[1]+i]*blend[1] +
-             Hrtf->coeffs[ridx[2]+i]*blend[2] + Hrtf->coeffs[ridx[3]+i]*blend[3]);
-        coeffs[i][1] = lerp(PassthruCoeff, c, dirfact) * gain * (1.0f/32767.0f);
-
-        for(i = 1;i < Hrtf->irSize;i++)
+        gain *= 1.0f/32767.0f;
+        for(i = 0;i < Hrtf->irSize;i++)
         {
-            c = (Hrtf->coeffs[lidx[0]+i]*blend[0] + Hrtf->coeffs[lidx[1]+i]*blend[1] +
-                 Hrtf->coeffs[lidx[2]+i]*blend[2] + Hrtf->coeffs[lidx[3]+i]*blend[3]);
-            coeffs[i][0] = lerp(0.0f, c, dirfact) * gain * (1.0f/32767.0f);
-            c = (Hrtf->coeffs[ridx[0]+i]*blend[0] + Hrtf->coeffs[ridx[1]+i]*blend[1] +
-                 Hrtf->coeffs[ridx[2]+i]*blend[2] + Hrtf->coeffs[ridx[3]+i]*blend[3]);
-            coeffs[i][1] = lerp(0.0f, c, dirfact) * gain * (1.0f/32767.0f);
+            coeffs[i][0] = (Hrtf->coeffs[lidx[0]+i]*blend[0] +
+                            Hrtf->coeffs[lidx[1]+i]*blend[1] +
+                            Hrtf->coeffs[lidx[2]+i]*blend[2] +
+                            Hrtf->coeffs[lidx[3]+i]*blend[3]) * gain;
+            coeffs[i][1] = (Hrtf->coeffs[ridx[0]+i]*blend[0] +
+                            Hrtf->coeffs[ridx[1]+i]*blend[1] +
+                            Hrtf->coeffs[ridx[2]+i]*blend[2] +
+                            Hrtf->coeffs[ridx[3]+i]*blend[3]) * gain;
         }
     }
     else
@@ -188,36 +215,43 @@ void GetLerpedHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azi
  * specified gain.  Stepping resolution and count is determined using the
  * given delta factor between 0.0 and 1.0.
  */
-ALuint GetMovingHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azimuth, ALfloat dirfact, ALfloat gain, ALfloat delta, ALint counter, ALfloat (*coeffs)[2], ALuint *delays, ALfloat (*coeffStep)[2], ALint *delayStep)
+ALuint GetMovingHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat azimuth, ALfloat gain, ALfloat delta, ALint counter, ALfloat (*coeffs)[2], ALuint *delays, ALfloat (*coeffStep)[2], ALint *delayStep)
 {
-    ALuint evidx[2], lidx[4], ridx[4];
+    ALuint evidx[2], azidx[2];
+    ALuint lidx[4], ridx[4];
     ALfloat mu[3], blend[4];
     ALfloat left, right;
-    ALfloat steps;
+    ALfloat step;
     ALuint i;
 
-    /* Claculate elevation indices and interpolation factor. */
-    CalcEvIndices(Hrtf->evCount, elevation, evidx, &mu[2]);
+    // Claculate elevation indices and interpolation factor.
+    CalcEvIndices(Hrtf, elevation, evidx, &mu[2]);
 
-    for(i = 0;i < 2;i++)
-    {
-        ALuint azcount = Hrtf->azCount[evidx[i]];
-        ALuint evoffset = Hrtf->evOffset[evidx[i]];
-        ALuint azidx[2];
+    // Calculate azimuth indices and interpolation factor for the first
+    // elevation.
+    CalcAzIndices(Hrtf, evidx[0], azimuth, azidx, &mu[0]);
 
-        /* Calculate azimuth indices and interpolation factor for this elevation. */
-        CalcAzIndices(azcount, azimuth, azidx, &mu[i]);
+    // Calculate the first set of linear HRIR indices for left and right
+    // channels.
+    lidx[0] = Hrtf->evOffset[evidx[0]] + azidx[0];
+    lidx[1] = Hrtf->evOffset[evidx[0]] + azidx[1];
+    ridx[0] = Hrtf->evOffset[evidx[0]] + ((Hrtf->azCount[evidx[0]]-azidx[0]) % Hrtf->azCount[evidx[0]]);
+    ridx[1] = Hrtf->evOffset[evidx[0]] + ((Hrtf->azCount[evidx[0]]-azidx[1]) % Hrtf->azCount[evidx[0]]);
 
-        /* Calculate a set of linear HRIR indices for left and right channels. */
-        lidx[i*2 + 0] = evoffset + azidx[0];
-        lidx[i*2 + 1] = evoffset + azidx[1];
-        ridx[i*2 + 0] = evoffset + ((azcount-azidx[0]) % azcount);
-        ridx[i*2 + 1] = evoffset + ((azcount-azidx[1]) % azcount);
-    }
+    // Calculate azimuth indices and interpolation factor for the second
+    // elevation.
+    CalcAzIndices(Hrtf, evidx[1], azimuth, azidx, &mu[1]);
+
+    // Calculate the second set of linear HRIR indices for left and right
+    // channels.
+    lidx[2] = Hrtf->evOffset[evidx[1]] + azidx[0];
+    lidx[3] = Hrtf->evOffset[evidx[1]] + azidx[1];
+    ridx[2] = Hrtf->evOffset[evidx[1]] + ((Hrtf->azCount[evidx[1]]-azidx[0]) % Hrtf->azCount[evidx[1]]);
+    ridx[3] = Hrtf->evOffset[evidx[1]] + ((Hrtf->azCount[evidx[1]]-azidx[1]) % Hrtf->azCount[evidx[1]]);
 
     // Calculate the stepping parameters.
-    steps = maxf(floorf(delta*Hrtf->sampleRate + 0.5f), 1.0f);
-    delta = 1.0f / steps;
+    delta = maxf(floorf(delta*(Hrtf->sampleRate*0.015f) + 0.5f), 1.0f);
+    step = 1.0f / delta;
 
     /* Calculate 4 blending weights for 2D bilinear interpolation. */
     blend[0] = (1.0f-mu[0]) * (1.0f-mu[2]);
@@ -232,15 +266,15 @@ ALuint GetMovingHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat a
     left = (ALfloat)(delays[0] - (delayStep[0] * counter));
     right = (ALfloat)(delays[1] - (delayStep[1] * counter));
 
-    delays[0] = fastf2u((Hrtf->delays[lidx[0]]*blend[0] + Hrtf->delays[lidx[1]]*blend[1] +
-                         Hrtf->delays[lidx[2]]*blend[2] + Hrtf->delays[lidx[3]]*blend[3]) *
-                        dirfact + 0.5f) << HRTFDELAY_BITS;
-    delays[1] = fastf2u((Hrtf->delays[ridx[0]]*blend[0] + Hrtf->delays[ridx[1]]*blend[1] +
-                         Hrtf->delays[ridx[2]]*blend[2] + Hrtf->delays[ridx[3]]*blend[3]) *
-                        dirfact + 0.5f) << HRTFDELAY_BITS;
+    delays[0] = fastf2u(Hrtf->delays[lidx[0]]*blend[0] + Hrtf->delays[lidx[1]]*blend[1] +
+                        Hrtf->delays[lidx[2]]*blend[2] + Hrtf->delays[lidx[3]]*blend[3] +
+                        0.5f) << HRTFDELAY_BITS;
+    delays[1] = fastf2u(Hrtf->delays[ridx[0]]*blend[0] + Hrtf->delays[ridx[1]]*blend[1] +
+                        Hrtf->delays[ridx[2]]*blend[2] + Hrtf->delays[ridx[3]]*blend[3] +
+                        0.5f) << HRTFDELAY_BITS;
 
-    delayStep[0] = fastf2i(delta * (delays[0] - left));
-    delayStep[1] = fastf2i(delta * (delays[1] - right));
+    delayStep[0] = fastf2i(step * (delays[0] - left));
+    delayStep[1] = fastf2i(step * (delays[1] - right));
 
     /* Calculate the sample offsets for the HRIR indices. */
     lidx[0] *= Hrtf->irSize;
@@ -260,41 +294,28 @@ ALuint GetMovingHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat a
      */
     if(gain > 0.0001f)
     {
-        ALfloat c;
-
-        i = 0;
-        left = coeffs[i][0] - (coeffStep[i][0] * counter);
-        right = coeffs[i][1] - (coeffStep[i][1] * counter);
-
-        c = (Hrtf->coeffs[lidx[0]+i]*blend[0] + Hrtf->coeffs[lidx[1]+i]*blend[1] +
-             Hrtf->coeffs[lidx[2]+i]*blend[2] + Hrtf->coeffs[lidx[3]+i]*blend[3]);
-        coeffs[i][0] = lerp(PassthruCoeff, c, dirfact) * gain * (1.0f/32767.0f);
-        c = (Hrtf->coeffs[ridx[0]+i]*blend[0] + Hrtf->coeffs[ridx[1]+i]*blend[1] +
-             Hrtf->coeffs[ridx[2]+i]*blend[2] + Hrtf->coeffs[ridx[3]+i]*blend[3]);
-        coeffs[i][1] = lerp(PassthruCoeff, c, dirfact) * gain * (1.0f/32767.0f);
-
-        coeffStep[i][0] = delta * (coeffs[i][0] - left);
-        coeffStep[i][1] = delta * (coeffs[i][1] - right);
-
-        for(i = 1;i < Hrtf->irSize;i++)
+        gain *= 1.0f/32767.0f;
+        for(i = 0;i < HRIR_LENGTH;i++)
         {
             left = coeffs[i][0] - (coeffStep[i][0] * counter);
             right = coeffs[i][1] - (coeffStep[i][1] * counter);
 
-            c = (Hrtf->coeffs[lidx[0]+i]*blend[0] + Hrtf->coeffs[lidx[1]+i]*blend[1] +
-                 Hrtf->coeffs[lidx[2]+i]*blend[2] + Hrtf->coeffs[lidx[3]+i]*blend[3]);
-            coeffs[i][0] = lerp(0.0f, c, dirfact) * gain * (1.0f/32767.0f);
-            c = (Hrtf->coeffs[ridx[0]+i]*blend[0] + Hrtf->coeffs[ridx[1]+i]*blend[1] +
-                 Hrtf->coeffs[ridx[2]+i]*blend[2] + Hrtf->coeffs[ridx[3]+i]*blend[3]);
-            coeffs[i][1] = lerp(0.0f, c, dirfact) * gain * (1.0f/32767.0f);
+            coeffs[i][0] = (Hrtf->coeffs[lidx[0]+i]*blend[0] +
+                            Hrtf->coeffs[lidx[1]+i]*blend[1] +
+                            Hrtf->coeffs[lidx[2]+i]*blend[2] +
+                            Hrtf->coeffs[lidx[3]+i]*blend[3]) * gain;
+            coeffs[i][1] = (Hrtf->coeffs[ridx[0]+i]*blend[0] +
+                            Hrtf->coeffs[ridx[1]+i]*blend[1] +
+                            Hrtf->coeffs[ridx[2]+i]*blend[2] +
+                            Hrtf->coeffs[ridx[3]+i]*blend[3]) * gain;
 
-            coeffStep[i][0] = delta * (coeffs[i][0] - left);
-            coeffStep[i][1] = delta * (coeffs[i][1] - right);
+            coeffStep[i][0] = step * (coeffs[i][0] - left);
+            coeffStep[i][1] = step * (coeffs[i][1] - right);
         }
     }
     else
     {
-        for(i = 0;i < Hrtf->irSize;i++)
+        for(i = 0;i < HRIR_LENGTH;i++)
         {
             left = coeffs[i][0] - (coeffStep[i][0] * counter);
             right = coeffs[i][1] - (coeffStep[i][1] * counter);
@@ -302,8 +323,8 @@ ALuint GetMovingHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat a
             coeffs[i][0] = 0.0f;
             coeffs[i][1] = 0.0f;
 
-            coeffStep[i][0] = delta * -left;
-            coeffStep[i][1] = delta * -right;
+            coeffStep[i][0] = step * -left;
+            coeffStep[i][1] = step * -right;
         }
     }
 
@@ -311,118 +332,13 @@ ALuint GetMovingHrtfCoeffs(const struct Hrtf *Hrtf, ALfloat elevation, ALfloat a
      * complete its transition.  The mixer will only apply stepping for this
      * many samples.
      */
-    return fastf2u(steps);
+    return fastf2u(delta);
 }
 
 
-/* Calculates HRTF coefficients for B-Format channels (only up to first-order).
- * Note that these will decode a B-Format output mix, which uses FuMa ordering
- * and scaling, not N3D!
- */
-void GetBFormatHrtfCoeffs(const struct Hrtf *Hrtf, const ALuint num_chans, ALfloat (**coeffs_list)[2], ALuint **delay_list)
+static struct Hrtf *LoadHrtf00(FILE *f, ALuint deviceRate)
 {
-    ALuint elev_idx, azi_idx;
-    ALfloat scale;
-    ALuint i, c;
-
-    assert(num_chans <= 4);
-
-    for(c = 0;c < num_chans;c++)
-    {
-        ALfloat (*coeffs)[2] = coeffs_list[c];
-        ALuint *delay = delay_list[c];
-
-        for(i = 0;i < Hrtf->irSize;i++)
-        {
-            coeffs[i][0] = 0.0f;
-            coeffs[i][1] = 0.0f;
-        }
-        delay[0] = 0;
-        delay[1] = 0;
-    }
-
-    /* NOTE: HRTF coefficients are generated by combining all the HRIRs in the
-     * dataset, with each entry scaled according to how much it contributes to
-     * the given B-Format channel based on its direction (including negative
-     * contributions!).
-     */
-    scale = 0.0f;
-    for(elev_idx = 0;elev_idx < Hrtf->evCount;elev_idx++)
-    {
-        ALfloat elev = (ALfloat)elev_idx/(ALfloat)(Hrtf->evCount-1)*F_PI - F_PI_2;
-        ALuint evoffset = Hrtf->evOffset[elev_idx];
-        ALuint azcount = Hrtf->azCount[elev_idx];
-
-        scale += (ALfloat)azcount;
-
-        for(azi_idx = 0;azi_idx < azcount;azi_idx++)
-        {
-            ALuint lidx, ridx;
-            ALfloat ambi_coeffs[4];
-            ALfloat az, gain;
-            ALfloat x, y, z;
-
-            lidx = evoffset + azi_idx;
-            ridx = evoffset + ((azcount-azi_idx) % azcount);
-
-            az = (ALfloat)azi_idx / (ALfloat)azcount * F_TAU;
-            if(az > F_PI) az -= F_TAU;
-
-            x = cosf(-az) * cosf(elev);
-            y = sinf(-az) * cosf(elev);
-            z = sinf(elev);
-
-            ambi_coeffs[0] = 1.414213562f;
-            ambi_coeffs[1] = x;
-            ambi_coeffs[2] = y;
-            ambi_coeffs[3] = z;
-
-            for(c = 0;c < num_chans;c++)
-            {
-                ALfloat (*coeffs)[2] = coeffs_list[c];
-                ALuint *delay = delay_list[c];
-
-                /* NOTE: Always include the total delay average since the
-                 * channels need to have matching delays. */
-                delay[0] += Hrtf->delays[lidx];
-                delay[1] += Hrtf->delays[ridx];
-
-                gain = ambi_coeffs[c];
-                if(!(fabsf(gain) > GAIN_SILENCE_THRESHOLD))
-                    continue;
-
-                for(i = 0;i < Hrtf->irSize;i++)
-                {
-                    coeffs[i][0] += Hrtf->coeffs[lidx*Hrtf->irSize + i]*(1.0f/32767.0f) * gain;
-                    coeffs[i][1] += Hrtf->coeffs[ridx*Hrtf->irSize + i]*(1.0f/32767.0f) * gain;
-                }
-            }
-        }
-    }
-
-    scale = 1.0f/scale;
-
-    for(c = 0;c < num_chans;c++)
-    {
-        ALfloat (*coeffs)[2] = coeffs_list[c];
-        ALuint *delay = delay_list[c];
-
-        for(i = 0;i < Hrtf->irSize;i++)
-        {
-            coeffs[i][0] *= scale;
-            coeffs[i][1] *= scale;
-        }
-        delay[0] = minu((ALuint)((ALfloat)delay[0] * scale), HRTF_HISTORY_LENGTH-1);
-        delay[0] <<= HRTFDELAY_BITS;
-        delay[1] = minu((ALuint)((ALfloat)delay[1] * scale), HRTF_HISTORY_LENGTH-1);
-        delay[1] <<= HRTFDELAY_BITS;
-    }
-}
-
-
-static struct Hrtf *LoadHrtf00(FILE *f)
-{
-    const ALubyte maxDelay = HRTF_HISTORY_LENGTH-1;
+    const ALubyte maxDelay = SRC_HISTORY_LENGTH-1;
     struct Hrtf *Hrtf = NULL;
     ALboolean failed = AL_FALSE;
     ALuint rate = 0, irCount = 0;
@@ -447,6 +363,12 @@ static struct Hrtf *LoadHrtf00(FILE *f)
 
     evCount = fgetc(f);
 
+    if(rate != deviceRate)
+    {
+        ERR("HRIR rate does not match device rate: rate=%d (%d)\n",
+            rate, deviceRate);
+        failed = AL_TRUE;
+    }
     if(irSize < MIN_IR_SIZE || irSize > MAX_IR_SIZE || (irSize%MOD_IR_SIZE))
     {
         ERR("Unsupported HRIR size: irSize=%d (%d to %d by %d)\n",
@@ -569,7 +491,6 @@ static struct Hrtf *LoadHrtf00(FILE *f)
         Hrtf->evOffset = evOffset;
         Hrtf->coeffs = coeffs;
         Hrtf->delays = delays;
-        AL_STRING_INIT(Hrtf->filename);
         Hrtf->next = NULL;
         return Hrtf;
     }
@@ -582,9 +503,9 @@ static struct Hrtf *LoadHrtf00(FILE *f)
 }
 
 
-static struct Hrtf *LoadHrtf01(FILE *f)
+static struct Hrtf *LoadHrtf01(FILE *f, ALuint deviceRate)
 {
-    const ALubyte maxDelay = HRTF_HISTORY_LENGTH-1;
+    const ALubyte maxDelay = SRC_HISTORY_LENGTH-1;
     struct Hrtf *Hrtf = NULL;
     ALboolean failed = AL_FALSE;
     ALuint rate = 0, irCount = 0;
@@ -604,6 +525,12 @@ static struct Hrtf *LoadHrtf01(FILE *f)
 
     evCount = fgetc(f);
 
+    if(rate != deviceRate)
+    {
+        ERR("HRIR rate does not match device rate: rate=%d (%d)\n",
+                rate, deviceRate);
+        failed = AL_TRUE;
+    }
     if(irSize < MIN_IR_SIZE || irSize > MAX_IR_SIZE || (irSize%MOD_IR_SIZE))
     {
         ERR("Unsupported HRIR size: irSize=%d (%d to %d by %d)\n",
@@ -709,7 +636,6 @@ static struct Hrtf *LoadHrtf01(FILE *f)
         Hrtf->evOffset = evOffset;
         Hrtf->coeffs = coeffs;
         Hrtf->delays = delays;
-        AL_STRING_INIT(Hrtf->filename);
         Hrtf->next = NULL;
         return Hrtf;
     }
@@ -722,166 +648,144 @@ static struct Hrtf *LoadHrtf01(FILE *f)
 }
 
 
-static void AddFileEntry(vector_HrtfEntry *list, al_string *filename)
+static struct Hrtf *LoadHrtf(ALuint deviceRate)
 {
-    HrtfEntry entry = { AL_STRING_INIT_STATIC(), *filename, NULL };
-    HrtfEntry *iter;
-    const char *name;
-    int i;
+    const char *fnamelist = "default-%r.mhr";
 
-    name = strrchr(al_string_get_cstr(entry.filename), '/');
-    if(!name) name = strrchr(al_string_get_cstr(entry.filename), '\\');
-    if(!name) name = al_string_get_cstr(entry.filename);
-    else ++name;
-
-    entry.hrtf = LoadedHrtfs;
-    while(entry.hrtf)
+    ConfigValueStr(NULL, "hrtf_tables", &fnamelist);
+    while(*fnamelist != '\0')
     {
-        if(al_string_cmp(entry.filename, entry.hrtf->filename) == 0)
-            break;
-        entry.hrtf = entry.hrtf->next;
-    }
-
-    if(!entry.hrtf)
-    {
-        struct Hrtf *hrtf = NULL;
+        struct Hrtf *Hrtf = NULL;
+        char fname[PATH_MAX];
+        const char *next;
         ALchar magic[8];
+        ALuint i;
         FILE *f;
 
-        TRACE("Loading %s...\n", al_string_get_cstr(entry.filename));
-        f = al_fopen(al_string_get_cstr(entry.filename), "rb");
+        i = 0;
+        while(isspace(*fnamelist) || *fnamelist == ',')
+            fnamelist++;
+        next = fnamelist;
+        while(*(fnamelist=next) != '\0' && *fnamelist != ',')
+        {
+            next = strpbrk(fnamelist, "%,");
+            while(fnamelist != next && *fnamelist && i < sizeof(fname))
+                fname[i++] = *(fnamelist++);
+
+            if(!next || *next == ',')
+                break;
+
+            /* *next == '%' */
+            next++;
+            if(*next == 'r')
+            {
+                int wrote = snprintf(&fname[i], sizeof(fname)-i, "%u", deviceRate);
+                i += minu(wrote, sizeof(fname)-i);
+                next++;
+            }
+            else if(*next == '%')
+            {
+                if(i < sizeof(fname))
+                    fname[i++] = '%';
+                next++;
+            }
+            else
+                ERR("Invalid marker '%%%c'\n", *next);
+        }
+        i = minu(i, sizeof(fname)-1);
+        fname[i] = '\0';
+        while(i > 0 && isspace(fname[i-1]))
+            i--;
+        fname[i] = '\0';
+
+        if(fname[0] == '\0')
+            continue;
+
+        TRACE("Loading %s...\n", fname);
+        f = OpenDataFile(fname, "openal/hrtf");
         if(f == NULL)
         {
-            ERR("Could not open %s\n", al_string_get_cstr(entry.filename));
-            goto error;
+            ERR("Could not open %s\n", fname);
+            continue;
         }
 
         if(fread(magic, 1, sizeof(magic), f) != sizeof(magic))
-            ERR("Failed to read header from %s\n", al_string_get_cstr(entry.filename));
+            ERR("Failed to read header from %s\n", fname);
         else
         {
             if(memcmp(magic, magicMarker00, sizeof(magicMarker00)) == 0)
             {
                 TRACE("Detected data set format v0\n");
-                hrtf = LoadHrtf00(f);
+                Hrtf = LoadHrtf00(f, deviceRate);
             }
             else if(memcmp(magic, magicMarker01, sizeof(magicMarker01)) == 0)
             {
                 TRACE("Detected data set format v1\n");
-                hrtf = LoadHrtf01(f);
+                Hrtf = LoadHrtf01(f, deviceRate);
             }
             else
-                ERR("Invalid header in %s: \"%.8s\"\n", al_string_get_cstr(entry.filename), magic);
+                ERR("Invalid header in %s: \"%.8s\"\n", fname, magic);
         }
+
         fclose(f);
+        f = NULL;
 
-        if(!hrtf)
+        if(Hrtf)
         {
-            ERR("Failed to load %s\n", al_string_get_cstr(entry.filename));
-            goto error;
+            Hrtf->next = LoadedHrtfs;
+            LoadedHrtfs = Hrtf;
+            TRACE("Loaded HRTF support for format: %s %uhz\n",
+                  DevFmtChannelsString(DevFmtStereo), Hrtf->sampleRate);
+            return Hrtf;
         }
 
-        al_string_copy(&hrtf->filename, entry.filename);
-        hrtf->next = LoadedHrtfs;
-        LoadedHrtfs = hrtf;
-        TRACE("Loaded HRTF support for format: %s %uhz\n",
-                DevFmtChannelsString(DevFmtStereo), hrtf->sampleRate);
-        entry.hrtf = hrtf;
+        ERR("Failed to load %s\n", fname);
     }
 
-    /* TODO: Get a human-readable name from the HRTF data (possibly coming in a
-     * format update). */
-
-    i = 0;
-    do {
-        al_string_copy_cstr(&entry.name, name);
-        if(i != 0)
-        {
-            char str[64];
-            snprintf(str, sizeof(str), " #%d", i+1);
-            al_string_append_cstr(&entry.name, str);
-        }
-        ++i;
-
-#define MATCH_NAME(i)  (al_string_cmp(entry.name, (i)->name) == 0)
-        VECTOR_FIND_IF(iter, HrtfEntry, *list, MATCH_NAME);
-#undef MATCH_NAME
-    } while(iter != VECTOR_ITER_END(*list));
-
-    TRACE("Adding entry \"%s\" from file \"%s\"\n", al_string_get_cstr(entry.name),
-          al_string_get_cstr(entry.filename));
-    VECTOR_PUSH_BACK(*list, entry);
-    return;
-
-error:
-    al_string_deinit(&entry.filename);
+    return NULL;
 }
 
-vector_HrtfEntry EnumerateHrtf(const_al_string devname)
+const struct Hrtf *GetHrtf(ALCdevice *device)
 {
-    vector_HrtfEntry list = VECTOR_INIT_STATIC();
-    const char *fnamelist = "%s.mhr";
-
-    ConfigValueStr(al_string_get_cstr(devname), NULL, "hrtf_tables", &fnamelist);
-    while(fnamelist && *fnamelist)
+    if(device->FmtChans == DevFmtStereo)
     {
-        while(isspace(*fnamelist) || *fnamelist == ',')
-            fnamelist++;
-        if(*fnamelist != '\0')
+        struct Hrtf *Hrtf = LoadedHrtfs;
+        while(Hrtf != NULL)
         {
-            const char *next, *end;
-
-            next = strchr(fnamelist, ',');
-            if(!next)
-                end = fnamelist + strlen(fnamelist);
-            else
-                end = next++;
-
-            while(end != fnamelist && isspace(*(end-1)))
-                --end;
-            if(end != fnamelist)
-            {
-                al_string fname = AL_STRING_INIT_STATIC();
-                vector_al_string flist;
-
-                al_string_append_range(&fname, fnamelist, end);
-
-                flist = SearchDataFiles(al_string_get_cstr(fname), "openal/hrtf");
-                VECTOR_FOR_EACH_PARAMS(al_string, flist, AddFileEntry, &list);
-                VECTOR_DEINIT(flist);
-
-                al_string_deinit(&fname);
-            }
-
-            fnamelist = next;
+            if(device->Frequency == Hrtf->sampleRate)
+                return Hrtf;
+            Hrtf = Hrtf->next;
         }
+
+        Hrtf = LoadHrtf(device->Frequency);
+        if(Hrtf != NULL)
+            return Hrtf;
+    }
+    ERR("Incompatible format: %s %uhz\n",
+        DevFmtChannelsString(device->FmtChans), device->Frequency);
+    return NULL;
+}
+
+ALCboolean FindHrtfFormat(const ALCdevice *device, enum DevFmtChannels *chans, ALCuint *srate)
+{
+    const struct Hrtf *hrtf = LoadedHrtfs;
+    while(hrtf != NULL)
+    {
+        if(device->Frequency == hrtf->sampleRate)
+            break;
+        hrtf = hrtf->next;
     }
 
-    return list;
+    if(hrtf == NULL)
+    {
+        hrtf = LoadHrtf(device->Frequency);
+        if(hrtf == NULL) return ALC_FALSE;
+    }
+
+    *chans = DevFmtStereo;
+    *srate = hrtf->sampleRate;
+    return ALC_TRUE;
 }
-
-void FreeHrtfList(vector_HrtfEntry *list)
-{
-#define CLEAR_ENTRY(i) do {           \
-    al_string_deinit(&(i)->name);     \
-    al_string_deinit(&(i)->filename); \
-} while(0)
-    VECTOR_FOR_EACH(HrtfEntry, *list, CLEAR_ENTRY);
-    VECTOR_DEINIT(*list);
-#undef CLEAR_ENTRY
-}
-
-
-ALuint GetHrtfSampleRate(const struct Hrtf *Hrtf)
-{
-    return Hrtf->sampleRate;
-}
-
-ALuint GetHrtfIrSize(const struct Hrtf *Hrtf)
-{
-    return Hrtf->irSize;
-}
-
 
 void FreeHrtfs(void)
 {
@@ -894,7 +798,11 @@ void FreeHrtfs(void)
         free((void*)Hrtf->evOffset);
         free((void*)Hrtf->coeffs);
         free((void*)Hrtf->delays);
-        al_string_deinit(&Hrtf->filename);
         free(Hrtf);
     }
+}
+
+ALuint GetHrtfIrSize (const struct Hrtf *Hrtf)
+{
+    return Hrtf->irSize;
 }

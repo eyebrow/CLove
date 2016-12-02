@@ -77,7 +77,7 @@ static ALCboolean PlaybackWrapper_start(PlaybackWrapper *self);
 static void PlaybackWrapper_stop(PlaybackWrapper *self);
 static DECLARE_FORWARD2(PlaybackWrapper, ALCbackend, ALCenum, captureSamples, void*, ALCuint)
 static DECLARE_FORWARD(PlaybackWrapper, ALCbackend, ALCuint, availableSamples)
-static DECLARE_FORWARD(PlaybackWrapper, ALCbackend, ALint64, getLatency)
+static ALint64 PlaybackWrapper_getLatency(PlaybackWrapper *self);
 static DECLARE_FORWARD(PlaybackWrapper, ALCbackend, void, lock)
 static DECLARE_FORWARD(PlaybackWrapper, ALCbackend, void, unlock)
 DECLARE_DEFAULT_ALLOCATORS(PlaybackWrapper)
@@ -121,6 +121,12 @@ static void PlaybackWrapper_stop(PlaybackWrapper *self)
     self->Funcs->StopPlayback(device);
 }
 
+static ALint64 PlaybackWrapper_getLatency(PlaybackWrapper *self)
+{
+    ALCdevice *device = STATIC_CAST(ALCbackend, self)->mDevice;
+    return self->Funcs->GetLatency(device);
+}
+
 
 typedef struct CaptureWrapper {
     DERIVE_FROM_TYPE(ALCbackend);
@@ -137,11 +143,12 @@ static ALCboolean CaptureWrapper_start(CaptureWrapper *self);
 static void CaptureWrapper_stop(CaptureWrapper *self);
 static ALCenum CaptureWrapper_captureSamples(CaptureWrapper *self, void *buffer, ALCuint samples);
 static ALCuint CaptureWrapper_availableSamples(CaptureWrapper *self);
-static DECLARE_FORWARD(CaptureWrapper, ALCbackend, ALint64, getLatency)
+static ALint64 CaptureWrapper_getLatency(CaptureWrapper *self);
 static DECLARE_FORWARD(CaptureWrapper, ALCbackend, void, lock)
 static DECLARE_FORWARD(CaptureWrapper, ALCbackend, void, unlock)
 DECLARE_DEFAULT_ALLOCATORS(CaptureWrapper)
 DEFINE_ALCBACKEND_VTABLE(CaptureWrapper);
+
 
 static void CaptureWrapper_Construct(CaptureWrapper *self, ALCdevice *device, const BackendFuncs *funcs)
 {
@@ -188,6 +195,12 @@ static ALCuint CaptureWrapper_availableSamples(CaptureWrapper *self)
     return self->Funcs->AvailableSamples(device);
 }
 
+static ALint64 CaptureWrapper_getLatency(CaptureWrapper *self)
+{
+    ALCdevice *device = STATIC_CAST(ALCbackend, self)->mDevice;
+    return self->Funcs->GetLatency(device);
+}
+
 
 ALCbackend *create_backend_wrapper(ALCdevice *device, const BackendFuncs *funcs, ALCbackend_Type type)
 {
@@ -195,8 +208,10 @@ ALCbackend *create_backend_wrapper(ALCdevice *device, const BackendFuncs *funcs,
     {
         PlaybackWrapper *backend;
 
-        NEW_OBJ(backend, PlaybackWrapper)(device, funcs);
+        backend = PlaybackWrapper_New(sizeof(*backend));
         if(!backend) return NULL;
+
+        PlaybackWrapper_Construct(backend, device, funcs);
 
         return STATIC_CAST(ALCbackend, backend);
     }
@@ -205,8 +220,10 @@ ALCbackend *create_backend_wrapper(ALCdevice *device, const BackendFuncs *funcs,
     {
         CaptureWrapper *backend;
 
-        NEW_OBJ(backend, CaptureWrapper)(device, funcs);
+        backend = CaptureWrapper_New(sizeof(*backend));
         if(!backend) return NULL;
+
+        CaptureWrapper_Construct(backend, device, funcs);
 
         return STATIC_CAST(ALCbackend, backend);
     }

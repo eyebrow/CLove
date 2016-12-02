@@ -21,13 +21,15 @@ int audio_vorbis_load(ALuint buffer, char const *filename) {
   int len = stb_vorbis_decode_filename(filename, &channels, &samplingrate, &data);
 
   if(len == -1) {
-    return 0;
-  }
+      printf("%s %s \n", "Error in loading ", filename);
+      return 0;
+    }
+
+  //printf("%s %d %d %d %d \n", "Data: ", buffer, channels, len, samplingrate);
 
   alBufferData(buffer, channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16, data,
-               len * sizeof(short) * channels, samplingrate);
+               len * sizeof(ALshort) * channels, samplingrate);
 
-  stb_vorbis_close(vorbis);
   free(data);
   return 1;
 }

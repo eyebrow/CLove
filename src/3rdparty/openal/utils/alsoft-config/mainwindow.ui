@@ -57,9 +57,9 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>50</y>
-        <width>78</width>
-        <height>22</height>
+        <y>20</y>
+        <width>206</width>
+        <height>23</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -69,12 +69,52 @@ float and converted to the output sample type as needed.</string>
       <property name="sizeAdjustPolicy">
        <enum>QComboBox::AdjustToContents</enum>
       </property>
+      <item>
+       <property name="text">
+        <string>- Autodetect -</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>int8 - signed 8-bit int</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>uint8 - unsigned 8-bit int</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>int16 - signed 16-bit int</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>uint16 - unsigned 16-bit int</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>int32 - signed 32-bit int</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>uint32 - unsigned 32-bit int</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>float32 - 32-bit float</string>
+       </property>
+      </item>
      </widget>
      <widget class="QLabel" name="label_5">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>50</y>
+        <y>20</y>
         <width>101</width>
         <height>21</height>
        </rect>
@@ -90,7 +130,7 @@ float and converted to the output sample type as needed.</string>
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
+        <y>50</y>
         <width>101</width>
         <height>21</height>
        </rect>
@@ -106,9 +146,9 @@ float and converted to the output sample type as needed.</string>
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>20</y>
-        <width>78</width>
-        <height>22</height>
+        <y>50</y>
+        <width>247</width>
+        <height>23</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -119,13 +159,48 @@ to stereo output.</string>
       <property name="sizeAdjustPolicy">
        <enum>QComboBox::AdjustToContents</enum>
       </property>
+      <item>
+       <property name="text">
+        <string>- Autodetect -</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>mono - 1-channel Mono</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>stereo - 2-channel Stereo</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>quad - 4-channel Quadraphonic</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>surround51 - 5.1 Surround Sound</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>surround61 - 6.1 Surround Sound</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>surround71 - 7.1 Surround Sound</string>
+       </property>
+      </item>
      </widget>
      <widget class="QComboBox" name="sampleRateCombo">
       <property name="geometry">
        <rect>
-        <x>370</x>
-        <y>20</y>
-        <width>96</width>
+        <x>120</x>
+        <y>80</y>
+        <width>123</width>
         <height>22</height>
        </rect>
       </property>
@@ -143,32 +218,17 @@ to stereo output.</string>
       </property>
       <item>
        <property name="text">
-        <string>Autodetect</string>
+        <string>- Autodetect -</string>
        </property>
       </item>
       <item>
        <property name="text">
-        <string>8000</string>
+        <string>96000</string>
        </property>
       </item>
       <item>
        <property name="text">
-        <string>11025</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>16000</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>22050</string>
-       </property>
-      </item>
-      <item>
-       <property name="text">
-        <string>32000</string>
+        <string>48000</string>
        </property>
       </item>
       <item>
@@ -178,16 +238,36 @@ to stereo output.</string>
       </item>
       <item>
        <property name="text">
-        <string>48000</string>
+        <string>32000</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>22050</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>16000</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>11025</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>8000</string>
        </property>
       </item>
      </widget>
      <widget class="QLabel" name="label_7">
       <property name="geometry">
        <rect>
-        <x>280</x>
-        <y>20</y>
-        <width>81</width>
+        <x>10</x>
+        <y>80</y>
+        <width>101</width>
         <height>21</height>
        </rect>
       </property>
@@ -202,29 +282,82 @@ to stereo output.</string>
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>180</y>
+        <y>200</y>
         <width>511</width>
-        <height>191</height>
+        <height>161</height>
        </rect>
       </property>
       <property name="title">
        <string>HRTF (Stereo only)</string>
       </property>
-      <widget class="QListWidget" name="hrtfFileList">
+      <widget class="QRadioButton" name="hrtfEnableButton">
        <property name="geometry">
         <rect>
          <x>20</x>
          <y>30</y>
-         <width>391</width>
+         <width>71</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="toolTip">
+        <string>Allows applications to request HRTF mixing.</string>
+       </property>
+       <property name="text">
+        <string>Enable</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="hrtfDisableButton">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>50</y>
+         <width>71</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="toolTip">
+        <string>Does not allow HRTF mixing, even when requested.</string>
+       </property>
+       <property name="text">
+        <string>Disable</string>
+       </property>
+      </widget>
+      <widget class="QRadioButton" name="hrtfForceButton">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>70</y>
+         <width>71</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="toolTip">
+        <string>Attempts to force HRTF mixing, even if applications request not
+to do it. This may override the channel configuration and
+sample rate.</string>
+       </property>
+       <property name="text">
+        <string>Force</string>
+       </property>
+      </widget>
+      <widget class="QListWidget" name="hrtfFileList">
+       <property name="geometry">
+        <rect>
+         <x>110</x>
+         <y>30</y>
+         <width>361</width>
          <height>121</height>
         </rect>
        </property>
        <property name="toolTip">
         <string>A list of files containing HRTF data sets. The listed data sets
-are used in place of the default sets. The filenames may
-contain these markers, which will be replaced as needed:
+are used in place of or in addiiton to the the built-in set. The
+filenames may contain these markers, which will be replaced
+as needed:
 %r - Device sampling rate
-%s - Non-greedy string (up to the following matching characters)
 %% - Percent sign (%)</string>
        </property>
        <property name="dragEnabled">
@@ -246,14 +379,14 @@ contain these markers, which will be replaced as needed:
       <widget class="QPushButton" name="hrtfAddButton">
        <property name="geometry">
         <rect>
-         <x>420</x>
+         <x>475</x>
          <y>30</y>
-         <width>81</width>
+         <width>25</width>
          <height>25</height>
         </rect>
        </property>
        <property name="text">
-        <string>Add...</string>
+        <string/>
        </property>
        <property name="icon">
         <iconset theme="list-add">
@@ -267,14 +400,14 @@ contain these markers, which will be replaced as needed:
       <widget class="QPushButton" name="hrtfRemoveButton">
        <property name="geometry">
         <rect>
-         <x>420</x>
+         <x>475</x>
          <y>60</y>
-         <width>81</width>
+         <width>25</width>
          <height>25</height>
         </rect>
        </property>
        <property name="text">
-        <string>Remove</string>
+        <string/>
        </property>
        <property name="icon">
         <iconset theme="list-remove">
@@ -282,56 +415,12 @@ contain these markers, which will be replaced as needed:
         </iconset>
        </property>
       </widget>
-      <widget class="QComboBox" name="hrtfStateComboBox">
-       <property name="geometry">
-        <rect>
-         <x>110</x>
-         <y>160</y>
-         <width>161</width>
-         <height>22</height>
-        </rect>
-       </property>
-       <property name="sizeAdjustPolicy">
-        <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
-       </property>
-       <item>
-        <property name="text">
-         <string>Application preference</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Force on</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>Force off</string>
-        </property>
-       </item>
-      </widget>
-      <widget class="QLabel" name="label_15">
-       <property name="geometry">
-        <rect>
-         <x>30</x>
-         <y>160</y>
-         <width>71</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>HRTF Mode:</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-       </property>
-      </widget>
      </widget>
      <widget class="QGroupBox" name="groupBox_3">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>90</y>
+        <y>110</y>
         <width>511</width>
         <height>91</height>
        </rect>
@@ -502,37 +591,6 @@ frames needed for each mixing update.</string>
        </widget>
       </widget>
      </widget>
-     <widget class="QLabel" name="label_14">
-      <property name="geometry">
-       <rect>
-        <x>280</x>
-        <y>50</y>
-        <width>81</width>
-        <height>21</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Stereo Mode:</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-     <widget class="QComboBox" name="stereoModeCombo">
-      <property name="geometry">
-       <rect>
-        <x>370</x>
-        <y>50</y>
-        <width>78</width>
-        <height>22</height>
-       </rect>
-      </property>
-      <property name="toolTip">
-       <string>How to treat stereo output. As headphones, HRTF or crossfeed
-filters may be used to improve binaural quality, which may not
-otherwise be suitable for speakers.</string>
-      </property>
-     </widget>
     </widget>
     <widget class="QWidget" name="tab_2">
      <attribute name="title">
@@ -680,8 +738,8 @@ value currently possible is 4.</string>
        <rect>
         <x>110</x>
         <y>120</y>
-        <width>78</width>
-        <height>22</height>
+        <width>203</width>
+        <height>23</height>
        </rect>
       </property>
       <property name="toolTip">
@@ -690,115 +748,81 @@ value currently possible is 4.</string>
       <property name="sizeAdjustPolicy">
        <enum>QComboBox::AdjustToContents</enum>
       </property>
+      <item>
+       <property name="text">
+        <string>- Default -</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Point (low quality, fast)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Linear (basic quality, fast)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Cubic Spline (good quality)</string>
+       </property>
+      </item>
      </widget>
-     <widget class="QGroupBox" name="cpuExtGroupBox">
+     <widget class="QGroupBox" name="groupBox_2">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>150</y>
         <width>511</width>
-        <height>121</height>
+        <height>61</height>
        </rect>
       </property>
       <property name="toolTip">
-       <string>Enables use of specific CPU extensions. Certain methods may
-utilize CPU extensions when detected, and disabling these can
-be useful for preventing those extensions from being used.</string>
+       <string>Disables use of specific CPU extensions. Certain methods may
+utilize CPU extensions when detected, and this is useful for
+preventing those extensions from being used.</string>
       </property>
       <property name="title">
        <string>CPU Extensions</string>
       </property>
-      <widget class="QCheckBox" name="enableSSECheckBox">
+      <widget class="QCheckBox" name="disableSSECheckBox">
        <property name="geometry">
         <rect>
-         <x>100</x>
+         <x>10</x>
          <y>20</y>
-         <width>71</width>
+         <width>101</width>
          <height>31</height>
         </rect>
        </property>
        <property name="text">
-        <string>SSE</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
+        <string>Disable SSE</string>
        </property>
       </widget>
-      <widget class="QCheckBox" name="enableSSE2CheckBox">
+      <widget class="QCheckBox" name="disableSSE2CheckBox">
        <property name="geometry">
         <rect>
-         <x>180</x>
+         <x>200</x>
          <y>20</y>
-         <width>71</width>
+         <width>111</width>
          <height>31</height>
         </rect>
        </property>
        <property name="text">
-        <string>SSE2</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
+        <string>Disable SSE2</string>
        </property>
       </widget>
-      <widget class="QCheckBox" name="enableNeonCheckBox">
+      <widget class="QCheckBox" name="disableNeonCheckBox">
        <property name="geometry">
         <rect>
-         <x>100</x>
-         <y>50</y>
-         <width>71</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Neon</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="enableSSE41CheckBox">
-       <property name="geometry">
-        <rect>
-         <x>340</x>
+         <x>380</x>
          <y>20</y>
-         <width>71</width>
+         <width>111</width>
          <height>31</height>
         </rect>
        </property>
        <property name="text">
-        <string>SSE4.1</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="enableSSE3CheckBox">
-       <property name="geometry">
-        <rect>
-         <x>260</x>
-         <y>20</y>
-         <width>71</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>SSE3</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QLabel" name="cpuExtDisabledLabel">
-       <property name="geometry">
-        <rect>
-         <x>101</x>
-         <y>80</y>
-         <width>311</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-style:italic;&quot;&gt;No support enabled for CPU Extensions&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>Disable Neon</string>
        </property>
       </widget>
      </widget>
@@ -908,24 +932,100 @@ some quality.</string>
        <string>Emulate EAX Reverb:</string>
       </property>
      </widget>
-     <widget class="QGroupBox" name="groupBox_5">
+     <widget class="QGroupBox" name="groupBox_4">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>100</y>
         <width>511</width>
-        <height>191</height>
+        <height>61</height>
        </rect>
       </property>
       <property name="toolTip">
-       <string>Specifies which effects apps can recognize. Disabling effects
-can help for apps that try to use ones that are too intensive
-for the system to handle.</string>
+       <string>Global amplification for reverb output, expressed in decibels.
++6 will be a scale of (approximately) 2x, +12 will be a scale of
+4x, etc. Similarly, -6 will be about half, and -12 about 1/4th. A
+value of 0 means no change.</string>
       </property>
       <property name="title">
-       <string>Enabled Effects</string>
+       <string>Reverb Boost</string>
       </property>
-      <widget class="QCheckBox" name="enableEaxReverbCheck">
+      <widget class="QSlider" name="reverbBoostSlider">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>30</y>
+         <width>391</width>
+         <height>23</height>
+        </rect>
+       </property>
+       <property name="toolTip">
+        <string/>
+       </property>
+       <property name="minimum">
+        <number>-120</number>
+       </property>
+       <property name="maximum">
+        <number>120</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksBelow</enum>
+       </property>
+       <property name="tickInterval">
+        <number>10</number>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="reverbBoostEdit">
+       <property name="geometry">
+        <rect>
+         <x>410</x>
+         <y>30</y>
+         <width>51</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+       </property>
+       <property name="placeholderText">
+        <string>0.0</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_12">
+       <property name="geometry">
+        <rect>
+         <x>460</x>
+         <y>30</y>
+         <width>31</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>dB</string>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBox_5">
+      <property name="geometry">
+       <rect>
+        <x>9</x>
+        <y>170</y>
+        <width>511</width>
+        <height>181</height>
+       </rect>
+      </property>
+      <property name="toolTip">
+       <string>Disables effects, preventing apps from recognizing them. This
+can help for apps that try to use effects which are too CPU
+intensive for the system to handle.</string>
+      </property>
+      <property name="title">
+       <string>Disabled Effects</string>
+      </property>
+      <widget class="QCheckBox" name="disableEaxReverbCheck">
        <property name="geometry">
         <rect>
          <x>70</x>
@@ -937,11 +1037,8 @@ for the system to handle.</string>
        <property name="text">
         <string>EAX Reverb</string>
        </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
       </widget>
-      <widget class="QCheckBox" name="enableStdReverbCheck">
+      <widget class="QCheckBox" name="disableStdReverbCheck">
        <property name="geometry">
         <rect>
          <x>70</x>
@@ -953,11 +1050,8 @@ for the system to handle.</string>
        <property name="text">
         <string>Standard Reverb</string>
        </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
       </widget>
-      <widget class="QCheckBox" name="enableChorusCheck">
+      <widget class="QCheckBox" name="disableChorusCheck">
        <property name="geometry">
         <rect>
          <x>70</x>
@@ -969,11 +1063,21 @@ for the system to handle.</string>
        <property name="text">
         <string>Chorus</string>
        </property>
-       <property name="checked">
-        <bool>true</bool>
+      </widget>
+      <widget class="QCheckBox" name="disableDistortionCheck">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>120</y>
+         <width>131</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Distortion</string>
        </property>
       </widget>
-      <widget class="QCheckBox" name="enableDistortionCheck">
+      <widget class="QCheckBox" name="disableEchoCheck">
        <property name="geometry">
         <rect>
          <x>70</x>
@@ -983,13 +1087,10 @@ for the system to handle.</string>
         </rect>
        </property>
        <property name="text">
-        <string>Distortion</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
+        <string>Echo</string>
        </property>
       </widget>
-      <widget class="QCheckBox" name="enableEchoCheck">
+      <widget class="QCheckBox" name="disableEqualizerCheck">
        <property name="geometry">
         <rect>
          <x>320</x>
@@ -999,13 +1100,10 @@ for the system to handle.</string>
         </rect>
        </property>
        <property name="text">
-        <string>Echo</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
+        <string>Equalizer</string>
        </property>
       </widget>
-      <widget class="QCheckBox" name="enableEqualizerCheck">
+      <widget class="QCheckBox" name="disableFlangerCheck">
        <property name="geometry">
         <rect>
          <x>320</x>
@@ -1015,13 +1113,10 @@ for the system to handle.</string>
         </rect>
        </property>
        <property name="text">
-        <string>Equalizer</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
+        <string>Flanger</string>
        </property>
       </widget>
-      <widget class="QCheckBox" name="enableFlangerCheck">
+      <widget class="QCheckBox" name="disableModulatorCheck">
        <property name="geometry">
         <rect>
          <x>320</x>
@@ -1031,62 +1126,24 @@ for the system to handle.</string>
         </rect>
        </property>
        <property name="text">
-        <string>Flanger</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
+        <string>Ring Modulator</string>
        </property>
       </widget>
-      <widget class="QCheckBox" name="enableModulatorCheck">
+      <widget class="QCheckBox" name="disableDedicatedCheck">
        <property name="geometry">
         <rect>
          <x>320</x>
          <y>120</y>
-         <width>131</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Ring Modulator</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="enableDedicatedCheck">
-       <property name="geometry">
-        <rect>
-         <x>320</x>
-         <y>150</y>
          <width>131</width>
          <height>21</height>
         </rect>
        </property>
        <property name="toolTip">
-        <string>Enables both the Dedicated Dialog and Dedicated LFE effects
+        <string>Disables both the Dedicated Dialog and Dedicated LFE effects
 added by the ALC_EXT_DEDICATED extension.</string>
        </property>
        <property name="text">
         <string>Dedicated ...</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="enableCompressorCheck">
-       <property name="geometry">
-        <rect>
-         <x>70</x>
-         <y>120</y>
-         <width>111</width>
-         <height>21</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Compressor</string>
-       </property>
-       <property name="checked">
-        <bool>true</bool>
        </property>
       </widget>
      </widget>
@@ -1111,8 +1168,8 @@ added by the ALC_EXT_DEDICATED extension.</string>
        <rect>
         <x>160</x>
         <y>20</y>
-        <width>131</width>
-        <height>22</height>
+        <width>142</width>
+        <height>23</height>
        </rect>
       </property>
       <property name="sizeAdjustPolicy">
@@ -1263,7 +1320,7 @@ added by the ALC_EXT_DEDICATED extension.</string>
      <x>0</x>
      <y>0</y>
      <width>564</width>
-     <height>19</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

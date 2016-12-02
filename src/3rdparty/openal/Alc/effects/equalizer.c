@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU Library General Public
  *  License along with this library; if not, write to the
- *  Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *  Boston, MA  02111-1307, USA.
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
@@ -75,7 +75,7 @@ typedef struct ALequalizerState {
     DERIVE_FROM_TYPE(ALeffectState);
 
     /* Effect gains for each channel */
-    ALfloat Gain[MAX_OUTPUT_CHANNELS];
+    ALfloat Gain[MaxChannels];
 
     /* Effect parameters */
     ALfilterState filter[4];
@@ -93,40 +93,33 @@ static ALboolean ALequalizerState_deviceUpdate(ALequalizerState *UNUSED(state), 
 static ALvoid ALequalizerState_update(ALequalizerState *state, ALCdevice *device, const ALeffectslot *slot)
 {
     ALfloat frequency = (ALfloat)device->Frequency;
-    ALfloat gain, freq_mult;
+    ALfloat gain = sqrtf(1.0f / device->NumChan) * slot->Gain;
 
-    ComputeAmbientGains(device, slot->Gain, state->Gain);
+    SetGains(device, gain, state->Gain);
 
-    /* Calculate coefficients for the each type of filter. Note that the shelf
-     * filters' gain is for the reference frequency, which is the centerpoint
-     * of the transition band.
-     */
-    gain = sqrtf(slot->EffectProps.Equalizer.LowGain);
-    freq_mult = slot->EffectProps.Equalizer.LowCutoff/frequency;
+    /* Calculate coefficients for the each type of filter */
     ALfilterState_setParams(&state->filter[0], ALfilterType_LowShelf,
-        gain, freq_mult, calc_rcpQ_from_slope(gain, 0.75f)
-    );
+                            sqrtf(slot->EffectProps.Equalizer.LowGain),
+                            slot->EffectProps.Equalizer.LowCutoff/frequency,
+                            0.0f);
 
-    gain = slot->EffectProps.Equalizer.Mid1Gain;
-    freq_mult = slot->EffectProps.Equalizer.Mid1Center/frequency;
     ALfilterState_setParams(&state->filter[1], ALfilterType_Peaking,
-        gain, freq_mult, calc_rcpQ_from_bandwidth(freq_mult, slot->EffectProps.Equalizer.Mid1Width)
-    );
+                            sqrtf(slot->EffectProps.Equalizer.Mid1Gain),
+                            slot->EffectProps.Equalizer.Mid1Center/frequency,
+                            slot->EffectProps.Equalizer.Mid1Width);
 
-    gain = slot->EffectProps.Equalizer.Mid2Gain;
-    freq_mult = slot->EffectProps.Equalizer.Mid2Center/frequency;
     ALfilterState_setParams(&state->filter[2], ALfilterType_Peaking,
-        gain, freq_mult, calc_rcpQ_from_bandwidth(freq_mult, slot->EffectProps.Equalizer.Mid2Width)
-    );
+                            sqrtf(slot->EffectProps.Equalizer.Mid2Gain),
+                            slot->EffectProps.Equalizer.Mid2Center/frequency,
+                            slot->EffectProps.Equalizer.Mid2Width);
 
-    gain = sqrtf(slot->EffectProps.Equalizer.HighGain);
-    freq_mult = slot->EffectProps.Equalizer.HighCutoff/frequency;
     ALfilterState_setParams(&state->filter[3], ALfilterType_HighShelf,
-        gain, freq_mult, calc_rcpQ_from_slope(gain, 0.75f)
-    );
+                            sqrtf(slot->EffectProps.Equalizer.HighGain),
+                            slot->EffectProps.Equalizer.HighCutoff/frequency,
+                            0.0f);
 }
 
-static ALvoid ALequalizerState_process(ALequalizerState *state, ALuint SamplesToDo, const ALfloat *restrict SamplesIn, ALfloat (*restrict SamplesOut)[BUFFERSIZE], ALuint NumChannels)
+static ALvoid ALequalizerState_process(ALequalizerState *state, ALuint SamplesToDo, const ALfloat *restrict SamplesIn, ALfloat (*restrict SamplesOut)[BUFFERSIZE])
 {
     ALuint base;
     ALuint it;
@@ -135,8 +128,8 @@ static ALvoid ALequalizerState_process(ALequalizerState *state, ALuint SamplesTo
 
     for(base = 0;base < SamplesToDo;)
     {
-        ALfloat temps[256];
-        ALuint td = minu(256, SamplesToDo-base);
+        ALfloat temps[64];
+        ALuint td = minu(SamplesToDo-base, 64);
 
         for(it = 0;it < td;it++)
         {
@@ -148,10 +141,10 @@ static ALvoid ALequalizerState_process(ALequalizerState *state, ALuint SamplesTo
             temps[it] = smp;
         }
 
-        for(kt = 0;kt < NumChannels;kt++)
+        for(kt = 0;kt < MaxChannels;kt++)
         {
             ALfloat gain = state->Gain[kt];
-            if(!(fabsf(gain) > GAIN_SILENCE_THRESHOLD))
+            if(!(gain > GAIN_SILENCE_THRESHOLD))
                 continue;
 
             for(it = 0;it < td;it++)

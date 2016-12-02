@@ -13,8 +13,8 @@
  *
  * You should have received a copy of the GNU Library General Public
  *  License along with this library; if not, write to the
- *  Free Software Foundation, Inc.,
- *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *  Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ *  Boston, MA  02111-1307, USA.
  * Or go to http://www.gnu.org/copyleft/lgpl.html
  */
 
@@ -35,7 +35,6 @@ ALboolean TrapALError = AL_FALSE;
 
 ALvoid alSetError(ALCcontext *Context, ALenum errorCode)
 {
-    ALenum curerr = AL_NO_ERROR;
     if(TrapALError)
     {
 #ifdef _WIN32
@@ -46,7 +45,7 @@ ALvoid alSetError(ALCcontext *Context, ALenum errorCode)
         raise(SIGTRAP);
 #endif
     }
-    ATOMIC_COMPARE_EXCHANGE_STRONG(ALenum, &Context->LastError, &curerr, errorCode);
+    CompExchangeInt(&Context->LastError, AL_NO_ERROR, errorCode);
 }
 
 AL_API ALenum AL_APIENTRY alGetError(void)
@@ -69,7 +68,7 @@ AL_API ALenum AL_APIENTRY alGetError(void)
         return AL_INVALID_OPERATION;
     }
 
-    errorCode = ATOMIC_EXCHANGE(ALenum, &Context->LastError, AL_NO_ERROR);
+    errorCode = ExchangeInt(&Context->LastError, AL_NO_ERROR);
 
     ALCcontext_DecRef(Context);
 

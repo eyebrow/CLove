@@ -11,37 +11,41 @@
 extern "C" {
 #endif
 
-struct ALbuffer;
-struct ALsource;
+extern enum Resampler DefaultResampler;
+
+extern const ALsizei ResamplerPadding[ResamplerMax];
+extern const ALsizei ResamplerPrePadding[ResamplerMax];
 
 
 typedef struct ALbufferlistitem {
-    struct ALbuffer *buffer;
-    struct ALbufferlistitem *volatile next;
-    struct ALbufferlistitem *volatile prev;
+    struct ALbuffer         *buffer;
+    struct ALbufferlistitem *next;
+    struct ALbufferlistitem *prev;
 } ALbufferlistitem;
 
 
-typedef struct ALvoice {
-    struct ALsource *volatile Source;
+typedef struct ALactivesource {
+    struct ALsource *Source;
 
     /** Method to update mixing parameters. */
-    ALvoid (*Update)(struct ALvoice *self, const struct ALsource *source, const ALCcontext *context);
+    ALvoid (*Update)(struct ALactivesource *self, const ALCcontext *context);
 
     /** Current target parameters used for mixing. */
-    ALint Step;
+    ResamplerFunc Resample;
+    union {
+        DryMixerFunc Mix;
+        HrtfMixerFunc HrtfMix;
+    } Dry;
+    WetMixerFunc WetMix;
 
     ALboolean IsHrtf;
+    ALint Step;
 
     ALuint Offset; /* Number of output samples mixed since starting. */
 
-    alignas(16) ALfloat PrevSamples[MAX_INPUT_CHANNELS][MAX_PRE_SAMPLES];
-
-    BsincState SincState;
-
     DirectParams Direct;
     SendParams Send[MAX_SENDS];
-} ALvoice;
+} ALactivesource;
 
 
 typedef struct ALsource {
@@ -56,10 +60,9 @@ typedef struct ALsource {
     volatile ALfloat   RefDistance;
     volatile ALfloat   MaxDistance;
     volatile ALfloat   RollOffFactor;
-    aluVector Position;
-    aluVector Velocity;
-    aluVector Direction;
-    volatile ALfloat   Orientation[2][3];
+    volatile ALfloat   Position[3];
+    volatile ALfloat   Velocity[3];
+    volatile ALfloat   Orientation[3];
     volatile ALboolean HeadRelative;
     volatile ALboolean Looping;
     volatile enum DistanceModel DistanceModel;
@@ -74,7 +77,7 @@ typedef struct ALsource {
     volatile ALfloat RoomRolloffFactor;
     volatile ALfloat DopplerFactor;
 
-    volatile ALfloat Radius;
+    enum Resampler Resampler;
 
     /**
      * Last user-specified offset, and the offset type (bytes, samples, or
@@ -99,8 +102,8 @@ typedef struct ALsource {
     ALuint position_fraction;
 
     /** Source Buffer Queue info. */
-    ATOMIC(ALbufferlistitem*) queue;
-    ATOMIC(ALbufferlistitem*) current_buffer;
+    ALbufferlistitem *volatile queue;
+    ALbufferlistitem *volatile current_buffer;
     RWLock queue_lock;
 
     /** Current buffer sample info. */
@@ -125,7 +128,7 @@ typedef struct ALsource {
     } Send[MAX_SENDS];
 
     /** Source needs to update its mixing parameters. */
-    ATOMIC(ALenum) NeedsUpdate;
+    volatile ALenum NeedsUpdate;
 
     /** Self ID */
     ALuint id;

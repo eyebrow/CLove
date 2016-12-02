@@ -45,50 +45,50 @@ static int l_audio_newSource(lua_State *state) {
 static int l_audio_SourceCommon_play(lua_State* state) {
   audio_SourceCommon* source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_play(source);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_stop(lua_State* state) {
   audio_SourceCommon* source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_stop(source);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_pause(lua_State* state) {
   audio_SourceCommon* source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_pause(source);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_resume(lua_State* state) {
   audio_SourceCommon* source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_resume(source);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_isStopped(lua_State* state) {
   audio_SourceCommon* source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_isStopped(source);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_isPlaying(lua_State* state) {
   audio_SourceCommon* source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_isPlaying(source);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_isPaused(lua_State* state) {
   audio_SourceCommon* source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_isPaused(source);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_setVolume(lua_State *state) {
   float gain = l_tools_toNumberOrError(state, 2);
   audio_SourceCommon *source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_setVolume(source, gain);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_getVolume(lua_State *state) {
@@ -111,7 +111,7 @@ static int l_audio_SourceCommon_setPitch(lua_State *state) {
   float pitch = l_tools_toNumberOrError(state, 2);
   audio_SourceCommon *source = (audio_SourceCommon*)lua_touserdata(state, 1);
   audio_SourceCommon_setPitch(source, pitch);
-  return 0;
+  return 1;
 }
 
 static int l_audio_SourceCommon_getPitch(lua_State *state) {

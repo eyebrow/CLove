@@ -18,8 +18,8 @@ static struct {
 } moduleData;
 
 void audio_init(void) {
-  moduleData.device = alcOpenDevice(0);
-  moduleData.context = alcCreateContext(moduleData.device, 0);
+  moduleData.device = alcOpenDevice(NULL);
+  moduleData.context = alcCreateContext(moduleData.device, NULL);
   if(!alcMakeContextCurrent(moduleData.context)) {
     printf("%s \n", "Failed to initialite audio context");
   }
