@@ -20,7 +20,7 @@ static struct {
   audio_StreamSource ** playingStreams;
   int playingStreamSize;
   int playingStreamCount;
-  ALuint unqueueBuffer[8];
+  ALuint unqueueBuffer[3];
 } moduleData;
 
 static const char* get_filename_ext(const char *filename) {
@@ -42,7 +42,7 @@ int audio_loadStream(audio_StreamSource *source, char const * filename) {
   source->decoderData = data;
 
   //NOTE: CLove only supports vorbis files when it comes to streaming!
-  if (strncmp(get_filename_ext(filename), "wav", 3))
+  if (strncmp(get_filename_ext(filename), "wav", 3) == 0)
     err = -1;
   else
     err = audio_vorbis_loadStream(data, filename);
@@ -56,7 +56,7 @@ int audio_loadStream(audio_StreamSource *source, char const * filename) {
   alSource3f(source->source, AL_POSITION, 0.0f, 0.0f, 0.0f);
   alSource3f(source->source, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
   alSourcei( source->source, AL_LOOPING,  AL_FALSE);
-  alGenBuffers(8, source->buffers);
+  alGenBuffers(3, source->buffers);
   source->channels   = audio_vorbis_getChannelCount(source->decoderData);
   source->sampleRate = audio_vorbis_getSampleRate(source->decoderData);
   source->bufferSamples = source->channels * source->sampleRate / 2;
@@ -148,7 +148,7 @@ void audio_StreamSource_setPosition(audio_StreamSource *source, float x, float y
 
 void audio_StreamSource_free(audio_StreamSource* source) {
   alDeleteSources(1, &source->source);
-  alDeleteBuffers(8, source->buffers);
+  alDeleteBuffers(3, source->buffers);
 }
 
 void audio_updateStreams() {

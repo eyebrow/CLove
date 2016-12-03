@@ -16,8 +16,6 @@
 #include "audio.h"
 #include "source.h"
 
-static int AUDIO_BUFFERS_PER_STREAM = 8;
-
 typedef struct {
   stb_vorbis *vorbis;
   ALshort    *readBuffer;
@@ -32,7 +30,7 @@ typedef struct {
   int channels;
   int sampleRate;
   ALuint source;
-  ALuint buffers[8];
+  ALuint buffers[3];
   int bufferSamples;
   int maxFrameSamples;
   int samplesRead;
