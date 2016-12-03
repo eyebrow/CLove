@@ -40,9 +40,15 @@ int audio_loadStream(audio_StreamSource *source, char const * filename) {
 
   audio_vorbis_DecoderData* data = malloc(sizeof(audio_vorbis_DecoderData));
   source->decoderData = data;
-  err = audio_vorbis_loadStream(data, filename);
-  if (err < 1)
+
+  //NOTE: CLove only supports vorbis files when it comes to streaming!
+  if (strncmp(get_filename_ext(filename), "wav", 3))
     err = -1;
+  else
+    err = audio_vorbis_loadStream(data, filename);
+
+  if (err < 1)
+    err = 0;
 
   alGenSources(1, &source->source);
   alSourcef( source->source, AL_PITCH,    1.0f);
