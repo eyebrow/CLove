@@ -2,7 +2,7 @@
 
 CLove
 =====
-CLove is a simple and easy to learn and use game framework tested on
+CLove is a simple, easy to learn and use 2D/3D game framework tested on
 Mac/Linux/PC, made in C with OpenGLES 2 which uses Lua as scripting langauge.
 
 How to build
@@ -11,11 +11,11 @@ On Windows:
 - Download and install mingw and let the setup configure the path for you.
 After that check if you got gcc & g++ installed.
 - Download and install CMake and let the setup configure the path for you.
-- Download DX SDK 2010 (required by SDL2): http://www.microsoft.com/en-us/download/details.aspx?id=6812
+- Download DX SDK 2010 only if you get errors from SDL when buulding: http://www.microsoft.com/en-us/download/details.aspx?id=6812
 - Download and install QT Community the Open Source Edition but only install the core of it since
 you wont need all the stuff that QT comes with
-- When building CLove be sure that QT uses your brand new installation of mingw
-- Restart the PC
+- When building CLove be sure that QT uses your brand new installation of mingw(GCC/GXX) not msvc
+- Restart the PC if needed
 
 On Linux & OS X:
 - Download and install cmake,gcc,g++(optional git)(on os x you can install these using brew)
@@ -48,7 +48,7 @@ Features
 Contributing
 ========
 If you want to contribute to the project, feel free to work on what you please. I want to do a lot of the other stuff myself too.
-Please try to replicate the code style of the existing code, I might refuse to pull your changes otherwise.
+Please try to replicate the code style of the existing code by using QT Community, I might refuse to pull your changes otherwise.
 
 Examples (see examples folder)
 --------
