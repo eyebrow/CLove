@@ -10,6 +10,13 @@
 #pragma once
 
 #include "../3rdparty/openal/include/AL/al.h"
+#include "../3rdparty/stb/stb_vorbis.h"
+#include "streamsource.h"
+
+typedef enum {
+  audio_type_stream,
+  audio_type_static,
+} audio_Type;
 
 void audio_init(void);
 void audio_setVolume(double value);

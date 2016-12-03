@@ -42,6 +42,7 @@
 #include "graphics/matrixstack.h"
 #include "filesystem/filesystem.h"
 #include "audio/audio.h"
+#include "audio/streamsource.h"
 #include "keyboard.h"
 #include "mouse.h"
 #include "timer/timer.h"
@@ -153,6 +154,7 @@ void main_loop(void *data) {
 #endif
         }
     }
+  audio_updateStreams();
 }
 
 int main(int argc, char* argv[]) {

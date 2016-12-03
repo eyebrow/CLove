@@ -11,14 +11,13 @@
 
 #include "../3rdparty/openal/include/AL/al.h"
 
-typedef struct {
-  ALshort    *readBuffer;
-  int         readBufferSize;
-  int         preloadedSamples;
-} audio_vorbis_DecoderData;
+#include "audio.h"
 
 int audio_vorbis_load(ALuint buffer, char const *filename);
-void audio_vorbis_rewindStream(void *decoderData);
-int audio_vorbis_getChannelCount(void *decoderData);
-int audio_vorbis_getSampleRate(void *decoderData);
-void audio_vorbis_flushBuffer(void *decoderData);
+int audio_vorbis_loadStream(audio_vorbis_DecoderData* data, char const *filename);
+int audio_vorbis_preloadStreamSamples(audio_vorbis_DecoderData* decoderData, int sampleCount);
+int audio_vorbis_uploadSreamSamples(audio_vorbis_DecoderData* decoderData, ALuint buffer);
+void audio_vorbis_rewindStream(audio_vorbis_DecoderData *decoderData);
+int audio_vorbis_getChannelCount(audio_vorbis_DecoderData *decoderData);
+int audio_vorbis_getSampleRate(audio_vorbis_DecoderData *decoderData);
+void audio_vorbis_flushBuffer(audio_vorbis_DecoderData *decoderData);

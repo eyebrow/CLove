@@ -11,11 +11,13 @@
 
 #include "../3rdparty/openal/include/AL/al.h"
 
+#include "audio.h"
 #include "source.h"
 
 typedef struct {
   audio_SourceCommon common;
   ALuint buffer;
+  audio_Type audio_type;
 } audio_StaticSource;
 
 

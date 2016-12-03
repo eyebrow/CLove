@@ -12,8 +12,6 @@
 #include "../3rdparty/stb/stb_vorbis.h"
 #include <stdlib.h>
 
-static stb_vorbis *vorbis;
-
 int audio_vorbis_load(ALuint buffer, char const *filename) {
   short *data;
   int channels;
@@ -34,21 +32,102 @@ int audio_vorbis_load(ALuint buffer, char const *filename) {
   return 1;
 }
 
-void audio_vorbis_rewindStream(void *decoderData) {
-  stb_vorbis_seek_start(vorbis);
+int audio_vorbis_loadStream(audio_vorbis_DecoderData* data, char const *filename) {
+  int err;
+  data->vorbis = stb_vorbis_open_filename(filename, &err, NULL);
+
+  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
+
+  data->readBufferSize    = info.channels * info.sample_rate + 4069;
+  data->readBuffer        = malloc(sizeof(ALshort) * data->readBufferSize);
+  data->preloadedSamples  = 0;
+  return err;
 }
 
-int audio_vorbis_getChannelCount(void *decoderData) {
-  stb_vorbis_info info = stb_vorbis_get_info((stb_vorbis*)decoderData);
+int audio_vorbis_preloadStreamSamples(audio_vorbis_DecoderData *decoderData, int sampleCount) {
+  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
+  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
+  int channels = info.channels >= 2 ? 2 : 1;   // Force to mono or stereo
+
+  int safeBufferSize = sampleCount * channels + 4069;
+  if(safeBufferSize > data->readBufferSize) {
+      data->readBufferSize = safeBufferSize;
+      free(data->readBuffer);
+      data->readBuffer = malloc(sizeof(ALshort) * safeBufferSize);
+    }
+
+  int space = data->readBufferSize - data->preloadedSamples - 4069;
+
+  if(space <= 0) {
+      //printf("Buffer already 100%% filled, no need to read more\n");
+      return -1;
+    }
+
+  if(space < sampleCount) {
+      sampleCount = space;
+    }
+
+  int readSamples = 0;
+  while(readSamples < sampleCount) {
+      float **channelData;
+      int samples = stb_vorbis_get_frame_float(data->vorbis, NULL, &channelData);
+      if(samples == 0)
+       break;
+      for(int i = 0; i < samples; ++i) {
+          for(int c = 0; c < channels; ++c) {
+              data->readBuffer[data->preloadedSamples + readSamples + channels * i + c] = (ALshort)(channelData[c][i] * 0x7FFF);
+            }
+        }
+
+      readSamples += channels * samples;
+    }
+
+  data->preloadedSamples += readSamples;
+  //printf("Preloaded %d samples, buffered: %d samples\n", readSamples, data->preloadedSamples);
+
+  return readSamples;
+}
+
+int audio_vorbis_uploadSreamSamples(audio_vorbis_DecoderData *decoderData, ALuint buffer) {
+  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
+  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
+  int channels = info.channels >= 2 ? 2 : 1;   // Force to mono or stereo
+
+  // Emergency loading if we ran out of time for proper preloading
+  if(data->preloadedSamples < data->readBufferSize / 2) {
+      audio_vorbis_preloadStreamSamples(decoderData, data->readBufferSize / 2);
+    }
+
+  //printf("uploaded %d samples to buffer %d\n", data->preloadedSamples, buffer);
+  alBufferData(
+        buffer,
+        channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16,
+        data->readBuffer,
+        data->preloadedSamples * sizeof(ALshort),
+        info.sample_rate
+        );
+  data->preloadedSamples = 0;
+  return 0;
+}
+
+void audio_vorbis_rewindStream(audio_vorbis_DecoderData *decoderData) {
+  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
+  stb_vorbis_seek_start(data->vorbis);
+}
+
+int audio_vorbis_getChannelCount(audio_vorbis_DecoderData *decoderData) {
+  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
+  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
   return info.channels;
 }
 
-int audio_vorbis_getSampleRate(void *decoderData) {
-  stb_vorbis_info info = stb_vorbis_get_info((stb_vorbis*)decoderData);
+int audio_vorbis_getSampleRate(audio_vorbis_DecoderData *decoderData) {
+  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
+  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
   return info.sample_rate;
 }
 
-void audio_vorbis_flushBuffer(void *decoderData) {
+void audio_vorbis_flushBuffer(audio_vorbis_DecoderData *decoderData) {
   audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
   data->preloadedSamples = 0;
 }
