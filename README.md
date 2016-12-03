@@ -11,7 +11,7 @@ On Windows:
 - Download and install mingw and let the setup configure the path for you.
 After that check if you got gcc & g++ installed.
 - Download and install CMake and let the setup configure the path for you.
-- Download DX SDK 2010 only if you get errors from SDL when buulding: http://www.microsoft.com/en-us/download/details.aspx?id=6812
+- Download DX SDK 2010 only if you get errors from SDL when building: http://www.microsoft.com/en-us/download/details.aspx?id=6812
 - Download and install QT Community the Open Source Edition but only install the core of it since
 you wont need all the stuff that QT comes with
 - When building CLove be sure that QT uses your brand new installation of mingw(GCC/GXX) not msvc
