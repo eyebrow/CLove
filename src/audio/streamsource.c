@@ -153,7 +153,7 @@ void audio_StreamSource_free(audio_StreamSource* source) {
 
 void audio_updateStreams() {
   for(int i = 0; i < moduleData.playingStreamCount; ++i) {
-      audio_StreamSource const* source = moduleData.playingStreams[i];
+      audio_StreamSource* source = moduleData.playingStreams[i];
 
       int loaded = audio_vorbis_preloadStreamSamples(source->decoderData, 8000);
 
@@ -169,6 +169,8 @@ void audio_updateStreams() {
           //moduleData.playingStreamCount = 0;
           if (source->loop)
             audio_vorbis_rewindStream(source->decoderData);
+          else
+            source->state = audio_SourceState_stopped;
         }
 
       for(int j = 0; j < count; ++j) {
