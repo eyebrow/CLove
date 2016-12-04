@@ -17,15 +17,22 @@ int l_math_random(lua_State* state) {
   float lo = 0.0f, hi = 1.0f;
   int t = lua_gettop(state);
   switch(t) {
-  case 1:
-    hi = l_tools_toNumberOrError(state, 1);
-    break;
 
-  case 2:
-    lo = l_tools_toNumberOrError(state, 1);
-    hi = l_tools_toNumberOrError(state, 2);
-    break;
-  }
+    case 0:
+      lo = 0;
+      hi = 1;
+      break;
+
+    case 1:
+      lo = 1;
+      hi = l_tools_toNumberOrError(state, 1);
+      break;
+
+    case 2:
+      lo = l_tools_toNumberOrError(state, 1);
+      hi = l_tools_toNumberOrError(state, 2);
+      break;
+    }
 
   lua_pushnumber(state, math_random(lo, hi));
   return 1;
@@ -69,30 +76,30 @@ static int l_math_noise(lua_State* state) {
   int t = min(lua_gettop(state), 4);
 
   for(int i = 0; i < t; ++i) {
-    a[i] = l_tools_toNumberOrError(state, i+1);
-  }
+      a[i] = l_tools_toNumberOrError(state, i+1);
+    }
 
   switch(t) {
-  case 1:
-    r = simplexnoise_noise1(a[0]);
-    break;
+    case 1:
+      r = simplexnoise_noise1(a[0]);
+      break;
 
-  case 2:
-    r = simplexnoise_noise2(a[0], a[1]);
-    break;
+    case 2:
+      r = simplexnoise_noise2(a[0], a[1]);
+      break;
 
-  case 3:
-    r = simplexnoise_noise3(a[0], a[1], a[2]);
-    break;
+    case 3:
+      r = simplexnoise_noise3(a[0], a[1], a[2]);
+      break;
 
-  case 4:
-    r = simplexnoise_noise4(a[0], a[1], a[2], a[3]);
-    break;
+    case 4:
+      r = simplexnoise_noise4(a[0], a[1], a[2], a[3]);
+      break;
 
-  default:
-    lua_pushstring(state, "need at least one dimension");
-    return lua_error(state);
-  }
+    default:
+      lua_pushstring(state, "need at least one dimension");
+      return lua_error(state);
+    }
 
   lua_pushnumber(state, r);
   return 1;
