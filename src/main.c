@@ -70,11 +70,12 @@ void main_loop(void *data) {
 
   timer_step();
   //matrixstack_origin();
-  lua_rawgeti(loopData->luaState, LUA_REGISTRYINDEX, loopData->errhand);
+  //lua_rawgeti(loopData->luaState, LUA_REGISTRYINDEX, loopData->errhand);
   lua_getglobal(loopData->luaState, "love");
   lua_pushstring(loopData->luaState, "update");
   lua_rawget(loopData->luaState, -2);
   lua_pushnumber(loopData->luaState, timer_getDelta());
+  pcall(loopData->luaState, 1);
 
   if (swap_At == 1){
       if(luaL_dofile(loopData->luaState, "main.lua")) {
@@ -84,13 +85,11 @@ void main_loop(void *data) {
 
   graphics_clear();
 
-  lua_pcall(loopData->luaState, 1, 0, 1);
   lua_pushstring(loopData->luaState, "draw");
   lua_rawget(loopData->luaState, -2);
 
-  lua_pcall(loopData->luaState, 0, 0, 0);
+  pcall(loopData->luaState, 0);
 
-  lua_pcall(loopData->luaState, 0, 0, 1); 
   graphics_swap();
 
   lua_pop(loopData->luaState, 1);
@@ -214,17 +213,16 @@ int main(int argc, char* argv[]) {
   printf("%s %s %d.%d.%d %s %s \n", "CLove:",
          version->codename,version->major,version->minor,version->revision, "running on:", get_os);
 
-  lua_pushcfunction(lua, errorhandler);
+  //lua_pushcfunction(lua, errorhandler);
   lua_getglobal(lua, "love");
   lua_pushstring(lua, "load");
   lua_rawget(lua, -2);
 
-  if(lua_pcall(lua, 0, 0, 1))
-      printf("Error in love.load: %s\n", lua_tostring(lua, -1));
+  pcall(lua, 0);
 
   lua_pop(lua, 1);
 
-  lua_pushcfunction(lua, errorhandler);
+  //lua_pushcfunction(lua, errorhandler);
 
   MainLoopData mainLoopData = {
     .luaState = lua,
@@ -238,10 +236,9 @@ int main(int argc, char* argv[]) {
   emscripten_set_main_loop_arg(main_loop, &mainLoopData, 0, 1);
 #else
   while (l_event_running())
-      main_loop(&mainLoopData);
+    main_loop(&mainLoopData);
 
-  if (!l_event_running())
-    quit_function(lua);
+  quit_function(lua);
 #endif
   graphics_destroyWindow();
   graphics_font_freeFT();

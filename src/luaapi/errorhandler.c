@@ -19,22 +19,38 @@
 
 #include "errorhandler.h"
 
+void pcall(lua_State *state, int nargs) {
+  if(lua_pcall(state, nargs, 0, 1)) {
+      char const *msg = lua_tostring(state, -1);
+      printf("Lua error: %s\n", msg);
+
+      /*graphics_Font font;
+      graphics_setBackgroundColor(0.64f, 0.27f, 0.26f, 1.0f);
+      graphics_clear();
+      graphics_setColor(1.0f, 1.0f, 1.0f, 0.8f);
+      graphics_Font_new(&font, 0, 12);
+      graphics_Font_print(&font, msg, 10, 40, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+      graphics_swap();
+      */
+    }
+}
+
 int errorhandler(lua_State *state) {
   lua_Debug debug;
   int level = 0;
   int count = 0;
   lua_pushstring(state, "\n\nStack trace:\n");
   while(lua_getstack(state, level, &debug)) {
-    lua_getinfo(state, "Sl", &debug);
-    if(strcmp(debug.what, "C")) {
-      lua_pushstring(state, debug.short_src);
-      lua_pushstring(state, ":");
-      lua_pushnumber(state, debug.currentline);
-      lua_pushstring(state, "\n");
-      ++count;
+      lua_getinfo(state, "Sl", &debug);
+      if(strcmp(debug.what, "C")) {
+          lua_pushstring(state, debug.short_src);
+          lua_pushstring(state, ":");
+          lua_pushnumber(state, debug.currentline);
+          lua_pushstring(state, "\n");
+          ++count;
+        }
+      ++level;
     }
-    ++level;
-  }
   lua_concat(state, 4*count+2);
   return 1;
 }
