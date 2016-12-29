@@ -52,12 +52,7 @@ Please try to replicate the code style of the existing code by using QT Communit
 
 Plans for 2017
 =============
-- Add networking (TCP/UDP)
-- Add FTP
-- Make the 3D api solid
-- Make extension .clove to work properly 
-- Add various features to filesystem
-- Add streaming support for .wav files
+
 
 Examples (see examples folder)
 --------
