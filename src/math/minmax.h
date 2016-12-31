@@ -18,5 +18,5 @@ inline int min(int i, int j) {
 }
 
 inline int clamp(int a, int i, int k) {
-  return a > k ? k : i ? i : a;
+  return max(i, min(k, a));
 }

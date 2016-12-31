@@ -75,6 +75,7 @@ end
 
 Images of running CLove demos
 -----------------------------
+![ScreenShot](http://i.imgur.com/qJN5bG2.gif "See examples folder")
 ![Image 1:](data/1.png?raw=true "Web")
 ![Image 2:](data/2.png?raw=true "Linux")
 ![Image 2:](data/3.png?raw=true "Os X")
