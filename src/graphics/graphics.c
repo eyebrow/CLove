@@ -1,12 +1,11 @@
 /*
 #   clove
 #
-#   Copyright (C) 2016 Muresan Vlad
+#   Copyright (C) 2016-2017 Muresan Vlad
 #
 #   This project is free software; you can redistribute it and/or modify it
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
-
 #include <stdint.h>
 #include "../3rdparty/SDL2/include/SDL.h"
 #include "graphics.h"
@@ -55,6 +54,8 @@ static struct {
   const char* title;
   int x;
   int y;
+  const char* version;
+  bool has_window;
 } moduleData;
 
 #ifndef EMSCRIPTEN
@@ -63,7 +64,8 @@ SDL_Window* graphics_getWindow(void) {
 }
 #endif
 
-void graphics_init(int width, int height) {
+void graphics_init(int width, int height, bool resizable) {
+  moduleData.version = "0.5.2";
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0)
     printf("Error: Could not init SDL video \n");
@@ -90,13 +92,15 @@ void graphics_init(int width, int height) {
   moduleData.y = SDL_WINDOWPOS_CENTERED;
   moduleData.title = "CLove: Untitled window";
 
-  /*
-   * By default the window is resisable by the user. This can't be stoped if you set the minimum
-   * resizable value to the value of window's width/height
-  */
-  moduleData.w_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+  moduleData.w_flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN;
+  if (resizable)
+    moduleData.w_flags |= SDL_WINDOW_RESIZABLE;
 
-  moduleData.window = SDL_CreateWindow(moduleData.title, moduleData.x, moduleData.y, width, height, moduleData.w_flags);
+  if (moduleData.has_window)
+    moduleData.window = SDL_CreateWindow(moduleData.title, moduleData.x, moduleData.y, width, height, moduleData.w_flags);
+  else
+    moduleData.window = SDL_CreateWindow(moduleData.title, moduleData.x, moduleData.y, 1, 1, moduleData.w_flags);
+
   if(!moduleData.window)
     printf("Error: Could not create window :O");
   moduleData.context = SDL_GL_CreateContext(moduleData.window);
@@ -143,7 +147,6 @@ void graphics_init(int width, int height) {
   graphics_setBlendMode(graphics_BlendMode_alpha);
   glEnable(GL_BLEND);
   graphics_clearScissor();
-  
 }
 
 void graphics_destroyWindow() {
@@ -179,7 +182,6 @@ void graphics_swap(void) {
 #endif
 }
 
-
 void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ibo, GLuint count, GLenum type, GLenum indexType, float const* useColor, float ws, float hs) {
   // tr = proj * view * model * vpos;
 
@@ -211,7 +213,6 @@ void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ib
 }
 
 
-
 int graphics_setTitle(const char* title){
 #ifndef EMSCRIPTEN
   moduleData.title = title;
@@ -238,8 +239,11 @@ int graphics_setFocus(int value){
   return 1;
 }
 
-int graphics_setPosition(int x, int y)
-{
+const char* graphics_getVersion() {
+  return moduleData.version;
+}
+
+int graphics_setPosition(int x, int y) {
 #ifndef EMSCRIPTEN
   if(x <= -1) // center x
     x = SDL_WINDOWPOS_CENTERED;
@@ -247,6 +251,26 @@ int graphics_setPosition(int x, int y)
     y = SDL_WINDOWPOS_CENTERED;
   SDL_SetWindowPosition(moduleData.window, x, y);
 #endif
+  return 1;
+}
+
+int graphics_setWindow(bool value) {
+  moduleData.has_window = value;
+  return 1;
+}
+
+int graphics_setVsync(bool value) {
+  SDL_GL_SetSwapInterval(value == true ? 1 : 0);
+  return 1;
+}
+
+int graphics_setBordless(bool value) {
+  SDL_SetWindowBordered(moduleData.window, value);
+  return 1;
+}
+
+int graphics_setMinSize(int x, int y) {
+  SDL_SetWindowMinimumSize(moduleData.window, x, y);
   return 1;
 }
 

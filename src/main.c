@@ -1,12 +1,11 @@
 /*
 #   clove
 #
-#   Copyright (C) 2016 Muresan Vlad
+#   Copyright (C) 2016-2017 Muresan Vlad
 #
 #   This project is free software; you can redistribute it and/or modify it
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
-
 #ifdef EMSCRIPTEN
 # include <emscripten.h>
 #endif
@@ -177,7 +176,15 @@ int main(int argc, char* argv[]) {
   l_boot(lua, &config);
 
   keyboard_init();
-  graphics_init(config.window.width, config.window.height);
+
+  graphics_setWindow(config.window.window);
+  graphics_init(config.window.width, config.window.height, config.window.resizable);
+  graphics_setTitle(config.window.title);
+  graphics_setBordless(config.window.bordless);
+  graphics_setMinSize(config.window.minwidth, config.window.minheight);
+  graphics_setVsync(config.window.vsync);
+  graphics_setPosition(config.window.x, config.window.y);
+
   l_running = 1;
   audio_init();
   char* get_os = "";
@@ -213,7 +220,7 @@ int main(int argc, char* argv[]) {
   printf("%s %s %d.%d.%d %s %s \n", "CLove:",
          version->codename,version->major,version->minor,version->revision, "running on:", get_os);
 
-  //lua_pushcfunction(lua, errorhandler);
+  lua_pushcfunction(lua, errorhandler);
   lua_getglobal(lua, "love");
   lua_pushstring(lua, "load");
   lua_rawget(lua, -2);
@@ -222,7 +229,7 @@ int main(int argc, char* argv[]) {
 
   lua_pop(lua, 1);
 
-  //lua_pushcfunction(lua, errorhandler);
+  lua_pushcfunction(lua, errorhandler);
 
   MainLoopData mainLoopData = {
     .luaState = lua,

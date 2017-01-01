@@ -1,15 +1,78 @@
 /*
 #   clove
 #
-#   Copyright (C) 2016 Muresan Vlad
+#   Copyright (C) 2016-2017 Muresan Vlad
 #
 #   This project is free software; you can redistribute it and/or modify it
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
+#include <stdlib.h>
 
 #include "../3rdparty/lua/lauxlib.h"
 
 #include "boot.h"
+#include "../graphics/graphics.h"
+#include "../love.h"
+
+static void setConfDefault(lua_State* state, love_Config *config) {
+  lua_pushstring(state, "window");
+  lua_rawget(state, -2);
+
+  lua_pushstring(state, "width");
+  lua_rawget(state, -2);
+  config->window.width = luaL_optinteger(state, -1, 800);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "height");
+  lua_rawget(state, -2);
+  config->window.height = luaL_optinteger(state, -1, 600);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "title");
+  lua_rawget(state, -2);
+  config->window.title = luaL_optstring(state, -1, "Untitled CLove");
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "x");
+  lua_rawget(state, -2);
+  config->window.x = luaL_optinteger(state, -1, -1);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "y");
+  lua_rawget(state, -2);
+  config->window.y = luaL_optinteger(state, -1, -1);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "vsync");
+  lua_rawget(state, -2);
+  config->window.vsync = luaL_optinteger(state, -1, 1);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "minheight");
+  lua_rawget(state, -2);
+  config->window.minheight = luaL_optinteger(state, -1, 1);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "minwidth");
+  lua_rawget(state, -2);
+  config->window.minwidth = luaL_optinteger(state, -1, 1);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "resizable");
+  lua_rawget(state, -2);
+  config->window.resizable = luaL_optinteger(state, -1, 1);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "bordless");
+  lua_rawget(state, -2);
+  config->window.bordless = luaL_optinteger(state, -1, 1);
+  lua_pop(state, 1);
+
+  lua_pushstring(state, "window");
+  lua_rawget(state, -2);
+  config->window.window = luaL_optinteger(state, -1, 1);
+  lua_pop(state, 1);
+}
 
 static char const bootScript[] =
   "package.path = '?.lua;?/init.lua'\n"
@@ -42,20 +105,7 @@ int l_boot(lua_State* state, love_Config *config) {
     return 1;
   }
 
-  lua_pushstring(state, "window");
-  lua_rawget(state, -2);
-
-  lua_pushstring(state, "width");
-  lua_rawget(state, -2);
-
-  config->window.width = lua_tointeger(state, -1);
-  lua_pop(state, 1);
-  
-  lua_pushstring(state, "height");
-  lua_rawget(state, -2);
-  config->window.height = lua_tointeger(state, -1);
-
-  lua_pop(state, 3);
+  setConfDefault(state, config);
 
   return 0;
 }
@@ -92,20 +142,7 @@ int l_no_game(lua_State* state, love_Config *config) {
     return 1;
   }
 
-  lua_pushstring(state, "window");
-  lua_rawget(state, -2);
-
-  lua_pushstring(state, "width");
-  lua_rawget(state, -2);
-
-  config->window.width = lua_tointeger(state, -1);
-  lua_pop(state, 1);
-
-  lua_pushstring(state, "height");
-  lua_rawget(state, -2);
-  config->window.height = lua_tointeger(state, -1);
-
-  lua_pop(state, 3);
+  setConfDefault(state, config);
 
   return 0;
 }

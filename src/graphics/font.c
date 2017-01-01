@@ -1,12 +1,11 @@
 /*
 #   clove
 #
-#   Copyright (C) 2016 Muresan Vlad
+#   Copyright (C) 2016-2017 Muresan Vlad
 #
 #   This project is free software; you can redistribute it and/or modify it
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
-
 #define _POSIX_SOURCE
 #include <string.h>
 #include "font.h"
@@ -177,7 +176,9 @@ void graphics_Font_printf(graphics_Font* font, char const* text, int px, int py,
 
   int count = 0;
   int wrapped = 0;
-  glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_DYNAMIC_DRAW);
+  //glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(imageVertices), imageVertices);
+
   while((moduleData.cp = utf8_scan(&text))) {
       font->ch = font->characters[moduleData.cp];
       glBindTexture(GL_TEXTURE_2D,font->ch.textureid);
@@ -233,7 +234,9 @@ void graphics_Font_print(graphics_Font* font, char const* text, int px, int py, 
   graphics_Shader* shader = graphics_getShader();
   graphics_setDefaultShader();
 
-  glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_DYNAMIC_DRAW);
+  //glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_DYNAMIC_DRAW);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(imageVertices), imageVertices);
+
    while((moduleData.cp = utf8_scan(&text))) {
       font->ch = font->characters[moduleData.cp];
       glBindTexture(GL_TEXTURE_2D,font->ch.textureid);

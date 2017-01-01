@@ -1,12 +1,11 @@
 /*
 #   clove
 #
-#   Copyright (C) 2016 Muresan Vlad
+#   Copyright (C) 2016-2017 Muresan Vlad
 #
 #   This project is free software; you can redistribute it and/or modify it
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
-
 #include <stdlib.h>
 #include <string.h>
 #include "batch.h"
@@ -144,6 +143,7 @@ void graphics_Batch_draw(graphics_Batch const* batch,
   glBindTexture(GL_TEXTURE_2D, batch->texture->texID);
 
   glBufferData(GL_ARRAY_BUFFER, 4*batch->maxCount*sizeof(graphics_Vertex), batch->vertexData, batch->usage);
+
   m4x4_newTransform2d(&moduleData.tr2d, x, y, r, sx, sy, ox, oy, kx, ky);
   float const * color = batch->colorUsed ? defaultColor : graphics_getColor();
   

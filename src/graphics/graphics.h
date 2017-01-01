@@ -1,19 +1,18 @@
 /*
 #   clove
 #
-#   Copyright (C) 2016 Muresan Vlad
+#   Copyright (C) 2016-2017 Muresan Vlad
 #
 #   This project is free software; you can redistribute it and/or modify it
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
-
 #pragma once
 
 #include "image.h"
 #include "quad.h"
 #include "../math/vector.h"
 
-void graphics_init(int width, int height);
+void graphics_init(int width, int height, bool resizable);
 
 typedef enum {
   graphics_BlendMode_additive,
@@ -49,6 +48,13 @@ int graphics_setTitle(const char* title);
 int graphics_setMode(int width, int height,
                      bool fullscreen, int min_size_x, int min_size_y, int max_size_x, int max_size_y, bool border,
                      int x, int y);
+
+void graphics_setVersion(const char* version);
+const char* graphics_getVersion();
+int graphics_setMinSize(int x, int y);
+int graphics_setBordless(bool value);
+int graphics_setVsync(bool value);
+int graphics_setWindow(bool value);
 int graphics_setFullscreen(int value, const char* mode);
 int graphics_isCreated();
 void graphics_destroyWindow();
