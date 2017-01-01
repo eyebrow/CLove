@@ -1,4 +1,4 @@
-viewer = require("model_viewer")
+require("model_viewer")
 
 function love.load(arg)
     WINDOW_W = love.graphics.getWidth()
@@ -9,24 +9,15 @@ function love.load(arg)
     font = love.graphics.newFont(14)
     love.graphics.setFont(font)
     
-    viewer:new("example.png")
+    img1 = love.graphics.newImage("example.png")
+    img2 = love.graphics.newImage("car.png")
 
-end
-
-function love.textinput(t)
-
-end
-
-function love.wheelmoved(y)
-    viewer:wheelmoved(y)
-end
-
-function love.keypressed(key)
-    viewer:keypressed(key)
+    viewer = model_viewer.create(img1, true)
+    car = model_viewer.create(img2, true, 64, 64) 
 end
 
 function love.update(dt)
-    viewer:update(dt)
+    
     if love.keyboard.isDown("esc") then
         love.event.quit()
     end
@@ -34,7 +25,8 @@ end
 
 function love.draw()
     love.graphics.print("FPS:"..love.timer.getFPS(),25,15)
-    --love.graphics.print("It's only a matter of perspective", WINDOW_W/2 - 100, WINDOW_H / 2 - 150)
-    viewer:drawModel(240,240)
+    
+    viewer:draw(240,240)
+    car:draw(100,240)
 end
 
