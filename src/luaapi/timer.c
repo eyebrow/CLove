@@ -38,7 +38,6 @@ int l_timer_getAverageDelta(lua_State* state) {
   return 1;
 }
 
-
 static luaL_Reg const regFuncs[] = {
   {"getAverageDelta", l_timer_getAverageDelta},
   {"getDelta",        l_timer_getDelta},
