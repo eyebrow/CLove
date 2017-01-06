@@ -43,7 +43,8 @@ Features
 - OpenGL ES 2.0 
 - Font loading & drawing
 - Keyboard & Mouse functions
-- Physics system thanks to ChipMunk
+- Threads
+- Error handling
 
 Contributing
 ========
