@@ -25,12 +25,12 @@ static struct {
 static int callback(void* ptr) {
     lua_State* L = moduleData.state;
 
-    if (luaL_checkstring(L, 1))
-        luaL_dofile(L, lua_tostring(L, 1));
-    else if (luaL_checkinteger(L, 1))
-        lua_tointeger(L, 1);
-    else {
-        luaL_error(L, "Error in thread. Only .lua file or integer function is correct %s %\n", lua_tostring(L, -1));
+    if (luaL_checkstring(L, 1)) {
+        luaL_loadfile(L, lua_tostring(L, 1)); 
+        if (lua_pcall(L, 0,0,0) != 0)
+            luaL_error(L, "%s \n", lua_tostring(L, -1)); 
+    }else {
+        luaL_error(L, "Error in thread. Only .lua file is correct %s %\n", lua_tostring(L, -1));
         return -1;
     }
     return 1;
@@ -47,7 +47,7 @@ static int l_thread_newThread(lua_State* state) {
         luaL_error(state, "\n Create thread failed: %s\n", SDL_GetError());
     else 
         SDL_WaitThread(data->thread, &data->res);
-
+    
     lua_rawgeti(state, LUA_REGISTRYINDEX, moduleData.threadDataMT);
     lua_setmetatable(state, -2);
 
