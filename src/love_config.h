@@ -21,6 +21,7 @@ typedef struct {
   bool bordless;
   int minwidth, minheight;
   int x, y;
+  int stats;
 } love_WindowConfig;
 
 typedef struct {

@@ -17,6 +17,6 @@ typedef enum {
   audio_type_static,
 } audio_Type;
 
-void audio_init(void);
+void audio_init(int stats);
 void audio_setVolume(double value);
 void audio_close(void);

@@ -64,7 +64,7 @@ SDL_Window* graphics_getWindow(void) {
 }
 #endif
 
-void graphics_init(int width, int height, bool resizable) {
+void graphics_init(int width, int height, bool resizable, bool stats) {
   moduleData.version = "0.5.2";
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -109,13 +109,14 @@ void graphics_init(int width, int height, bool resizable) {
 
   //moduleData.surface = SDL_GetWindowSurface(moduleData.window);
   SDL_GL_SetSwapInterval(1); //limit FPS to 60, this may not work on all drivers
-  
-  printf("%s %d.%d.%d \n", "Debug: Sdl version: ", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
-  printf("Debug: OpenGL version: %s \n", glGetString(GL_VERSION));
-  printf("Debug: GLSL version %s \n", glGetString(GL_SHADING_LANGUAGE_VERSION));
-  printf("Debug: Vendor: %s\n", glGetString(GL_VENDOR));
-  printf("Debug: Renderer: %s\n", glGetString(GL_RENDERER));
-
+ 
+  if (stats > 0) {
+    printf("%s %d.%d.%d \n", "Debug: Sdl version: ", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
+    printf("Debug: OpenGL version: %s \n", glGetString(GL_VERSION));
+    printf("Debug: GLSL version %s \n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    printf("Debug: Vendor: %s\n", glGetString(GL_VENDOR));
+    printf("Debug: Renderer: %s\n", glGetString(GL_RENDERER));
+  }
 #endif
   glewExperimental = true;
   GLenum res = glewInit();

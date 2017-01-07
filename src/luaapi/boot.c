@@ -72,6 +72,12 @@ static void setConfDefault(lua_State* state, love_Config *config) {
   lua_rawget(state, -2);
   config->window.window = luaL_optinteger(state, -1, 1);
   lua_pop(state, 1);
+
+  lua_pushstring(state, "stats");
+  lua_rawget(state, -2);
+  config->window.stats = luaL_optinteger(state, -1, 0);
+  lua_pop(state, 1);
+
 }
 
 static char const bootScript[] =
@@ -104,7 +110,7 @@ int l_boot(lua_State* state, love_Config *config) {
   if(luaL_dostring(state, bootScript)) {
     return 1;
   }
-
+    
   setConfDefault(state, config);
 
   return 0;

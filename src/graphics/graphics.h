@@ -8,11 +8,13 @@
 */
 #pragma once
 
+#include <stdbool.h>
+
 #include "image.h"
 #include "quad.h"
 #include "../math/vector.h"
 
-void graphics_init(int width, int height, bool resizable);
+void graphics_init(int width, int height, bool resizable, bool stats);
 
 typedef enum {
   graphics_BlendMode_additive,

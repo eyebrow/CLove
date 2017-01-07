@@ -8,4 +8,5 @@ function love.conf(t)
     t.window.vsync = 1
     t.window.resizable = 1
     t.window.title = "No title in conf.lua"
+    t.window.stats = 1
 end

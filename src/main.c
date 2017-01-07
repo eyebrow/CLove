@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
     keyboard_init();
 
     graphics_setWindow(config.window.window);
-    graphics_init(config.window.width, config.window.height, config.window.resizable);
+    graphics_init(config.window.width, config.window.height, config.window.resizable, config.window.stats);
     graphics_setTitle(config.window.title);
     graphics_setBordless(config.window.bordless);
     graphics_setMinSize(config.window.minwidth, config.window.minheight);
@@ -189,7 +189,7 @@ int main(int argc, char* argv[]) {
     graphics_setPosition(config.window.x, config.window.y);
 
     l_running = 1;
-    audio_init();
+    audio_init(config.window.stats);
     char* get_os = "";
 #ifdef CLOVE_MACOSX
     get_os = "osx";
@@ -220,7 +220,8 @@ int main(int argc, char* argv[]) {
     }
 
     love_Version const * version = love_getVersion();
-    printf("%s %s %d.%d.%d %s %s \n", "CLove:",
+    if (config.window.stats > 0)
+        printf("%s %s %d.%d.%d %s %s \n", "CLove:",
             version->codename,version->major,version->minor,version->revision, "running on:", get_os);
 
     lua_pushcfunction(lua, errorhandler);
