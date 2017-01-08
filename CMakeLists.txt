@@ -120,10 +120,15 @@ INCLUDE_DIRECTORIES(src/3rdparty/stb)
 add_subdirectory(src/3rdparty/freetype)
 set(FREETYPE_INCLUDE_DIR src/3rdparty/freetype/include)
 
-#libzip
+#zlib
+add_subdirectory(src/3rdparty/zlib)
+set(ZLIB_INCLUDE_DIR src/3rdparty/zlib/)
+set(ZLIB_FOUND TRUE)
+set(ZLIB_LIBRARIES zlibstatic)
+
+#physfs
 add_subdirectory(src/3rdparty/physfs)
-set(LIBZIP_INCLUDE_DIR src/3rdparty/physfs)
-set(LIBZIP_LIBRARIES physfs)
+set(PHYSFS_INCLUDE_DIR src/3rdparty/physfs/)
 
 #openal
 add_subdirectory(src/3rdparty/openal)
@@ -153,6 +158,7 @@ set(FREETYPE_LIBRARIES freetype)
 include_directories(src/3rdparty/freetype/include)
 
 set(GLEW_LIBRARIES libglew_static)
+set(PHYSFS_LIBRARIES physfs-static)
 
 if(MINGW)
     SET(OPENAL_LIBRARIES OpenAL32)
@@ -163,21 +169,23 @@ endif()
 
 if(MINGW)
     target_link_libraries(clove ws2_32.lib
-        ${LIBZIP_LIBRARIES}
+        ${ZLIB_LIBRARIES} ${PHYSFS_LIBRARIES}
         ${SDL_LIBRARIES} ${GLEW_LIBRARIES}
         ${OPENGL_LIBRARIES} ${OPENAL_LIBRARIES}
         ${FREETYPE_LIBRARIES} ${LUA_LIBRARIES})
 endif()
 
 if(APPLE)
-    target_link_libraries(clove ${LIBZIP_LIBRARIES}
+    target_link_libraries(clove 
+        ${ZLIB_LIBRARIES} ${PHYSFS_LIBRARIES}
         ${SDL_LIBRARIES} ${GLEW_LIBRARIES}
         ${OPENGL_LIBRARIES} ${OPENAL_LIBRARIES}
         ${FREETYPE_LIBRARIES} ${LUA_LIBRARIES})
 endif()
 
 if(UNIX)
-    target_link_libraries(clove ${LIBZIP_LIBRARIES}
+    target_link_libraries(clove 
+        ${ZLIB_LIBRARIES} ${PHYSFS_LIBRARIES}
         ${SDL_LIBRARIES} ${GLEW_LIBRARIES}
         ${OPENGL_LIBRARIES} ${OPENAL_LIBRARIES}
         ${FREETYPE_LIBRARIES} ${LUA_LIBRARIES})
