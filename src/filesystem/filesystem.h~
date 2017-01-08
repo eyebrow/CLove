@@ -11,7 +11,7 @@
 //#include "../3rdparty/SDL2/include/SDL.h"
 #include "../3rdparty/physfs/physfs.h"
 
-void filesystem_init(char* argv0, int stats);
+void filesystem_init(int argv0, int stats);
 
 int filesystem_read(char const* filename, char** output);
 int filesystem_write(const char* name, const char* data);

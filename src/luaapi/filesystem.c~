@@ -92,7 +92,7 @@ static int l_filesystem_require(lua_State* state) {
 
   PHYSFS_file* myfile = PHYSFS_openRead(filename);
   if(!myfile)
-    printf("%s %s \n", "No .lua ", filename);
+    printf("%s %s \n", "No .lua file named in directory ", filename);
   PHYSFS_sint64 fileLngth = PHYSFS_fileLength(myfile);
   PHYSFS_read (myfile, myBuf, 1, fileLngth);
   int status = 0;
@@ -219,8 +219,15 @@ static int l_filesystem_isFile(lua_State* state) {
   return 1;
 }
 
+/*static int l_filesystem_getSource(lua_State* state) {
+    lua_pushstring(state, filesystem_getSource());
+    return 1;
+}
+*/
+
 static luaL_Reg const regFuncs[] = {
   {"load", l_filesystem_load},
+  //{"getSource", l_filesystem_getSource},
   {"setSource",l_filesystem_setSource},
   {"requireDir",l_filesystem_set_requireDir},
   {"getSource", l_filesystem_getSource},

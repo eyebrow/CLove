@@ -160,7 +160,7 @@ int main(int argc, char* argv[]) {
     luaL_openlibs(lua);
 
     love_Config config;
-
+        
     filesystem_init(argv[0], config.window.stats);
 
     l_love_register(lua);
@@ -205,11 +205,11 @@ int main(int argc, char* argv[]) {
             luaL_error(lua, "%s \n", lua_tostring(lua, -1));
         }
     }
-
+    
     love_Version const * version = love_getVersion();
     if (config.window.stats > 0)
         printf("%s %s %d.%d.%d \n", "CLove version - ",
-                version->codename,version->major,version->minor,version->revision);
+            version->codename,version->major,version->minor,version->revision);
 
     lua_pushcfunction(lua, errorhandler);
     lua_getglobal(lua, "love");
