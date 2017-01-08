@@ -5,6 +5,11 @@
 *.elf
 *.py[cod]
 
+#Editors
+*~
+*.swp
+*.swo
+
 # Precompiled Headers
 *.gch
 *.pch
