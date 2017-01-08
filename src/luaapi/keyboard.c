@@ -81,8 +81,9 @@ void l_keyboard_keypressed(SDL_Keycode key, bool isrepeat) {
   lua_pushstring(moduleData.luaState, "keypressed");
   lua_rawget(moduleData.luaState, -2);
   lua_pushstring(moduleData.luaState, keyboard_getKeyName(key));
+  lua_pushinteger(moduleData.luaState, key);
   lua_pushboolean(moduleData.luaState, isrepeat);
-  lua_call(moduleData.luaState, 2, 0);
+  lua_call(moduleData.luaState, 3, 0);
 }
 
 void l_keyboard_keyreleased(SDL_Keycode key) {
@@ -90,7 +91,8 @@ void l_keyboard_keyreleased(SDL_Keycode key) {
   lua_pushstring(moduleData.luaState, "keyreleased");
   lua_rawget(moduleData.luaState, -2);
   lua_pushstring(moduleData.luaState, keyboard_getKeyName(key));
-  lua_call(moduleData.luaState, 1, 0);
+  lua_pushinteger(moduleData.luaState, key);
+  lua_call(moduleData.luaState, 2, 0);
 }
 
 void l_keyboard_textInput(char const* text) {
