@@ -1,0 +1,19 @@
+
+version 0.6.2:
+added No game screen
+added love.window.getDesktopDimensions()
+added love.window.getDisplayName()
+added love.window.getDisplays()
+added love.window.hasFocus()
+added love.window.hasMouseFocus()
+added love.timer.sleep(seconds)
+added love.window.setIcon(imageData)
+added love.window.getIcon(),it does not behave like Love.Clove returns the name of the file 
+added pixels = ImageData:getString()
+added love.filesystem.load(fileName) see: https://love2d.org/wiki
+
+internal: added more functions to image_ImageData
+fixed: build system for physfs on linux
+
+SDL_WINDOWEVENT_ENTER or SDL_WINDOWEVENT_LEAVE
+SDL_WINDOWEVENT_FOCUS_GAINED

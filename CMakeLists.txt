@@ -94,6 +94,7 @@ FILE(
     src/timer/*.c
     src/*.c
     src/*.h
+    src/resources/*.png
 
     #3rdparty "small" libs
     src/3rdparty/stb/*.c
@@ -158,7 +159,13 @@ set(FREETYPE_LIBRARIES freetype)
 include_directories(src/3rdparty/freetype/include)
 
 set(GLEW_LIBRARIES libglew_static)
-set(PHYSFS_LIBRARIES physfs-static)
+
+if(UNIX AND NOT APPLE)
+    set(PHYSFS_LIBRARIES physfs)
+endif()
+if (APPLE)
+    set(PHYSFS_LIBRARIES physfs-static)
+endif()
 
 if(MINGW)
     SET(OPENAL_LIBRARIES OpenAL32)

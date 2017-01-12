@@ -15,140 +15,142 @@
 #include "../love.h"
 
 static void setConfDefault(lua_State* state, love_Config *config) {
-  lua_pushstring(state, "window");
-  lua_rawget(state, -2);
+    lua_pushstring(state, "window");
+    lua_rawget(state, -2);
 
-  lua_pushstring(state, "width");
-  lua_rawget(state, -2);
-  config->window.width = luaL_optinteger(state, -1, 800);
-  lua_pop(state, 1);
+    lua_pushstring(state, "width");
+    lua_rawget(state, -2);
+    config->window.width = luaL_optinteger(state, -1, 800);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "height");
-  lua_rawget(state, -2);
-  config->window.height = luaL_optinteger(state, -1, 600);
-  lua_pop(state, 1);
+    lua_pushstring(state, "height");
+    lua_rawget(state, -2);
+    config->window.height = luaL_optinteger(state, -1, 600);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "title");
-  lua_rawget(state, -2);
-  config->window.title = luaL_optstring(state, -1, "Untitled CLove");
-  lua_pop(state, 1);
+    lua_pushstring(state, "title");
+    lua_rawget(state, -2);
+    config->window.title = luaL_optstring(state, -1, "Untitled CLove");
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "x");
-  lua_rawget(state, -2);
-  config->window.x = luaL_optinteger(state, -1, -1);
-  lua_pop(state, 1);
+    lua_pushstring(state, "x");
+    lua_rawget(state, -2);
+    config->window.x = luaL_optinteger(state, -1, -1);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "y");
-  lua_rawget(state, -2);
-  config->window.y = luaL_optinteger(state, -1, -1);
-  lua_pop(state, 1);
+    lua_pushstring(state, "y");
+    lua_rawget(state, -2);
+    config->window.y = luaL_optinteger(state, -1, -1);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "vsync");
-  lua_rawget(state, -2);
-  config->window.vsync = luaL_optinteger(state, -1, 1);
-  lua_pop(state, 1);
+    lua_pushstring(state, "vsync");
+    lua_rawget(state, -2);
+    config->window.vsync = luaL_optinteger(state, -1, 1);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "minheight");
-  lua_rawget(state, -2);
-  config->window.minheight = luaL_optinteger(state, -1, 1);
-  lua_pop(state, 1);
+    lua_pushstring(state, "minheight");
+    lua_rawget(state, -2);
+    config->window.minheight = luaL_optinteger(state, -1, 1);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "minwidth");
-  lua_rawget(state, -2);
-  config->window.minwidth = luaL_optinteger(state, -1, 1);
-  lua_pop(state, 1);
+    lua_pushstring(state, "minwidth");
+    lua_rawget(state, -2);
+    config->window.minwidth = luaL_optinteger(state, -1, 1);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "resizable");
-  lua_rawget(state, -2);
-  config->window.resizable = luaL_optinteger(state, -1, 1);
-  lua_pop(state, 1);
+    lua_pushstring(state, "resizable");
+    lua_rawget(state, -2);
+    config->window.resizable = luaL_optinteger(state, -1, 1);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "bordless");
-  lua_rawget(state, -2);
-  config->window.bordless = luaL_optinteger(state, -1, 1);
-  lua_pop(state, 1);
+    lua_pushstring(state, "bordless");
+    lua_rawget(state, -2);
+    config->window.bordless = luaL_optinteger(state, -1, 1);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "window");
-  lua_rawget(state, -2);
-  config->window.window = luaL_optinteger(state, -1, 1);
-  lua_pop(state, 1);
+    lua_pushstring(state, "window");
+    lua_rawget(state, -2);
+    config->window.window = luaL_optinteger(state, -1, 1);
+    lua_pop(state, 1);
 
-  lua_pushstring(state, "stats");
-  lua_rawget(state, -2);
-  config->window.stats = luaL_optinteger(state, -1, 0);
-  lua_pop(state, 1);
+    lua_pushstring(state, "stats");
+    lua_rawget(state, -2);
+    config->window.stats = luaL_optinteger(state, -1, 0);
+    lua_pop(state, 1);
 
 }
 
 static char const bootScript[] =
-  "package.path = '?.lua;?/init.lua'\n"
-  "love.update = function(dt) if love.keyboard.isDown('esc') then love.event.quit() end end\n"
-  "love.draw = function() end \n"
-  "love.load = function() end \n"
-  "love.mousepressed = function(k,x,y) end\n"
-  "love.mousereleased = function(k,x,y) end\n"
-  "love.keypressed = function(k) end\n"
-  "love.keyreleased = function(k) end\n"
-  "love.wheelmoved= function(y) end\n"
-  "love.quit = function() end\n"
-  "love.textinput = function(t) end\n" 
-  "local conf = {\n"
-    "  window = {\n"
-  "    width = 800,\n"
-  "    height = 600\n"
-  "  }\n"
-  "}\n"
-  "local confFunc = loadfile(\"conf.lua\")\n"
-  "if confFunc then\n"
-  "  confFunc()\n"
-  "  love.conf(conf)\n"
-  "end\n"
-  "return conf\n"
+"package.path = '?.lua;?/init.lua'\n"
+"love.update = function(dt) if love.keyboard.isDown('esc') then love.event.quit() end end\n"
+"love.draw = function() end \n"
+"love.load = function() end \n"
+"love.mousepressed = function(k,x,y) end\n"
+"love.mousereleased = function(k,x,y) end\n"
+"love.keypressed = function(k) end\n"
+"love.keyreleased = function(k) end\n"
+"love.wheelmoved= function(y) end\n"
+"love.quit = function() end\n"
+"love.focus = function(f) end\n"
+"love.textinput = function(t) end\n" 
+"local conf = {\n"
+"  window = {\n"
+"    width = 800,\n"
+"    height = 600\n"
+"  }\n"
+"}\n"
+"local confFunc = loadfile(\"conf.lua\")\n"
+"if confFunc then\n"
+"  confFunc()\n"
+"  love.conf(conf)\n"
+"end\n"
+"return conf\n"
 ;
 
 int l_boot(lua_State* state, love_Config *config) {
-  if(luaL_dostring(state, bootScript)) {
-    return 1;
-  }
-    
-  setConfDefault(state, config);
+    if(luaL_dostring(state, bootScript)) {
+        return 1;
+    }
 
-  return 0;
+    setConfDefault(state, config);
+
+    return 0;
 }
 
-static char const no_game_Script[] =
-  "package.path = '?.lua;?/init.lua'\n"
-  "love.update = function(dt) if love.keyboard.isDown('esc') then love.event.quit end  end\n"
-  "love.draw = function() love.graphics.setBackgroundColor(0x84, 0xca, 0xff) "
-  "love.graphics.print('No main.lua found',love.window.getWidth()/2 - 190,love.window.getHeight()/2) end \n"
-  "love.load = function() end \n"
-  "love.mousepressed = function(k,x,y) end\n"
-  "love.mousereleased = function(k,x,y) end\n"
-  "love.keypressed = function(k) end\n"
-  "love.keyreleased = function(k) end\n"
-  "love.wheelmoved= function(y) end\n"
-  "love.quit = function() end\n"
-  "love.textinput = function(t) end\n"
-  "local conf = {\n"
-  "  window = {\n"
-  "    width = 800,\n"
-  "    height = 600\n"
-  "  }\n"
-  "}\n"
-  "local confFunc = loadfile(\"conf.lua\")\n"
-  "if confFunc then\n"
-  "  confFunc()\n"
-  "  love.conf(conf)\n"
-  "end\n"
-  "return conf\n"
+static char const no_game_Script[] =  
+"package.path = '?.lua;?/init.lua'\n"
+"love.update = function(dt) if love.keyboard.isDown('esc') then love.event.quit() end end\n"
+"love.draw = function() love.graphics.setBackgroundColor(189, 86, 78) love.graphics.print('No main.lua', love.window.getWidth() / 2 - 100, love.window.getHeight()/2) end \n"
+"love.load = function() love.graphics.setFont(24) love.window.setTitle('No game') end \n"
+"love.mousepressed = function(k,x,y) end\n"
+"love.mousereleased = function(k,x,y) end\n"
+"love.keypressed = function(k) end\n"
+"love.keyreleased = function(k) end\n"
+"love.wheelmoved= function(y) end\n"
+"love.quit = function() end\n"
+"love.focus = function() end\n"
+"love.textinput = function(t) end\n" 
+"local conf = {\n"
+"  window = {\n"
+"    width = 800,\n"
+"    height = 600\n"
+"  }\n"
+"}\n"
+"local confFunc = loadfile(\"conf.lua\")\n"
+"if confFunc then\n"
+"  confFunc()\n"
+"  love.conf(conf)\n"
+"end\n"
+"return conf\n"
 ;
 
+
 int l_no_game(lua_State* state, love_Config *config) {
-  if(luaL_dostring(state, no_game_Script)) {
-    return 1;
-  }
+    if(luaL_dostring(state, no_game_Script)) {
+        return 1;
+    }
 
-  setConfDefault(state, config);
+    setConfDefault(state, config);
 
-  return 0;
+    return 0;
 }

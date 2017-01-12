@@ -28,6 +28,32 @@ static int l_graphics_window_setTitle(lua_State* state){
   return 1;
 }
 
+static int l_graphics_window_getDesktopDimension(lua_State* state) {
+    int* ret = graphics_getDesktopDimension();
+    int w = ret[0];
+    int h = ret[1];
+    lua_pushinteger(state, w);
+    lua_pushinteger(state, h);
+    return 2;
+}
+
+static int l_graphics_window_getDisplayCount(lua_State* state) {
+   lua_pushinteger(state, graphics_getDisplayCount());
+   return 1;
+}
+
+static int l_graphics_window_setIcon(lua_State* state) {
+   image_ImageData* imgd = (image_ImageData*) lua_touserdata(state, 1);
+   graphics_setIcon(imgd);
+   return 1;
+}
+
+static int l_graphics_window_getIcon(lua_State* state) {
+   const char* path = image_ImageData_getPath(graphics_getIcon());
+   lua_pushstring(state, path);
+   return 1; 
+}
+
 // This function is not compatible 1:1 with love2d
 static int l_graphics_window_setMode(lua_State* state){
   float w = l_tools_toNumberOrError(state, 1);
@@ -42,6 +68,13 @@ static int l_graphics_window_setMode(lua_State* state){
   int y = luaL_optinteger(state, 10, -1);
   graphics_setMode(w, h, fullscreen, m_s_x, m_s_y, ma_s_x, ma_s_y, border, x, y);
   return 1;
+}
+
+static int l_graphics_window_getDisplayName(lua_State* state) {
+    int indx = luaL_optnumber(state, 1, 0);
+    const char* name = graphics_getDisplayName(indx);
+    lua_pushstring(state, name);
+    return 1;
 }
 
 static int l_graphics_window_setFullscreen(lua_State* state){
@@ -83,6 +116,11 @@ static int l_graphics_window_getDimensions(lua_State* state) {
 static luaL_Reg const windowFreeFuncs[] = {
   {"setFullscreen", l_graphics_window_setFullscreen},
   {"getDimensions", l_graphics_window_getDimensions},
+  {"getDisplayCount", l_graphics_window_getDisplayCount},
+  {"getDesktopDimension", l_graphics_window_getDesktopDimension},
+  {"setIcon",              l_graphics_window_setIcon},
+  {"getIcon",              l_graphics_window_getIcon},
+  {"getDisplayName", l_graphics_window_getDisplayName},
   {"setMode", l_graphics_window_setMode},
   {"isCreated", l_graphics_window_isCreated},
   {"setTitle", l_graphics_window_setTitle},
@@ -97,5 +135,6 @@ static luaL_Reg const windowFreeFuncs[] = {
 
 void l_graphics_window_register(lua_State* state) {
   l_tools_registerModule(state, "window", windowFreeFuncs);
+
 }
 

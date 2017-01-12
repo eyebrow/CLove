@@ -49,6 +49,9 @@ void timer_step(void) {
   }
 }
 
+void timer_sleep(short ms) {
+    SDL_Delay(ms * 1000.0f);
+}
 
 float timer_getFPS(void) {
   return moduleData.fps;

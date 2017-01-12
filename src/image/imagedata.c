@@ -34,9 +34,13 @@ void image_ImageData_new_with_size(image_ImageData *dst, int width, int height) 
   dst->w = width;
   dst->h = height;
   dst->c = 4; //RGBA ftw ^_^
-  dst->path = "this is an image data.";
+  dst->path = "no path.";
   memset(dst->surface, 0, sizeof(unsigned char) * width * height * 4);
   dst->pixels = (pixel*) dst->surface;
+}
+
+const char* image_ImageData_getPath(image_ImageData* dst) {
+   return dst->path;
 }
 
 // return rgba(4) 
@@ -75,6 +79,11 @@ int image_ImageData_save(image_ImageData *dst, const char* format, const char* f
 		printf("%s %s \n", "Error: failed to save imageData: ", filename);
 		return 0;
 	}
+}
+
+void image_imageData_setSurface(image_ImageData* dst, unsigned char* data) {
+   free(dst->surface);
+   dst->surface = (unsigned char*)realloc(dst->surface,sizeof(data));
 }
 
 unsigned char* image_ImageData_getSurface(image_ImageData *dst) {

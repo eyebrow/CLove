@@ -17,13 +17,13 @@
 void graphics_init(int width, int height, bool resizable, bool stats);
 
 typedef enum {
-  graphics_BlendMode_additive,
-  graphics_BlendMode_alpha,
-  graphics_BlendMode_subtractive,
-  graphics_BlendMode_multiplicative,
-  graphics_BlendMode_premultiplied,
-  graphics_BlendMode_replace,
-  graphics_BlendMode_screen
+    graphics_BlendMode_additive,
+    graphics_BlendMode_alpha,
+    graphics_BlendMode_subtractive,
+    graphics_BlendMode_multiplicative,
+    graphics_BlendMode_premultiplied,
+    graphics_BlendMode_replace,
+    graphics_BlendMode_screen
 } graphics_BlendMode;
 
 
@@ -38,6 +38,9 @@ void graphics_drawArray(graphics_Quad const* quad, mat4x4 const* tr2d, GLuint ib
 
 
 //Window
+int graphics_getDisplayCount();
+int graphics_setIcon(image_ImageData* imgd);
+image_ImageData* graphics_getIcon();
 int mouse_focus;
 int graphics_hasMouseFocus();
 int graphics_setMouseFocus(int value);
@@ -48,9 +51,11 @@ int graphics_getWidth(void);
 int graphics_getHeight(void);
 int graphics_setTitle(const char* title);
 int graphics_setMode(int width, int height,
-                     bool fullscreen, int min_size_x, int min_size_y, int max_size_x, int max_size_y, bool border,
-                     int x, int y);
+        bool fullscreen, int min_size_x, int min_size_y, int max_size_x, int max_size_y, bool border,
+        int x, int y);
 
+const char* graphics_getDisplayName(int indx);
+int* graphics_getDesktopDimension();
 void graphics_setVersion(const char* version);
 const char* graphics_getVersion();
 int graphics_setMinSize(int x, int y);

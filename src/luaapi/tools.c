@@ -30,7 +30,6 @@ void l_tools_registerModule(lua_State* state, char const* moduleName, luaL_Reg c
   lua_pop(state, 1);
 }
 
-
 int l_tools_makeTypeMetatable(lua_State* state, luaL_Reg const* funcs) {
   int mtref;
 //  luaL_newlib(state, funcs);

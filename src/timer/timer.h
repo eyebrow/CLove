@@ -13,5 +13,6 @@ float timer_getTime(void);
 float timer_getFPS(void);
 float timer_getDelta(void);
 float timer_getAverageDelta(void);
+void timer_sleep(short ms);
 void timer_init(void);
 

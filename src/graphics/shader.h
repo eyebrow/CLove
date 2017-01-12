@@ -18,59 +18,59 @@
 #include "quad.h"
 
 typedef enum {
-  graphics_ShaderUniformType_float,
-  graphics_ShaderUniformType_int,
-  graphics_ShaderUniformType_bool,
-  graphics_ShaderUniformType_sampler,
-  graphics_ShaderUniformType_none
+    graphics_ShaderUniformType_float,
+    graphics_ShaderUniformType_int,
+    graphics_ShaderUniformType_bool,
+    graphics_ShaderUniformType_sampler,
+    graphics_ShaderUniformType_none
 } graphics_ShaderUniformType;
 
 typedef struct {
-  char    *name;
-  GLenum   type;
-  int      elements;
-  GLint    location;
-  void    *extra;
+    char    *name;
+    GLenum   type;
+    int      elements;
+    GLint    location;
+    void    *extra;
 } graphics_ShaderUniformInfo;
 
 typedef struct {
-  int unit;
-  GLuint boundTexture;
+    int unit;
+    GLuint boundTexture;
 } graphics_ShaderTextureUnitInfo;
 
 typedef struct {
-  // These are regularly needed on a per-drawcall basis.
-  // This way we can access them real quick
-  struct {
-    GLuint projection;
-    GLuint view;
-    GLuint model;
-    GLuint textureRect;
-    GLuint tex;
-    GLuint color;
-    GLuint size;
-  } uniformLocations;
+    // These are regularly needed on a per-drawcall basis.
+    // This way we can access them real quick
+    struct {
+        GLuint projection;
+        GLuint view;
+        GLuint model;
+        GLuint textureRect;
+        GLuint tex;
+        GLuint color;
+        GLuint size;
+    } uniformLocations;
 
-  int uniformCount;
-  graphics_ShaderUniformInfo *uniforms;
+    int uniformCount;
+    graphics_ShaderUniformInfo *uniforms;
 
-  int textureUnitCount;
-  graphics_ShaderTextureUnitInfo *textureUnits;
+    int textureUnitCount;
+    graphics_ShaderTextureUnitInfo *textureUnits;
 
-  struct {
-    char * fragment;
-    char * vertex;
-    char * program;
-  } warnings;
+    struct {
+        char * fragment;
+        char * vertex;
+        char * program;
+    } warnings;
 
-  GLuint program;
+    GLuint program;
 } graphics_Shader;
 
 typedef enum {
-  graphics_ShaderCompileStatus_okay,
-  graphics_ShaderCompileStatus_linkError,
-  graphics_ShaderCompileStatus_vertexError,
-  graphics_ShaderCompileStatus_fragmentError
+    graphics_ShaderCompileStatus_okay,
+    graphics_ShaderCompileStatus_linkError,
+    graphics_ShaderCompileStatus_vertexError,
+    graphics_ShaderCompileStatus_fragmentError
 } graphics_ShaderCompileStatus;
 
 graphics_ShaderCompileStatus graphics_Shader_new(graphics_Shader *shader, char const* vertexCode, char const* fragmentCode);
