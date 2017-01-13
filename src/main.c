@@ -205,14 +205,15 @@ int main(int argc, char* argv[]) {
 	  * It took me several days to make this feature to work, so
 	  * appreciate it ^_^!
 	  */ 
-	 if(filesystem_exists("boot.lua")){
+	 if (filesystem_exists("boot.lua")){
 		  if(luaL_dofile(lua,"boot.lua")){
 				luaL_error(lua, "%s \n", lua_tostring(lua, -1));
 		  }
 	 } else {
 		  int err = luaL_dofile(lua,"main.lua");
-		  if(err == 1){
+		  if (err == 1){
 				l_no_game(lua, &config);
+            printf("%s \n", lua_tostring(lua, -1));
 		  } else if (err == 0)
 				luaL_dofile(lua,"main.lua");
 	 }

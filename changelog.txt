@@ -1,5 +1,9 @@
 
+version 0.6.3 :
+fixed: https://github.com/Murii/CLove/issues/26
+
 version 0.6.2 12.01.2017:
+
 added No game screen
 added love.window.getDesktopDimensions()
 added love.window.getDisplayName()
