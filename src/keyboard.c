@@ -26,6 +26,7 @@ static const KeyName keynames[] = {
     {SDLK_BACKSPACE,    "backspace"},
     {SDLK_TAB,          "tab"},
     {SDLK_SPACE,        " "},
+    {SDLK_SPACE,        "space"},
     {SDLK_EXCLAIM,      "!"},
     {SDLK_QUOTEDBL,     "\""},
     {SDLK_HASH,         "#"},
@@ -62,7 +63,33 @@ static const KeyName keynames[] = {
     {SDLK_RIGHTBRACKET, "]"},
     {SDLK_CARET,        "^"},
     {SDLK_UNDERSCORE,   "_"},
-    {SDLK_BACKQUOTE,    "`"},
+    {SDLK_BACKQUOTE,    "`"},    
+    {SDLK_a,            "A"},
+    {SDLK_b,            "B"},
+    {SDLK_c,            "C"},
+    {SDLK_d,            "D"},
+    {SDLK_e,            "E"},
+    {SDLK_f,            "F"},
+    {SDLK_g,            "G"},
+    {SDLK_h,            "H"},
+    {SDLK_i,            "I"},
+    {SDLK_j,            "J"},
+    {SDLK_k,            "K"},
+    {SDLK_l,            "L"},
+    {SDLK_m,            "M"},
+    {SDLK_n,            "N"},
+    {SDLK_o,            "O"},
+    {SDLK_p,            "P"},
+    {SDLK_q,            "Q"},
+    {SDLK_r,            "R"},
+    {SDLK_s,            "S"},
+    {SDLK_t,            "T"},
+    {SDLK_u,            "U"},
+    {SDLK_v,            "V"},
+    {SDLK_w,            "W"},
+    {SDLK_x,            "X"},
+    {SDLK_y,            "Y"},
+    {SDLK_z,            "Z"},
     {SDLK_a,            "a"},
     {SDLK_b,            "b"},
     {SDLK_c,            "c"},
@@ -222,11 +249,7 @@ char const * keyboard_getKeyName(SDL_Keycode key) {
 }
 
 SDL_Keycode keyboard_getKeycode(char const* name) {
-    for(int i = 0; i < moduleData.numKeys; ++i) {
-        if(strcmp(name, keynames[i].name)) {
-            name = "unknown";
-            printf("%s \n", "Error, the key you are trying to press is invalid or upper cased");
-        }
+    for(int i = 0; i < moduleData.numKeys; ++i) { 
         if(!strcmp(name, keynames[i].name)) 
             return keynames[i].keycode;
 

@@ -32,6 +32,14 @@ static int l_filesystem_read(lua_State* state) {
   return 2;
 }
 
+static int l_filesystem_getSaveDirectory(lua_State* state) {
+    const char* company = luaL_optstring(state, 2, "Clove");
+    const char* projName = luaL_optstring(state, 1, "myGame");
+    const char* path = filesystem_getSaveDirectory(company, projName);
+    lua_pushstring(state, path);
+    return 1;
+}
+
 static int l_filesystem_exists(lua_State* state)
 {
   const char* filename = l_tools_toStringOrError(state, 1);
@@ -221,6 +229,7 @@ static int l_filesystem_isFile(lua_State* state) {
 
 static luaL_Reg const regFuncs[] = {
   {"load", l_filesystem_load},
+  {"getSaveDirectory", l_filesystem_getSaveDirectory},
   {"setSource",l_filesystem_setSource},
   {"requireDir",l_filesystem_set_requireDir},
   {"getSource", l_filesystem_getSource},

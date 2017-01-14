@@ -7,6 +7,7 @@
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
 #include "filesystem.h"
+#include "../3rdparty/SDL2/include/SDL.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,10 @@ void filesystem_init(char* argv0, int stats) {
 #endif
    if (stats > 0)
        printf("%s %s \n", "Debug: Platform: ", get_os);
+}
+
+const char* filesystem_getSaveDirectory(const char* company, const char* projName) {
+    return SDL_GetPrefPath(company, projName);
 }
 
 int filesystem_contain(const char* a, const char* b) {

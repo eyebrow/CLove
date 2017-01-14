@@ -13,6 +13,7 @@
 
 void filesystem_init(char* argv0, int stats);
 
+const char* filesystem_getSaveDirectory(const char* company, const char* projName);
 int filesystem_read(char const* filename, char** output);
 int filesystem_write(const char* name, const char* data);
 int filesystem_append(const char* name, const char* data);
