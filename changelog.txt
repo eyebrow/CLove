@@ -3,7 +3,8 @@ version 0.6.3 :
 
 added love.filesystem.getSaveDirectory(optional: game, optional: comany)
 fixed: https://github.com/Murii/CLove/issues/26
-
+fixed: love.mouse.isDown()
+	 
 version 0.6.2 12.01.2017:
 
 added No game screen

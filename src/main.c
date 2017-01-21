@@ -122,14 +122,14 @@ void main_loop(void *data) {
 						  break;
 				}
 		  }
-		  switch(event.wheel.type)
-		  {
+		  switch(event.wheel.type) {
 				case SDL_MOUSEWHEEL:
-					 mouse_mousewheel(event.wheel.y);
+                mouse_mousewheel(event.wheel.y);
 					 int _what = event.wheel.y == 1 ? SDL_BUTTON_WHEEL_UP : SDL_BUTTON_WHEEL_DOWN;
 					 mouse_mousepressed(event.button.x, event.button.y,
 								_what);
-					 break;
+					 mouse_setButton(event.button.button);
+                break;
 				default:
 					 break;
 		  }
@@ -146,13 +146,14 @@ void main_loop(void *data) {
 				case SDL_MOUSEMOTION:
 					 mouse_mousemoved(event.motion.x, event.motion.y);
 					 break;
-				case SDL_MOUSEBUTTONDOWN:
-					 mouse_mousepressed(event.button.x, event.button.y,
-								event.button.button);
-					 break;
+				case SDL_MOUSEBUTTONDOWN: 
+					 mouse_mousepressed(event.button.x, event.button.y, event.button.button);
+					 mouse_setButton(event.button.button);
+                break;
 				case SDL_MOUSEBUTTONUP:
 					 mouse_mousereleased(event.button.x, event.button.y,
 								event.button.button);
+                mouse_setButton(0);
 					 break;
 #ifndef EMSCRIPTEN
 				case SDL_QUIT:
