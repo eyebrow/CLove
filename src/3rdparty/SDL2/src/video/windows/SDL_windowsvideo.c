@@ -247,6 +247,7 @@ SDL_Direct3D9GetAdapterIndex( int displayIndex )
 
 #define CINTERFACE
 #define COBJMACROS
+#ifdef error
 #include <dxgi.h>
 
 SDL_bool 
@@ -330,6 +331,7 @@ SDL_DXGIGetOutputInfo( int displayIndex, int *adapterIndex, int *outputIndex )
 	}
 }
 
+#endif
 #endif /* SDL_VIDEO_DRIVER_WINDOWS */
 
 /* vim: set ts=4 sw=4 expandtab: */

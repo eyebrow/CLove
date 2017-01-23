@@ -35,10 +35,12 @@ typedef void (*altss_dtor_t)(void*);
 
 #ifndef _TIMESPEC_DEFINED
 #define _TIMESPEC_DEFINED
+#ifndef _WIN32
 struct timespec {
     time_t tv_sec;
     long tv_nsec;
 };
+#endif
 
 struct itimerspec {
     struct timespec it_interval;
