@@ -16,7 +16,8 @@ On Windows:
 - Make a new directory called build inside CLove and call: 
  cmake ../ -DCMAKE_C_COMPILER:PATH=C:/MinGW/bin/gcc.exe -DCMAKE_CXX_COMPILER:PATH=C:/MinGW/bin/g++.exe . If this command 
  does not work then go in C:\Program Files\CMake\bin and open up cmake-gui.exe. Tell it where is Clove and where you want to build the   project. Also do not forget to use custom compiler that is set to GCC as C compiler and G++ as the C++ compiler. 
- After that use the make command and that's it.
+ After that use the make command and that's it( if you get errors that make does not exist then paste this into CMD terminal 
+  copy c:\MinGW\bin\mingw32-make.exe c:\MinGW\bin\make.exe)
 - Download DX SDK 2010 only if you get errors from SDL when building: http://www.microsoft.com/en-us/download/details.aspx?id=6812
 - Restart the PC if needed
 
