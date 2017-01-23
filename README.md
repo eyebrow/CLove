@@ -9,14 +9,15 @@ How to build
 ============
 On Windows: 
 - Download and install mingw and let the setup configure the path for you. 
-Open up the CMD and type gcc if you get an error then type this: setx "%PATH%;C:\MinGW\bin" . That command will add 
-the bin folder to the path. Close the current CMD and open up another and type gcc again.
-After that check if you got gcc & g++ installed.
+ Open up the CMD and type gcc if you get an error then type this: setx PATH "%PATH%;C:\MinGW\bin;" . That command will add 
+ the bin folder to the path.
+ After that check if you got gcc & g++ installed.
 - Download and install CMake and let the setup configure the path for you.
+- Make a new directory called build inside CLove and call: 
+ cmake ../ -DCMAKE_C_COMPILER:PATH=C:/MinGW/bin/gcc.exe -DCMAKE_CXX_COMPILER:PATH=C:/MinGW/bin/g++.exe . If this command 
+ does not work then go in C:\Program Files\CMake\bin and open up cmake-gui.exe. Tell it where is Clove and where you want to build the   project. Also do not forget to use custom compiler that is set to GCC as C compiler and G++ as the C++ compiler. 
+ After that use the make command and that's it.
 - Download DX SDK 2010 only if you get errors from SDL when building: http://www.microsoft.com/en-us/download/details.aspx?id=6812
-- Download and install QT Community the Open Source Edition but only install the core of it since
-you wont need all the stuff that QT comes with
-- When building CLove be sure that QT uses your brand new installation of mingw(GCC/GXX) not msvc
 - Restart the PC if needed
 
 On Linux & OS X:
