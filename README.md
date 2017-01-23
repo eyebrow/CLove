@@ -8,7 +8,9 @@ Mac/Linux/PC, made in C with OpenGLES 2 which uses Lua as scripting langauge.
 How to build
 ============
 On Windows: 
-- Download and install mingw and let the setup configure the path for you.
+- Download and install mingw and let the setup configure the path for you. 
+Open up the CMD and type gcc if you get an error then type this: setx "%PATH%;C:\MinGW\bin" . That command will add 
+the bin folder to the path. Close the current CMD and open up another and type gcc again.
 After that check if you got gcc & g++ installed.
 - Download and install CMake and let the setup configure the path for you.
 - Download DX SDK 2010 only if you get errors from SDL when building: http://www.microsoft.com/en-us/download/details.aspx?id=6812
