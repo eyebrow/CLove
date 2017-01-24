@@ -24,15 +24,8 @@
 
 static const int GlyphTexturePadding = 1;
 
-typedef struct {
-    char const* ptr;
-    int len;
-    int width;
-} Word;
-
 static struct {
     FT_Library ft;
-    Word *line;
     int wordcount;
     graphics_Batch *batches;
     int batchcount;
