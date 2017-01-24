@@ -90,8 +90,8 @@ static int l_graphics_printf(lua_State* state) {
     float kx = luaL_optnumber(state, 11, 0);
     float ky = luaL_optnumber(state, 12, 0);
 
-    graphics_Font_printf(moduleData.currentFont, text, x, y, limit, align, r, sx, sy, ox, oy, kx, ky);
-
+    //graphics_Font_printf(moduleData.currentFont, text, x, y, limit, align, r, sx, sy, ox, oy, kx, ky);
+    //graphics_Font_render(moduleData.currentFont, text, x, y, r, sx, sy, ox, oy, kx, ky);
     return 0;
 }
 
@@ -114,7 +114,8 @@ static int l_graphics_print(lua_State* state) {
     float kx = luaL_optnumber(state, 9, 0);
     float ky = luaL_optnumber(state, 10, 0);
 
-    graphics_Font_print(moduleData.currentFont, text, x, y, r, sx, sy, ox, oy, kx, ky);
+    //graphics_Font_print(moduleData.currentFont, text, x, y, r, sx, sy, ox, oy, kx, ky);
+    graphics_Font_render(moduleData.currentFont, text, x, y, r, sx, sy, ox, oy, kx, ky);
     return 0;
 }
 
@@ -170,8 +171,8 @@ static int l_graphics_Font_getHeight(lua_State* state) {
 
     graphics_Font* font = l_graphics_toFont(state, 1);
 
-    char const* line = l_tools_toStringOrError(state, 2); 
-    int height = graphics_Font_getHeight(font, line);
+    //char const* line = l_tools_toStringOrError(state, 2); 
+    int height = graphics_Font_getHeight(font);
 
     lua_pushinteger(state, height);
     return 1;

@@ -252,7 +252,6 @@ int main(int argc, char* argv[]) {
 	 quit_function(lua);
 #endif
 	 graphics_destroyWindow();
-	 graphics_font_freeFT();
 	 audio_close ();
 	 lua_close(lua);
 

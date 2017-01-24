@@ -55,7 +55,7 @@ void graphics_Batch_new(graphics_Batch* batch, graphics_Image const* texture, in
   
 
   batch->texture = texture;
-  batch->vertexData = calloc(4*maxSize, sizeof(graphics_Vertex));
+  batch->vertexData = malloc(4*maxSize * sizeof(graphics_Vertex));
   glGenBuffers(1, &batch->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, batch->vbo);
   glBufferData(GL_ARRAY_BUFFER, 4*maxSize*sizeof(graphics_Vertex), batch->vertexData, usage);
@@ -80,13 +80,6 @@ void graphics_Batch_new(graphics_Batch* batch, graphics_Image const* texture, in
   batch->color.y = 1.0f;
   batch->color.z = 1.0f;
   batch->color.w = 1.0f;
-}
-
-void graphics_Batch_free(graphics_Batch* batch) {
-  glDeleteBuffers(1, &batch->vbo);
-  glDeleteBuffers(1, &moduleData.sharedIndexBuffer);
-
-  free(batch->vertexData);
 }
 
 static const vec2 batchQuadPts[4] = {
@@ -194,3 +187,12 @@ void graphics_Batch_clearColor(graphics_Batch *batch) {
   batch->color.w = 1.0f;
   batch->colorSet = false;
 }
+
+void graphics_Batch_free(graphics_Batch* batch) {
+  glDeleteBuffers(1, &batch->vbo);
+  glDeleteBuffers(1, &moduleData.sharedIndexBuffer);
+
+  free(batch->vertexData);
+}
+
+
