@@ -32,13 +32,11 @@ typedef struct {
   int size;
   FT_Face face;
   FT_GlyphSlot glyph;
+  FT_Bitmap bitmap;
   char const* text;
   const char* path;
-  int ref;
   character characters[300];
   character ch;
-  int w;
-  int h;
 } graphics_Font;
 
 
@@ -55,15 +53,11 @@ int graphics_Font_load(graphics_Font* font);
 void graphics_font_freeFT();
 void graphics_Font_free(graphics_Font* font);
 
-int graphics_Font_getHeight(graphics_Font* font);
-
-int graphics_Font_getAscent(graphics_Font* font);
-
-int graphics_Font_getDescent(graphics_Font* font);
-
-int graphics_Font_getBaseline(graphics_Font* font);
-
+int graphics_Font_getHeight(graphics_Font* font, char const* line);
 int graphics_Font_getWidth(graphics_Font* font, char const* line);
+int graphics_Font_getAscent(graphics_Font* font);
+int graphics_Font_getDescent(graphics_Font* font);
+int graphics_Font_getBaseline(graphics_Font* font);
 
 typedef enum {
   graphics_TextAlign_center,

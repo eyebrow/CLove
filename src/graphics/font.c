@@ -26,61 +26,83 @@
 
 #include FT_GLYPH_H
 static struct {
-  mat4x4 tr2d;
-  const char* name;
-  FT_Library ft;
+    mat4x4 tr2d;
+    const char* name;
+    FT_Library ft;
 
-  uint32_t cp; //message to take utf8 from
-  int x; // message's X
-  int storeX; // store X pos
-  int storeY; // store Y pos
-  int y; // message's Y
+    uint32_t cp; //message to take utf8 from
+    int x; // message's X
+    int storeX; // store X pos
+    int storeY; // store Y pos
+    int y; // message's Y
 } moduleData;
 
 static graphics_Vertex const imageVertices[] = {
-  {{0.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-  {{1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-  {{0.0f, 1.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
-  {{1.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}
+    {{0.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+    {{1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+    {{0.0f, 1.0f}, {0.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+    {{1.0f, 1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}}
 };
 
 static graphics_Quad const quad = {
-  0.0f,0.0f,1.0f,1.0f
+    0.0f,0.0f,1.0f,1.0f
 };
 
 static unsigned char const imageIndices[] = { 0, 1, 2, 3 };
 static const graphics_Filter defaultFilter = {
-  .maxAnisotropy = 1.0f,
-  .mipmapLodBias = 1.0f,
-  .minMode = graphics_FilterMode_linear,
-  .magMode = graphics_FilterMode_linear,
-  .mipmapMode = graphics_FilterMode_none
+    .maxAnisotropy = 1.0f,
+    .mipmapLodBias = 1.0f,
+    .minMode = graphics_FilterMode_linear,
+    .magMode = graphics_FilterMode_linear,
+    .mipmapMode = graphics_FilterMode_none
 };
 
 static const graphics_Wrap defaultWrap = {
-  .verMode = graphics_WrapMode_clamp,
-  .horMode = graphics_WrapMode_clamp
+    .verMode = graphics_WrapMode_clamp,
+    .horMode = graphics_WrapMode_clamp
 };
 
 int graphics_font_init(void) {
-  int error = FT_Init_FreeType(&moduleData.ft);
-  if(error){
-      printf("%s \n","Could not init freetype");
-      return 0;
+    int error = FT_Init_FreeType(&moduleData.ft);
+    if(error){
+        printf("%s \n","Could not init freetype");
+        return 0;
     }
-  return 1;
+    return 1;
 }
 
 void graphics_font_freeFT() {
-  FT_Done_FreeType(moduleData.ft);
+    FT_Done_FreeType(moduleData.ft);
 }
 
 void graphics_Font_free(graphics_Font* font) {
-  //FT_Done_Face(font->face); //TODO free this!
-  glDeleteBuffers(1, &font->vbo);
-  glDeleteBuffers(1, &font->ibo);
-  glDeleteTextures(1,&font->tex);
+    //FT_Done_Face(font->face); //TODO free this!
+    glDeleteBuffers(1, &font->vbo);
+    glDeleteBuffers(1, &font->ibo);
+    glDeleteTextures(1,&font->tex);
 
+}
+
+void graphics_Font_print(graphics_Font* font, char const* text, int px, int py, float r, float sx, float sy, float ox, float oy, float kx, float ky) {
+
+  graphics_Shader* shader = graphics_getShader();
+  graphics_setDefaultShader();
+
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(imageVertices), imageVertices);
+
+   while((moduleData.cp = utf8_scan(&text))) {
+      font->ch = font->characters[moduleData.cp];
+      glBindTexture(GL_TEXTURE_2D,font->ch.textureid);
+
+      m4x4_newTransform2d(&moduleData.tr2d, px + font->ch.bearingx, py - font->ch.bearingy, r, sx, sy, ox, oy, kx, ky);
+
+      graphics_drawArray(&quad, &moduleData.tr2d,  font->ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
+                         graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);
+
+      px += font->ch.advancex >> 6;
+      py += font->ch.advancey >> 6;
+    }
+  graphics_setShader(shader);
 }
 
 static void graphics_Font_newTexture(graphics_Font* font) {
@@ -127,10 +149,13 @@ int graphics_Font_new(graphics_Font* font, char const* filename, int ptsize) {
 
   font->size = ptsize;
   FT_Set_Pixel_Sizes(font->face, 0, font->size);
+    
+    font->glyph = font->face->glyph;
+    font->bitmap = font->glyph->bitmap;
 
   //moduleData.g = font->face->glyph;
   // Load first 128 characters of ASCII set
-  for (GLubyte c = 0; c < 128; c++){
+  for (short c = 0; c < 256; c++){
       // Load character glyph
       if (FT_Load_Char(font->face, c, FT_LOAD_RENDER))
         continue;
@@ -154,147 +179,99 @@ int graphics_Font_new(graphics_Font* font, char const* filename, int ptsize) {
   return 0;
 }
 
-int graphics_Font_getWidth(graphics_Font* font, char const* line) {
-  int sum;
-  uint32_t cp;
-  while(cp = utf8_scan(&line)) {
-      if(font->w)
-        sum = cp * font->w;
-    }
-  return sum;
-}
-
 void graphics_Font_printf(graphics_Font* font, char const* text, int px, int py, int limit, graphics_TextAlign align,
-                          float r, float sx, float sy, float ox, float oy, float kx, float ky) {
-  moduleData.x = 0;
-  moduleData.storeX = 0;
-  moduleData.storeY = 0;
-  moduleData.y = font->face->ascender;
+        float r, float sx, float sy, float ox, float oy, float kx, float ky) {
+    moduleData.x = 0;
+    moduleData.storeX = 0;
+    moduleData.storeY = 0;
+    moduleData.y = font->face->ascender;
 
-  graphics_Shader* shader = graphics_getShader();
-  graphics_setDefaultShader();
+    graphics_Shader* shader = graphics_getShader();
+    graphics_setDefaultShader();
 
-  int count = 0;
-  int wrapped = 0;
-  //glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(imageVertices), imageVertices);
+    int count = 0;
+    int wrapped = 0;
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(imageVertices), imageVertices);
 
-  while((moduleData.cp = utf8_scan(&text))) {
-      font->ch = font->characters[moduleData.cp];
-      glBindTexture(GL_TEXTURE_2D,font->ch.textureid);
-	
-		
-      if (moduleData.storeX == 0)
-        moduleData.storeX = px ;//- font->ch.sizex;
-      if (moduleData.storeY == 0)
-        moduleData.storeY = py + font->ch.sizey + 1;
-				
-      moduleData.x = px + font->ch.bearingx;
-      moduleData.y = py - font->ch.bearingy;
-		
-		
-      if ((wrapped == 0 && ++count >= limit)){
-          px = moduleData.x - (((font->ch.advancex >> 6)) * (font->ch.sizex + font->ch.bearingx));
-          px = moduleData.storeX;
-          py = moduleData.storeY;
-          count = 0;
-          wrapped = 1;
-        }
+    while((moduleData.cp = utf8_scan(&text))) {
+        font->ch = font->characters[moduleData.cp];
+        glBindTexture(GL_TEXTURE_2D,font->ch.textureid);
 
-      moduleData.x = px + font->ch.bearingx;
-      moduleData.y = py - font->ch.bearingy;
-		
-      if (moduleData.cp == '\n'){
-          px = moduleData.x - (((font->ch.advancex >> 6)) * (font->ch.sizex + font->ch.bearingx));
-          if (px < moduleData.storeX)
+
+        if (moduleData.storeX == 0)
+            moduleData.storeX = px ;//- font->ch.sizex;
+        if (moduleData.storeY == 0)
+            moduleData.storeY = py + font->ch.sizey + 1;
+
+        moduleData.x = px + font->ch.bearingx;
+        moduleData.y = py - font->ch.bearingy;
+
+
+        if ((wrapped == 0 && ++count >= limit)){
+            px = moduleData.x - (((font->ch.advancex >> 6)) * (font->ch.sizex + font->ch.bearingx));
             px = moduleData.storeX;
-          py += floor(font->ch.bearingy + 5.25f);
-          continue;
+            py = moduleData.storeY;
+            count = 0;
+            wrapped = 1;
         }
 
-      m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
+        moduleData.x = px + font->ch.bearingx;
+        moduleData.y = py - font->ch.bearingy;
 
-      graphics_drawArray(&quad, &moduleData.tr2d,  font->ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
-                         graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);
+        if (moduleData.cp == '\n'){
+            px = moduleData.x - (((font->ch.advancex >> 6)) * (font->ch.sizex + font->ch.bearingx));
+            if (px < moduleData.storeX)
+                px = moduleData.storeX;
+            py += floor(font->ch.bearingy + 5.25f);
+            continue;
+        }
 
-      font->w = (int )&font->face->glyph->bitmap.width;
-      font->w = font->w >> 6;
-      px += font->ch.advancex >> 6;
-      py += font->ch.advancey >> 6;
+        m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
+
+        graphics_drawArray(&quad, &moduleData.tr2d,  font->ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
+                graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);
+
+        px += font->ch.advancex >> 6;
+        py += font->ch.advancey >> 6;
     }
-  graphics_setShader(shader);
+    graphics_setShader(shader);
 
 }
 
-void graphics_Font_print(graphics_Font* font, char const* text, int px, int py, float r, float sx, float sy, float ox, float oy, float kx, float ky) {
-  moduleData.x = 0;
-  moduleData.storeX = 0;
-  moduleData.y = font->face->ascender;
-  
-  graphics_Shader* shader = graphics_getShader();
-  graphics_setDefaultShader();
 
-  //glBufferData(GL_ARRAY_BUFFER, sizeof(imageVertices), imageVertices, GL_DYNAMIC_DRAW);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(imageVertices), imageVertices);
-
-   while((moduleData.cp = utf8_scan(&text))) {
-      font->ch = font->characters[moduleData.cp];
-      glBindTexture(GL_TEXTURE_2D,font->ch.textureid);
-
-      if (moduleData.storeX == 0)
-        moduleData.storeX = px; //- font->ch.sizex;
-
-      moduleData.x = px + font->ch.bearingx;
-      moduleData.y = py - font->ch.bearingy;
-
-      if (moduleData.cp == '\n'){
-          px = moduleData.x - (((font->ch.advancex >> 5)) * (font->ch.sizex + font->ch.bearingx));
-          if (px < moduleData.storeX)
-            px = moduleData.storeX;
-          py += floor(font->ch.bearingy + 5.25f);
-          continue;
-        }
-
-      m4x4_newTransform2d(&moduleData.tr2d, moduleData.x, moduleData.y, r, sx, sy, ox, oy, kx, ky);
-
-      graphics_drawArray(&quad, &moduleData.tr2d,  font->ibo, 4, GL_TRIANGLE_STRIP, GL_UNSIGNED_BYTE,
-                         graphics_getColor(), quad.w * font->ch.sizex , quad.h * font->ch.sizey);
-
-      font->w = (int )&font->face->glyph->bitmap.width;
-      font->w = font->w >> 6;
-      px += font->ch.advancex >> 6;
-      py += font->ch.advancey >> 6;
-    }
-  graphics_setShader(shader);
-}
 
 void graphics_Font_setFilter(graphics_Font* font, graphics_Filter const* filter) {
-  graphics_Texture_setFilter(font->tex, filter);
+    graphics_Texture_setFilter(font->tex, filter);
 }
 
 void graphics_Font_getFilter(graphics_Font *font, graphics_Filter *filter) {
-  graphics_Texture_getFilter(font->tex, filter);
+    graphics_Texture_getFilter(font->tex, filter);
 }
 
 void graphics_Font_setWrap(graphics_Font *font, graphics_Wrap const* wrap) {
-  glBindTexture(GL_TEXTURE_2D, font->tex);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap->horMode);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap->verMode);
+    glBindTexture(GL_TEXTURE_2D, font->tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap->horMode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap->verMode);
 }
 
 int graphics_Font_getDescent(graphics_Font* font) {
-  return font->face->descender;
+    return font->face->descender;
 }
 
 int graphics_Font_getBaseline(graphics_Font* font) {
-  return floor(font->glyph->bitmap.rows / 1.25f + .5f);
+    return floor(font->glyph->bitmap.rows / 1.25f + .5f);
 }
 
 int graphics_Font_getAscent(graphics_Font* font) {
-  return font->face->ascender;
+    return font->face->ascender;
 }
 
-int graphics_Font_getHeight(graphics_Font* font){
-  return font->face->glyph->bitmap.rows;
+int graphics_Font_getWidth(graphics_Font* font, char const* line) {
+    return font->face->glyph->bitmap.width;
+}
+
+int graphics_Font_getHeight(graphics_Font* font, char const* line){
+    return font->face->glyph->bitmap.rows;
 }
 
