@@ -13,22 +13,27 @@
 #include <string.h>
 #include "../tools/utils.c"
 
+static struct {
+    const char* os;
+} moduleData;
+
 void filesystem_init(char* argv0, int stats) {
-    char* get_os = "";
 #ifdef CLOVE_MACOSX
-    get_os = "osx";
+    moduleData.os = "osx";
     PHYSFS_init(argv0);
 #elif CLOVE_LINUX
-    get_os = "linux";
+    moduleData.os = "linux";
     PHYSFS_init(argv0);
 #elif CLOVE_WINDOWS
-    get_os = "windows";
+    moduleData.os = "windows";
     PHYSFS_init(NULL);
 #else
-    get_os = "This OS is not supported";
+    moduleData.os = "This OS is not supported";
 #endif
-   if (stats > 0)
-       printf("%s %s \n", "Debug: Platform: ", get_os);
+}
+
+const char* filesystem_getOS() {
+    return moduleData.os;
 }
 
 const char* filesystem_getSaveDirectory(const char* company, const char* projName) {

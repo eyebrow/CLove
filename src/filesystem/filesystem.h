@@ -12,6 +12,7 @@
 #include "../3rdparty/physfs/physfs.h"
 
 void filesystem_init(char* argv0, int stats);
+const char* filesystem_getOS();
 
 const char* filesystem_getSaveDirectory(const char* company, const char* projName);
 int filesystem_read(char const* filename, char** output);
@@ -21,3 +22,4 @@ int filesystem_exists(const char* name);
 int filesystem_compare(const char* a,const char* b,int l);
 int filesystem_contain(const char* a, const char* b);
 int filesystem_remove(const char* name);
+

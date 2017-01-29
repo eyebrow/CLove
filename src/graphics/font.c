@@ -7,6 +7,9 @@
 #   This project is free software; you can redistribute it and/or modify it
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
+
+// http://freetype.sourceforge.net/freetype2/docs/reference/ft2-base_interface.html#FT_GlyphSlotRec
+
 #define _POSIX_SOURCE
 #include <string.h>
 #include <tgmath.h>

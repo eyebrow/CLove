@@ -37,7 +37,7 @@ Features
 - Lua scripting language
 - 3D
 - Easy to learn and use api 
-- Cross Platform 
+- Cross Platform (Desktop & Web)
 - Possibility of hiding the code inside .zip files and load the data from there
 - Powerful Batch system
 - Image loader & drawing
@@ -46,8 +46,8 @@ Features
 - Primitives drawing
 - Filesystem functions
 - OpenGL ES 2.0 
-- Font loading & drawing
-- Keyboard & Mouse functions
+- Powerful font loading & drawing using batch system
+- Keyboard & Mouse & Joystick functions
 - Threads
 - Error handling
 
@@ -55,15 +55,6 @@ Contributing
 ========
 If you want to contribute to the project, feel free to work on what you please. I want to do a lot of the other stuff myself too.
 Please try to replicate the code style of the existing code by using QT Community, I might refuse to pull your changes otherwise.
-
-Plans for 2017
-=============
-- Add networking (TCP/UDP)
-- Add FTP
-- Make the 3D api solid
-- Make extension .clove to work properly 
-- Add various features to filesystem
-- Add streaming support for .wav files
 
 Examples (see examples folder)
 --------

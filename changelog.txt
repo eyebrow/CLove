@@ -1,7 +1,13 @@
 
-version 0.6.3 :
+version 0.6.3 29.01.2017:
 
-added love.filesystem.getSaveDirectory(optional: game, optional: comany)
+added full joystick support. The API is different then on Love!
+added love.filesystem.getSaveDirectory(optional: game, optional: company)
+added batch system to fonts
+added font:getWidth
+added font:getHeight
+fixed: build system for windows
+fixed: font
 fixed: https://github.com/Murii/CLove/issues/26
 fixed: love.mouse.isDown()
 	 

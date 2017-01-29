@@ -66,7 +66,7 @@ SDL_Window* graphics_getWindow(void) {
 #endif
 
 void graphics_init(int width, int height, bool resizable, bool stats) {
-    moduleData.version = "0.6.2";
+    moduleData.version = "0.6.3";
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
         printf("Error: Could not init SDL video \n");
