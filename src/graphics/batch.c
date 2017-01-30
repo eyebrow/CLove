@@ -51,6 +51,18 @@ void graphics_batch_init(void) {
   graphics_batch_makeIndexBuffer(128);
 }
 
+void graphics_Batch_setBufferSize(graphics_Batch* batch, int newSize) {
+    free(batch->vertexData);
+    batch->vertexData = malloc(4 * newSize * sizeof(graphics_Vertex));
+     glBindBuffer(GL_ARRAY_BUFFER, batch->vbo);
+    glBufferData(GL_ARRAY_BUFFER, 4*newSize*sizeof(graphics_Vertex), batch->vertexData, batch->usage);
+    batch->maxCount = newSize;
+    batch->insertPos = 0;
+
+    graphics_batch_makeIndexBuffer(newSize);
+}
+
+
 void graphics_Batch_new(graphics_Batch* batch, graphics_Image const* texture, int maxSize, graphics_BatchUsage usage) {
   
 

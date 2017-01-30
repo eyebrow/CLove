@@ -217,14 +217,25 @@ static void prepareBatches(graphics_Font const* font, int chars) {
             graphics_Batch_bind(&moduleData.batches[i]);
         }
     }
-    
-    for(int i = 0; i < moduleData.batchcount; ++i) {
-        graphics_Batch_bind(&moduleData.batches[i]);
-        graphics_Batch_clear(&moduleData.batches[i]);
-        ((graphics_Image*)moduleData.batches[i].texture)->texID = font->glyphs.textures[i];
-        ((graphics_Image*)moduleData.batches[i].texture)->width = font->glyphs.textureWidth;
-        ((graphics_Image*)moduleData.batches[i].texture)->height = font->glyphs.textureHeight;
+
+    if(moduleData.batchsize < newSize) {
+        for(int i = 0; i < moduleData.batchcount; ++i) {
+            graphics_Batch_bind(&moduleData.batches[i]);
+            graphics_Batch_setBufferSize(&moduleData.batches[i], newSize);
+            ((graphics_Image*)moduleData.batches[i].texture)->texID = font->glyphs.textures[i];
+            ((graphics_Image*)moduleData.batches[i].texture)->width = font->glyphs.textureWidth;
+            ((graphics_Image*)moduleData.batches[i].texture)->height = font->glyphs.textureHeight;
+        }
+    } else {
+        for(int i = 0; i < moduleData.batchcount; ++i) {
+            graphics_Batch_bind(&moduleData.batches[i]);
+            graphics_Batch_clear(&moduleData.batches[i]);
+            ((graphics_Image*)moduleData.batches[i].texture)->texID = font->glyphs.textures[i];
+            ((graphics_Image*)moduleData.batches[i].texture)->width = font->glyphs.textureWidth;
+            ((graphics_Image*)moduleData.batches[i].texture)->height = font->glyphs.textureHeight;
+        }
     }
+
     
 
     //@Look 1
