@@ -59,9 +59,6 @@ void quit_function(lua_State* state)
     lua_getglobal(state, "love");
     lua_pushstring(state, "quit");
     lua_rawget(state, -2);
-    if(lua_pcall(state, 0, 0, 0) != 0) {
-        printf("Error in love.quit: %s\n", lua_tostring(state, -1));
-    }
     lua_pop(state, 1);
 }
 
@@ -269,15 +266,16 @@ int main(int argc, char* argv[]) {
 #else
     while (l_event_running())
         main_loop(&mainLoopData);
-
-    quit_function(lua);
 #endif
+    quit_function(lua);
     joystick_close();
     graphics_destroyWindow();
-    audio_close ();
+    /* There is a nasty bug on Windows that
+        causes lua_close to give a segment fault. */
     lua_close(lua);
+    audio_close();
 
     if(PHYSFS_isInit() == 1)
         PHYSFS_deinit();
-    return 1;
+    return 0;
 }

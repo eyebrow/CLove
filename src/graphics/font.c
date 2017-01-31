@@ -191,6 +191,7 @@ int graphics_Font_new(graphics_Font *dst, char const* filename, int ptsize) {
     //The descender is the vertical distance from the horizontal baseline to the lowest ‘character’ coordinate in a font face.
     dst->descent = dst->face->size->metrics.descender >> 6;
     dst->lineHeight = 1.0f;
+    dst->batchsize = 1;
 
     return 0;
 }
@@ -201,11 +202,11 @@ int graphics_Font_getWrap(graphics_Font * font, char const* text, int width, cha
     return 0;
 }
 
-static void prepareBatches(graphics_Font const* font, int chars) {
-    int newSize = max(chars, moduleData.batchsize);
+static void prepareBatches(graphics_Font* font, int chars) {
+    int newSize = max(chars, font->batchsize);
 
-    // This will be called only once because of @See 1. Note, there should be 
-    // just one texture ie numTextures.
+    /* This will be called only once to set up the only texture used for batch which will contain
+        all the text from print and printf functions. */
     if(font->glyphs.numTextures > moduleData.batchcount) {
         moduleData.batches = realloc(moduleData.batches, font->glyphs.numTextures * sizeof(graphics_Batch));
         for(int i = moduleData.batchcount; i < font->glyphs.numTextures; ++i) {
@@ -218,15 +219,19 @@ static void prepareBatches(graphics_Font const* font, int chars) {
         }
     }
 
-    if(moduleData.batchsize < newSize) {
+    /* If batchsize is smaller than the size of the text we want to print then we 
+        need to increas the size of the batch and update the rest of components */
+    if(font->batchsize < newSize) {
         for(int i = 0; i < moduleData.batchcount; ++i) {
             graphics_Batch_bind(&moduleData.batches[i]);
-            graphics_Batch_setBufferSize(&moduleData.batches[i], newSize);
+            graphics_Batch_changeBufferSize(&moduleData.batches[i], newSize);
             ((graphics_Image*)moduleData.batches[i].texture)->texID = font->glyphs.textures[i];
             ((graphics_Image*)moduleData.batches[i].texture)->width = font->glyphs.textureWidth;
             ((graphics_Image*)moduleData.batches[i].texture)->height = font->glyphs.textureHeight;
         }
     } else {
+        /* In case we do not need to increase the size of the batch we just update the 
+            components */
         for(int i = 0; i < moduleData.batchcount; ++i) {
             graphics_Batch_bind(&moduleData.batches[i]);
             graphics_Batch_clear(&moduleData.batches[i]);
@@ -236,11 +241,8 @@ static void prepareBatches(graphics_Font const* font, int chars) {
         }
     }
 
-    
-
-    //@Look 1
     moduleData.batchcount = font->glyphs.numTextures;
-    moduleData.batchsize = newSize;
+    font->batchsize = newSize;
 }
 
 void graphics_Font_render(graphics_Font* font, char const* text, int px, int py, float r, float sx, float sy, float ox, float oy, float kx, float ky) {

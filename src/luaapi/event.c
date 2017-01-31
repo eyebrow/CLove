@@ -34,5 +34,5 @@ int l_event_register(lua_State* state) {
 
   l_running = true;
   l_tools_registerModule(state, "event", regFuncs);
-  return 0;
+  return 1;
 }

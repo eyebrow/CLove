@@ -54,6 +54,8 @@ typedef struct {
     int descent;
     int ascent;
     float lineHeight;
+    int batchsize;
+    int batchcount;
 } graphics_Font;
 
 

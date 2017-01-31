@@ -13,8 +13,8 @@
 #include <stdio.h>
 
 static struct {
-  ALCdevice  *device;
-  ALCcontext *context;
+  ALCdevice* device;
+  ALCcontext* context;
 } moduleData;
 
 void audio_init(int stats) {

@@ -170,7 +170,7 @@ int l_graphics_SpriteBatch_setBufferSize(lua_State* state) {
 
   int newsize = l_tools_toNumberOrError(state, 2);
 
-  //graphics_Batch_setBufferSize(&batch->batch, newsize);
+  graphics_Batch_changeBufferSize(&batch->batch, newsize);
 
   return 0;
 }
