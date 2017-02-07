@@ -126,7 +126,7 @@ graphics_Glyph const* graphics_Font_findGlyph(graphics_Font *font, unsigned unic
         font->glyphs.currentX = GlyphTexturePadding;
         font->glyphs.currentY = GlyphTexturePadding;
         font->glyphs.currentRowHeight = GlyphTexturePadding;
-        //graphics_GlyphMap_newTexture(&font->glyphs);
+        graphics_GlyphMap_newTexture(&font->glyphs);
     }
 
     // TODO: create new texture if current texture is full
@@ -203,7 +203,7 @@ int graphics_Font_getWrap(graphics_Font * font, char const* text, int width, cha
 }
 
 static void prepareBatches(graphics_Font* font, int chars) {
-    int newSize = max(chars, font->batchsize);
+    int newSize = max(chars, moduleData.batchsize);
 
     /* This will be called only once to set up the only texture used for batch which will contain
         all the text from print and printf functions. */
@@ -242,7 +242,7 @@ static void prepareBatches(graphics_Font* font, int chars) {
     }
 
     moduleData.batchcount = font->glyphs.numTextures;
-    font->batchsize = newSize;
+    moduleData.batchsize = newSize;
 }
 
 void graphics_Font_render(graphics_Font* font, char const* text, int px, int py, float r, float sx, float sy, float ox, float oy, float kx, float ky) {

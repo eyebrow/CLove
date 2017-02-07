@@ -75,7 +75,7 @@ void main_loop(void *data) {
 
     timer_step();
     love_focus(loopData->luaState);
-    //matrixstack_origin();
+    matrixstack_origin();
     lua_rawgeti(loopData->luaState, LUA_REGISTRYINDEX, loopData->errhand);
     lua_getglobal(loopData->luaState, "love");
     lua_pushstring(loopData->luaState, "update");
@@ -179,12 +179,17 @@ void main_loop(void *data) {
     audio_updateStreams();
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) { 
+    keyboard_init();
+    joystick_init();
+    timer_init();
+    
     lua_State *lua = luaL_newstate();
     luaL_openlibs(lua);
 
     love_Config config;
-
+    
+    audio_init(config.window.stats);
     filesystem_init(argv[0], config.window.stats);
 
     l_love_register(lua);
@@ -203,9 +208,6 @@ int main(int argc, char* argv[]) {
 
     l_boot(lua, &config);
 
-    keyboard_init();
-    joystick_init();
-
     graphics_setWindow(config.window.window);
     if (config.window.stats > 1)
        printf("%s %s \n", "Debug: Platform: ", filesystem_getOS());
@@ -217,7 +219,7 @@ int main(int argc, char* argv[]) {
     graphics_setPosition(config.window.x, config.window.y);
 
     l_running = 1;
-    audio_init(config.window.stats);
+    
     /*
      * Since 24.09.16 boot from zip was introduced which means .zip files
      * are being used for executing games, just like Love2d does.
@@ -257,8 +259,6 @@ int main(int argc, char* argv[]) {
         .luaState = lua,
         .errhand = luaL_ref(lua, LUA_REGISTRYINDEX)
     };
-
-    timer_init();
 
 #ifdef EMSCRIPTEN
     //TODO find a way to quit(love.event.quit) love on web?

@@ -75,7 +75,7 @@ void graphics_init(int width, int height, bool resizable, bool stats) {
 #ifdef EMSCRIPTEN
     moduleData.surface = SDL_SetVideoMode(width, height, 0, SDL_OPENGL);
 #else
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
+    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);

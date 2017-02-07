@@ -14,19 +14,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-const static int stackSize = 32;
+const static float stackSize = 32;
 
 static struct {
   int head;
-#ifdef CLOVE_WINDOWS 
   mat4x4* stack;
-#endif
-#ifdef CLOVE_LINUX
-  mat4x4* stack;
-#endif
-#ifdef CLOVE_MACOSX
-  mat4x4 stack[stackSize];
-#endif
 
   float rotX;
   float rotY;
@@ -44,12 +36,8 @@ inline mat4x4* matrixstack_head() {
 }
 
 void matrixstack_init(void) {
-#ifdef CLOVE_WINDOWS
-  moduleData.stack = malloc(sizeof(stackSize));
-#endif
-#ifdef CLOVE_LINUX
   moduleData.stack = malloc(sizeof(float)*stackSize);
-#endif 
+
   moduleData.rotAngle = 0;
   moduleData.rotX = 0;
   moduleData.rotY = 0;
