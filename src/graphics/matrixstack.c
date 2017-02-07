@@ -36,7 +36,7 @@ inline mat4x4* matrixstack_head() {
 }
 
 void matrixstack_init(void) {
-  moduleData.stack = malloc(sizeof(float)*stackSize);
+  moduleData.stack = malloc(sizeof(mat4x4) * stackSize);
 
   moduleData.rotAngle = 0;
   moduleData.rotX = 0;

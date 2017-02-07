@@ -7,11 +7,11 @@
 #   under the terms of the MIT license. See LICENSE.md for details.
 */
 #ifdef EMSCRIPTEN
-# include <emscripten.h>
+ #include <emscripten.h>
 #else
-#include "../3rdparty/SDL2/include/SDL.h"
-
+ #include "../3rdparty/SDL2/include/SDL.h"
 #endif
+
 #include "timer.h"
 
 static float const FpsUpdateTimeout = 1.0f;
@@ -24,6 +24,16 @@ static struct {
   float fps;
   int frames;
 } moduleData;
+
+void timer_init() {
+  float now = timer_getTime();
+  moduleData.averageDeltaTime = 0.0;
+  moduleData.lastFpsUpdate = now;
+  moduleData.currentTime = now;
+  moduleData.deltaTime = 0.0f;
+  moduleData.fps = 0.0f;
+  moduleData.frames = 0;
+}
 
 float timer_getTime(void) {
 #ifdef EMSCRIPTEN
@@ -65,12 +75,4 @@ float timer_getAverageDelta(void) {
   return moduleData.averageDeltaTime;
 }
 
-void timer_init() {
-  float now = timer_getTime();
-  moduleData.averageDeltaTime = 0.0;
-  moduleData.lastFpsUpdate = now;
-  moduleData.currentTime = now;
-  moduleData.deltaTime = 0.0f;
-  moduleData.fps = 0.0f;
-  moduleData.frames = 0;
-}
+
