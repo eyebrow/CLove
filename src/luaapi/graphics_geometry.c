@@ -51,10 +51,10 @@ static int l_geometry_rectangle(lua_State* state) {
   if (lua_tonumber(state, 10)) oy = luaL_checknumber(state, 10);
 
   if (strncmp(type,"line",4) == 0)
-    graphics_geometry_fillRectangle(0, x, y, w, h, r, sx, sy, ox, oy);
+    graphics_geometry_rectangle(false, x, y, w, h, r, sx, sy, ox, oy);
 
   else if(strncmp(type,"fill", 4) == 0)
-    graphics_geometry_fillRectangle(1, x, y, w, h, r, sx, sy, ox, oy);
+    graphics_geometry_rectangle(true, x, y, w, h, r, sx, sy, ox, oy);
   else
     {
       luaL_argerror(state,1,"expected string");
@@ -126,9 +126,9 @@ static int l_geometry_vertex(lua_State* state) {
       // Stack is now the same as it was on entry to this function
     }
   if (strncmp(type,"line",4) == 0)
-    graphics_geometry_vertex(0,x,y,moduleData.vertices,count);
+    graphics_geometry_vertex(false, x, y,moduleData.vertices,count);
   else if (strncmp(type, "fill",4) == 0)
-    graphics_geometry_vertex(1,x,y,moduleData.vertices,count);
+    graphics_geometry_vertex(true, x, y, moduleData.vertices,count);
 
   //free(vertices);
   return 1;

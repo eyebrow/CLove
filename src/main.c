@@ -189,7 +189,6 @@ int main(int argc, char* argv[]) {
 
     love_Config config;
     
-    audio_init(config.window.stats);
     filesystem_init(argv[0], config.window.stats);
 
     l_love_register(lua);
@@ -209,6 +208,8 @@ int main(int argc, char* argv[]) {
     l_boot(lua, &config);
 
     graphics_setWindow(config.window.window);
+    audio_init(config.window.stats);
+    
     if (config.window.stats > 1)
        printf("%s %s \n", "Debug: Platform: ", filesystem_getOS());
     graphics_init(config.window.width, config.window.height, config.window.resizable, config.window.stats);
