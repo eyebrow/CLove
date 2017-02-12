@@ -1,3 +1,10 @@
+version 0.7.0 not released yet: 
+planned: love.graphics.newMesh submodule
+
+fixed?: fixed stream support with vorbis files
+fixed: rectangles and circles alpha when using love.graphics.setColor
+fixed: Windows support should be totally functional 
+
 
 version 0.6.3 29.01.2017:
 
@@ -28,5 +35,3 @@ added love.filesystem.load(fileName) see: https://love2d.org/wiki
 internal: added more functions to image_ImageData
 fixed: build system for physfs on linux
 
-SDL_WINDOWEVENT_ENTER or SDL_WINDOWEVENT_LEAVE
-SDL_WINDOWEVENT_FOCUS_GAINED

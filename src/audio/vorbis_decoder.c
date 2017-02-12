@@ -35,18 +35,16 @@ int audio_vorbis_loadStream(audio_vorbis_DecoderData* data, char const *filename
   int err;
   data->vorbis = stb_vorbis_open_filename(filename, &err, NULL);
 
-  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
+  data->info = stb_vorbis_get_info(data->vorbis);
 
-  data->readBufferSize    = info.channels * info.sample_rate + 4069;
+  data->readBufferSize    = data->info.channels * data->info.sample_rate + 4069;
   data->readBuffer        = malloc(sizeof(ALshort) * data->readBufferSize);
   data->preloadedSamples  = 0;
   return err;
 }
 
-int audio_vorbis_preloadStreamSamples(audio_vorbis_DecoderData *decoderData, int sampleCount) {
-  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
-  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
-  int channels = info.channels >= 2 ? 2 : 1;   // Force to mono or stereo
+int audio_vorbis_preloadStreamSamples(audio_vorbis_DecoderData *data, int sampleCount) {
+  int channels = data->info.channels >= 2 ? 2 : 1;   // Force to mono or stereo
 
   int safeBufferSize = sampleCount * channels + 4069;
   if(safeBufferSize > data->readBufferSize) {
@@ -74,7 +72,7 @@ int audio_vorbis_preloadStreamSamples(audio_vorbis_DecoderData *decoderData, int
        break;
       for(int i = 0; i < samples; ++i) {
           for(int c = 0; c < channels; ++c) {
-              data->readBuffer[data->preloadedSamples + readSamples + channels * i + c] = (ALshort)(channelData[c][i] * 0x7FFF);
+              data->readBuffer[data->preloadedSamples + readSamples + channels * i + c] = (channelData[c][i] * 32767);
             }
         }
 
@@ -87,15 +85,14 @@ int audio_vorbis_preloadStreamSamples(audio_vorbis_DecoderData *decoderData, int
   return readSamples;
 }
 
-int audio_vorbis_uploadSreamSamples(audio_vorbis_DecoderData *decoderData, ALuint buffer) {
-  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
-  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
-  int channels = info.channels >= 2 ? 2 : 1;   // Force to mono or stereo
+int audio_vorbis_uploadSreamSamples(audio_vorbis_DecoderData *data, ALuint buffer) {
+  int channels = data->info.channels >= 2 ? 2 : 1;   // Force to mono or stereo
 
   // Emergency loading if we ran out of time for proper preloading
   if(data->preloadedSamples < data->readBufferSize / 2) {
-      audio_vorbis_preloadStreamSamples(decoderData, data->readBufferSize / 2);
+      audio_vorbis_preloadStreamSamples(data, data->readBufferSize / 2);
     }
+    
 
   //printf("uploaded %d samples to buffer %d\n", data->preloadedSamples, buffer);
   alBufferData(
@@ -103,10 +100,11 @@ int audio_vorbis_uploadSreamSamples(audio_vorbis_DecoderData *decoderData, ALuin
         channels == 2 ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16,
         data->readBuffer,
         data->preloadedSamples * sizeof(ALshort),
-        info.sample_rate
+        data->info.sample_rate
         );
+  int uploaded = data->preloadedSamples;
   data->preloadedSamples = 0;
-  return 0;
+  return uploaded;
 }
 
 void audio_vorbis_rewindStream(audio_vorbis_DecoderData *decoderData) {
@@ -114,16 +112,12 @@ void audio_vorbis_rewindStream(audio_vorbis_DecoderData *decoderData) {
   stb_vorbis_seek_start(data->vorbis);
 }
 
-int audio_vorbis_getChannelCount(audio_vorbis_DecoderData *decoderData) {
-  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
-  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
-  return info.channels;
+int audio_vorbis_getChannelCount(audio_vorbis_DecoderData *data) {
+  return data->info.channels;
 }
 
-int audio_vorbis_getSampleRate(audio_vorbis_DecoderData *decoderData) {
-  audio_vorbis_DecoderData * data = (audio_vorbis_DecoderData*)decoderData;
-  stb_vorbis_info info = stb_vorbis_get_info(data->vorbis);
-  return info.sample_rate;
+int audio_vorbis_getSampleRate(audio_vorbis_DecoderData *data) {
+  return data->info.sample_rate;
 }
 
 void audio_vorbis_flushBuffer(audio_vorbis_DecoderData *decoderData) {

@@ -54,8 +54,7 @@ typedef struct {
     int errhand;
 } MainLoopData;
 
-void quit_function(lua_State* state)
-{
+void quit_function(lua_State* state) {
     lua_getglobal(state, "love");
     lua_pushstring(state, "quit");
     lua_rawget(state, -2);
@@ -68,6 +67,19 @@ void love_focus(lua_State* state) {
     lua_rawget(state, -2);
     lua_pushboolean(state, graphics_hasFocus());
     lua_call(state, 1, 0);
+}
+
+void main_clean(lua_State* state) { 
+    joystick_close();
+    graphics_destroyWindow();
+    /* There is a nasty bug on Windows that
+       causes lua_close to give a segment fault. */
+    lua_close(state);
+    audio_close();
+
+    if(PHYSFS_isInit() == 1)
+        PHYSFS_deinit();
+
 }
 
 void main_loop(void *data) {
@@ -183,12 +195,12 @@ int main(int argc, char* argv[]) {
     keyboard_init();
     joystick_init();
     timer_init();
-    
+
     lua_State *lua = luaL_newstate();
     luaL_openlibs(lua);
 
     love_Config config;
-    
+
     filesystem_init(argv[0], config.window.stats);
 
     l_love_register(lua);
@@ -209,9 +221,9 @@ int main(int argc, char* argv[]) {
 
     graphics_setWindow(config.window.window);
     audio_init(config.window.stats);
-    
+
     if (config.window.stats > 1)
-       printf("%s %s \n", "Debug: Platform: ", filesystem_getOS());
+        printf("%s %s \n", "Debug: Platform: ", filesystem_getOS());
     graphics_init(config.window.width, config.window.height, config.window.resizable, config.window.stats);
     graphics_setTitle(config.window.title);
     graphics_setBordless(config.window.bordless);
@@ -220,7 +232,7 @@ int main(int argc, char* argv[]) {
     graphics_setPosition(config.window.x, config.window.y);
 
     l_running = 1;
-    
+
     /*
      * Since 24.09.16 boot from zip was introduced which means .zip files
      * are being used for executing games, just like Love2d does.
@@ -269,14 +281,6 @@ int main(int argc, char* argv[]) {
         main_loop(&mainLoopData);
 #endif
     quit_function(lua);
-    joystick_close();
-    graphics_destroyWindow();
-    /* There is a nasty bug on Windows that
-        causes lua_close to give a segment fault. */
-    lua_close(lua);
-    audio_close();
-
-    if(PHYSFS_isInit() == 1)
-        PHYSFS_deinit();
+    main_clean(lua);
     return 0;
 }

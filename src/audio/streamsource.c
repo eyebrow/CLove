@@ -19,7 +19,7 @@ static struct {
   audio_StreamSource ** playingStreams;
   int playingStreamSize;
   int playingStreamCount;
-  ALuint unqueueBuffer[3];
+  ALuint unqueueBuffer[6];
 } moduleData;
 
 static const char* get_filename_ext(const char *filename) {
@@ -36,15 +36,14 @@ void audio_StreamInit() {
 
 int audio_loadStream(audio_StreamSource *source, char const * filename) {
   int err = 1;
-
-  audio_vorbis_DecoderData* data = malloc(sizeof(audio_vorbis_DecoderData));
-  source->decoderData = data;
-
+    
+  source->decoderData = malloc(sizeof(audio_vorbis_DecoderData));
+      
   //NOTE: CLove only supports vorbis files when it comes to streaming!
-  if (strncmp(get_filename_ext(filename), "wav", 3) == 0)
-    err = -1;
-  else
-    err = audio_vorbis_loadStream(data, filename);
+  //if (strncmp(get_filename_ext(filename), "wav", 3) == 0)
+    //err = -1;
+  //else
+    err = audio_vorbis_loadStream(source->decoderData, filename);
 
   if (err < 1)
     err = 0;
@@ -55,25 +54,62 @@ int audio_loadStream(audio_StreamSource *source, char const * filename) {
   alSource3f(source->source, AL_POSITION, 0.0f, 0.0f, 0.0f);
   alSource3f(source->source, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
   alSourcei( source->source, AL_LOOPING,  AL_FALSE);
-  alGenBuffers(3, source->buffers);
+  alGenBuffers(6, source->buffers);
   source->channels   = audio_vorbis_getChannelCount(source->decoderData);
   source->sampleRate = audio_vorbis_getSampleRate(source->decoderData);
-  source->bufferSamples = source->channels * source->sampleRate / 2;
 
-  for(int i = 0; i < 2; ++i) {
-      audio_vorbis_preloadStreamSamples(source->decoderData, 44100);
+  for(int i = 0; i < 6; ++i) {
+      audio_vorbis_preloadStreamSamples(source->decoderData, 100);
       audio_vorbis_uploadSreamSamples(source->decoderData, source->buffers[i]);
     }
   source->loop = false;
   return err;
 }
 
+
+void audio_updateStreams() {
+    for(int i = 0; i < moduleData.playingStreamCount; ++i) {
+        audio_StreamSource* source = moduleData.playingStreams[i];
+
+        ALuint src = source->source;
+        ALint count;
+        ALint queued;
+        ALint state;
+        alGetSourcei(src, AL_BUFFERS_PROCESSED, &count);
+        alGetSourcei(src, AL_BUFFERS_QUEUED, &queued);
+        alGetSourcei(src, AL_SOURCE_STATE, &state);
+        
+        if (count > 0) {
+
+            int loaded = audio_vorbis_preloadStreamSamples(source->decoderData, 8000);
+
+
+            //printf("%d buffers free, %d queued, state=%d\n", count, queued, state);
+            if(loaded == 0) {
+                //moduleData.playingStreamCount = 0;
+                if (source->loop)
+                    audio_vorbis_rewindStream(source->decoderData);
+                else
+                    source->state = audio_SourceState_stopped;
+            }
+
+//            for(int j = 0; j < count; ++j) {
+                ALuint buf;
+                alSourceUnqueueBuffers(src, 1, &buf);
+                int uploaded = audio_vorbis_uploadSreamSamples(source->decoderData, buf);
+                if (uploaded > 0 && queued < 7)
+                    alSourceQueueBuffers(src, 1, &buf);
+  //          }
+        }
+    }
+}
+
 void audio_StreamSource_play(audio_StreamSource *source) {
   source->state = audio_SourceState_playing;
-  alSourceQueueBuffers(source->source, 2, source->buffers);
+  alSourceQueueBuffers(source->source, 6, source->buffers);
 
   if(moduleData.playingStreamCount == moduleData.playingStreamSize) {
-      moduleData.playingStreamSize = 2 * moduleData.playingStreamSize;
+      moduleData.playingStreamSize *= 2;
       moduleData.playingStreams = realloc(moduleData.playingStreams, moduleData.playingStreamSize*sizeof(audio_StreamSource*));
     }
 
@@ -147,36 +183,6 @@ void audio_StreamSource_setPosition(audio_StreamSource *source, float x, float y
 
 void audio_StreamSource_free(audio_StreamSource* source) {
   alDeleteSources(1, &source->source);
-  alDeleteBuffers(3, source->buffers);
+  alDeleteBuffers(6, source->buffers);
 }
 
-void audio_updateStreams() {
-  for(int i = 0; i < moduleData.playingStreamCount; ++i) {
-      audio_StreamSource* source = moduleData.playingStreams[i];
-
-      int loaded = audio_vorbis_preloadStreamSamples(source->decoderData, 8000);
-
-      ALuint src = source->source;
-      ALint count;
-      ALint queued;
-      ALint state;
-      alGetSourcei(src, AL_BUFFERS_PROCESSED, &count);
-      alGetSourcei(src, AL_BUFFERS_QUEUED, &queued);
-      alGetSourcei(src, AL_SOURCE_STATE, &state);
-      //printf("%d buffers free, %d queued, state=%d\n", count, queued, state);
-      if(loaded == 0) {
-          //moduleData.playingStreamCount = 0;
-          if (source->loop)
-            audio_vorbis_rewindStream(source->decoderData);
-          else
-            source->state = audio_SourceState_stopped;
-        }
-
-      for(int j = 0; j < count; ++j) {
-          ALuint buf;
-          alSourceUnqueueBuffers(src, 1, &buf);
-          audio_vorbis_uploadSreamSamples(source->decoderData, buf);
-          alSourceQueueBuffers(src, 1, &buf);
-        }
-    }
-}

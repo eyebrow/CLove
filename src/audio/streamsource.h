@@ -16,24 +16,24 @@
 #include "source.h"
 
 typedef struct {
-  stb_vorbis *vorbis;
-  ALshort    *readBuffer;
-  int         readBufferSize;
-  int         preloadedSamples;
+    stb_vorbis *vorbis;
+    ALshort    *readBuffer;
+    stb_vorbis_info info;
+    int         readBufferSize;
+    int         preloadedSamples;
 } audio_vorbis_DecoderData;
 
 typedef struct {
-  audio_vorbis_DecoderData* decoderData;
-  audio_SourceState state;
-  bool loop;
-  int channels;
-  int sampleRate;
-  ALuint source;
-  ALuint buffers[3];
-  int bufferSamples;
-  int maxFrameSamples;
-  int samplesRead;
-  int nextBuffer;
+    audio_vorbis_DecoderData* decoderData;
+    audio_SourceState state;
+    bool loop;
+    int channels;
+    int sampleRate;
+    ALuint source;
+    ALuint buffers[6];
+    int maxFrameSamples;
+    int samplesRead;
+    int nextBuffer;
 } audio_StreamSource;
 
 void audio_updateStreams();
